@@ -1,10 +1,12 @@
-// require("@nomicfoundation/hardhat-verify");
 require("@nomicfoundation/hardhat-toolbox");
 // require('@openzeppelin/hardhat-upgrades');
 
-const ARBITRUM_KEY = "KNQKKXEIU1F9K7A15BAF8JBWKCRZ9SRTCM";
-const GOERLI_TESTNET_PRIVATE_KEY =
-  "27614733a96ebe9f80cf1b2d487b991c2fede6aead5090ceedfa6f5a9d703b3a";
+require("dotenv").config();
+
+const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY;
+const TESTNET_PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
+const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
+const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY;
 
 module.exports = {
   defaultNetwork: "hardhat",
@@ -12,10 +14,17 @@ module.exports = {
     hardhat: {
       chainId: 1337,
     },
-    arbitrumGoerli: {
-      url: "https://goerli-rollup.arbitrum.io/rpc",
-      chainId: 421613,
-      accounts: [GOERLI_TESTNET_PRIVATE_KEY],
+    fuji: {
+      url: "https://api.avax-test.network/ext/bc/C/rpc",
+      gasPrice: 225000000000,
+      chainId: 43113,
+      accounts: [TESTNET_PRIVATE_KEY],
+    },
+    mainnet: {
+      url: "https://api.avax.network/ext/bc/C/rpc",
+      gasPrice: 225000000000,
+      chainId: 43114,
+      accounts: [MAINNET_PRIVATE_KEY],
     },
   },
   solidity: {
@@ -68,6 +77,13 @@ module.exports = {
     timeout: 40000,
   },
   etherscan: {
-    apiKey: ARBITRUM_KEY,
+    apiKey: ETHERSCAN_API_KEY,
   },
+  // gasReporter: {
+  //   enabled: false,
+  //   currency: "USD",
+  //   outputFile: "gas-report.txt",
+  //   noColors: true,
+  //   coinmarketcap: COINMARKETCAP_API_KEY,
+  // },
 };

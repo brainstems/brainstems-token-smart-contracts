@@ -5,27 +5,24 @@
 // will compile your contracts, add the Hardhat Runtime Environment's members to the
 // global scope, and execute the script.
 const hre = require("hardhat");
-
+const { green } = require("console-log-colors");
 
 async function main() {
-
-  console.log("-------------------------- [ Deploy IntellShareNFTContract.sol ] ----------------------------")
-  const NAME = "INTELL Share NFT";
-  const SYMBOL = "INTELL";
-  const Editions = await hre.ethers.getContractFactory("Editions");
-  const editions = await Editions.deploy(NAME, SYMBOL);
-
-  await editions.deployed();
   console.log(
-    `Deployed to ${editions.address}`
+    "-------------------------- [ Deploy IntellTokenContract.sol ] ----------------------------"
   );
+  const IntelligenceInvestmentToken = await hre.ethers.getContractFactory(
+    "IntelligenceInvestmentToken"
+  );
+  const intelligenceInvestmentToken =
+    await IntelligenceInvestmentToken.deploy();
+
+  await intelligenceInvestmentToken.deployed();
+  console.log(green(`Deployed to ${intelligenceInvestmentToken.address}`));
   await hre.run("verify:verify", {
-    address: editions.address,
-    constructorArguments: [NAME, SYMBOL],
-  })
-  console.log("-------------------------------------------------------------------------------------");
-
-
+    address: intelligenceInvestmentToken.address,
+    // constructorArguments: [NAME, SYMBOL],
+  });
 }
 
 // We recommend this pattern to be able to use async/await everywhere
