@@ -247,50 +247,25 @@ contract IntellShareCollectionContract is
         }
     }
 
-    /**
-     * @dev releases new share collection
-     */
-
-    function releaseShareCollection(
-        bytes memory __shareCollectionParams,
-        bytes memory __signature
-    ) external {
-        // Verifys signature using ECDSA
-        if (!verifyMessage(__shareCollectionParams, __signature)) {
-            revert UnverifiedMessage();
-        }
-
-        nextIntellShareCollectionId++;
-
-        // Decode params from bytes
+    function validation(bytes memory data) internal view returns(bool) {
         (
-            address _PAYMENT_TOKEN_ADDR,
             address _USER_ADDR,
             uint256 _INTELL_MODEL_TOKEN_ID,
             uint256 _MAX_TOTAL_SUPPLY,
             uint256 _MINT_PRICE,
-            uint256 _DURATION,
-            uint256 _SOFTCAP,
-            bool _FOR_ONLY_US_INVESTOR,
             bool _USER_SUSPENDED,
             bool _APPROVED,
-            bool _HAS_SHARE,
-            string memory _IPFS_HASH
+            bool _HAS_SHARE
         ) = abi.decode(
-                __shareCollectionParams,
+                data,
                 (
                     address,
-                    address,
-                    uint256,
-                    uint256,
                     uint256,
                     uint256,
                     uint256,
                     bool,
                     bool,
-                    bool,
-                    bool,
-                    string
+                    bool
                 )
             );
 
@@ -307,7 +282,56 @@ contract IntellShareCollectionContract is
         );
         require(_APPROVED, "MUST BE APPROVED FROM ADMIN");
         require(_USER_ADDR == msg.sender, "THE CALLER MUST BE OWNER!");
-        require(!_USER_SUSPENDED, "YOUR WAS BLOCKED FROM TIEX DAO ADMIN!");
+        require(!_USER_SUSPENDED, "YOU WAS BLOCKED FROM TIEX DAO ADMIN!");
+
+        return true;
+
+    }
+
+    /**
+     * @dev releases new share collection
+     */
+
+    function releaseShareCollection(
+        bytes memory __shareCollection,
+        bytes memory __shareCollectionSignature,
+        bytes memory __validation,
+        bytes memory __validationSignature
+    ) external {
+        // Verifys signature using ECDSA
+        if (!verifyMessage(__shareCollection, __shareCollectionSignature) && !verifyMessage(__validation, __validationSignature)) {
+            revert UnverifiedMessage();
+        }
+
+        require(validation(__validation), "Params are invalid!");
+
+        nextIntellShareCollectionId++;
+
+        // Decode params from bytes
+        (
+            address _PAYMENT_TOKEN_ADDR,
+            uint256 _INTELL_MODEL_TOKEN_ID,
+            uint256 _MAX_TOTAL_SUPPLY,
+            uint256 _MINT_PRICE,
+            uint256 _DURATION,
+            uint256 _SOFTCAP,
+            bool _FOR_ONLY_US_INVESTOR,
+            string memory _IPFS_HASH
+        ) = abi.decode(
+                __shareCollection,
+                (
+                    address,
+                    uint256,
+                    uint256,
+                    uint256,
+                    uint256,
+                    uint256,
+                    bool,
+                    string
+                )
+            );
+
+
 
         // Creates new collection
         _shareCollections[_INTELL_MODEL_TOKEN_ID].push(

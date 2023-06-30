@@ -7,7 +7,7 @@ interface IIntellSetting {
     function truthHolder() external view returns(address);
     function shareNFTLaunchPrice() external view returns(uint256);
     function intellTokenAddr() external view returns(address);
-    function factoryContractAddr() external view returns(address);
+    function intellShareCollectionContractAddr() external view returns(address);
     function intellModelNFTContractAddr() external view returns(address);
     function modelLaunchPrice() external view returns(uint256);
 }
