@@ -17,7 +17,7 @@ describe("IntelligenceInvestmentToken", function () {
     );
     const intelligenceInvestmentToken =
       await IntelligenceInvestmentToken.deploy();
-      
+
     return {
       owner,
       otherAccount,
@@ -200,20 +200,27 @@ describe("IntelligenceInvestmentToken", function () {
 
   describe("Ownership", function () {
     it("Should be able to transfer current ownership to new owner", async () => {
-      const { intelligenceInvestmentToken, otherAccount } =
-        await loadFixture(deployIntelligenceExchangeProtocolFixture);
+      const { intelligenceInvestmentToken, otherAccount } = await loadFixture(
+        deployIntelligenceExchangeProtocolFixture
+      );
 
-        await intelligenceInvestmentToken.transferOwnership(otherAccount.address);
-        expect(await intelligenceInvestmentToken.owner()).to.equal(otherAccount.address)
+      await intelligenceInvestmentToken.transferOwnership(otherAccount.address);
+      expect(await intelligenceInvestmentToken.owner()).to.equal(
+        otherAccount.address
+      );
     });
 
     it("Should be able to renounce ownership", async () => {
-        const { intelligenceInvestmentToken } =
-          await loadFixture(deployIntelligenceExchangeProtocolFixture);
-  
-          await intelligenceInvestmentToken.renounceOwnership();
-          expect(await intelligenceInvestmentToken.owner()).to.equal(ethers.constants.AddressZero)
-      });
+      const { intelligenceInvestmentToken } = await loadFixture(
+        deployIntelligenceExchangeProtocolFixture
+      );
 
+      await intelligenceInvestmentToken.renounceOwnership();
+      expect(await intelligenceInvestmentToken.owner()).to.equal(
+        ethers.constants.AddressZero
+      );
+    });
+
+    
   });
 });

@@ -205,10 +205,10 @@ contract IntellModelNFTContract is
         );
 
         // Verifies message from off-chain (backend) through ECDSA on chain
-        // require(
-        //     verifyMessage(statusMessage, statusSignature),
-        //     "ONLY ACCEPT TRUTHHOLDER SIGNED MESSAGE"
-        // );
+        require(
+            verifyMessage(statusMessage, statusSignature),
+            "ONLY ACCEPT TRUTHHOLDER SIGNED MESSAGE"
+        );
 
         // model identification number from backend and database in off-chain
         uint256 _MODEL_ID = abi.decode(statusMessage, (uint256));
@@ -252,7 +252,7 @@ contract IntellModelNFTContract is
         );
     }
 
-    // Gets token ids minted with user account as an owner of model
+    // Gets nft token ids minted from user account
     function walletOfOwner(
         address _owner
     ) public view override returns (uint256[] memory) {
