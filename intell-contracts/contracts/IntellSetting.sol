@@ -10,17 +10,17 @@ import "./interface/IIntellSetting.sol";
 pragma experimental ABIEncoderV2;
 
 contract IntellSetting is Ownable, IIntellSetting {
-    address private _admin = 0x171c8C090511bc95886c9AAc505dB3081FE72F97;
-    address private _truthHolder = 0xF8AbE936Ff2bCc9774Db7912554c4f38368e05A2;
+    address private _admin;
+    address private _truthHolder;
     address private _intellTokenAddr;
     address private _intellShareCollectionContractAddr;
     address private _intellModelNFTContractAddr;
-    uint256 private _modelLaunchPrice;
-    uint256 private _shareNFTLaunchPrice;
+    uint256 private _modelRegisterationPrice;
+    uint256 private _intellShareCollectionLaunchPrice;
 
     constructor() {
-        _modelLaunchPrice = 10000 * 10 ** 18;
-        _shareNFTLaunchPrice = 10000 * 10 ** 18;
+        _modelRegisterationPrice = 10000 * 10 ** 18;
+        _intellShareCollectionLaunchPrice = 10000 * 10 ** 18;
     }
 
     function truthHolder() external view override returns (address) {
@@ -31,22 +31,27 @@ contract IntellSetting is Ownable, IIntellSetting {
         _truthHolder = _newTruthHolder;
     }
 
-    function modelLaunchPrice() external view override returns (uint256) {
-        return _modelLaunchPrice;
+    function modelRegisterationPrice() external view override returns (uint256) {
+        return _modelRegisterationPrice;
     }
 
-    function setModelLaunchPrice(uint256 val) external onlyOwner {
-        _modelLaunchPrice = val;
+    function setModelRegisterationPrice(uint256 val) external onlyOwner {
+        _modelRegisterationPrice = val;
     }
 
-    function shareNFTLaunchPrice() external view override returns (uint256) {
-        return _shareNFTLaunchPrice;
+    function intellShareCollectionLaunchPrice()
+        external
+        view
+        override
+        returns (uint256)
+    {
+        return _intellShareCollectionLaunchPrice;
     }
 
-    function setShareNFTLaunchPrice(
+    function setintellShareCollectionLaunchPrice(
         uint256 _newLaunchPrice
     ) external onlyOwner {
-        _shareNFTLaunchPrice = _newLaunchPrice;
+        _intellShareCollectionLaunchPrice = _newLaunchPrice;
     }
 
     function admin() external view override returns (address) {

@@ -150,7 +150,6 @@ contract IntellModelNFTContract is
         (
             // model identification number from backend (off-chain)
             uint256 _MODEL_ID,
-            ,
             // a installation progress status of the model on machine learning server
             uint256 _MODEL_PROGRESS_STATUS,
             // user account address from backend and database
@@ -163,7 +162,7 @@ contract IntellModelNFTContract is
             bool _MODEL_UPLOADED
         ) = abi.decode(
                 statusMessage,
-                (uint256, bool, uint256, address, bool, bool, bool)
+                (uint256, uint256, address, bool, bool, bool)
             );
 
         // Checks if user account is valid and not bot
@@ -206,10 +205,10 @@ contract IntellModelNFTContract is
         );
 
         // Verifies message from off-chain (backend) through ECDSA on chain
-        require(
-            verifyMessage(statusMessage, statusSignature),
-            "ONLY ACCEPT TRUTHHOLDER SIGNED MESSAGE"
-        );
+        // require(
+        //     verifyMessage(statusMessage, statusSignature),
+        //     "ONLY ACCEPT TRUTHHOLDER SIGNED MESSAGE"
+        // );
 
         // model identification number from backend and database in off-chain
         uint256 _MODEL_ID = abi.decode(statusMessage, (uint256));
@@ -228,7 +227,7 @@ contract IntellModelNFTContract is
         _safeMint(msg.sender, nextTokenId);
 
         /// Commission to register the model and get the NFT token for proving ownership of copyright/Base IP
-        uint256 paymentTokenAmount = _intellSetting.modelLaunchPrice();
+        uint256 paymentTokenAmount = _intellSetting.modelRegisterationPrice();
 
         //Checks if user account has enough payment tokens to register
         require(
@@ -245,7 +244,7 @@ contract IntellModelNFTContract is
 
         emit NewModelMint(
             msg.sender, // user account address
-            paymentTokenAmount, // comission paid
+            paymentTokenAmount, // commission paid
             nextTokenId, // issued token id from on-chain
             _MODEL_ID, // issued model id from off-chain
             block.timestamp, // date and time when issued
