@@ -69,21 +69,22 @@ contract IntellShareCollectionContract is
 {
     using Strings for uint256;
     using SafeMath for uint256;
+
     // Structure for Share Collection Info
     struct ShareCollection {
-        address paymentTokenAddr;
-        uint256 softcap;
-        uint256 maxTotalSupply;
-        uint256 totalInvestmentAmount;
-        uint256 price;
-        uint256 launchEndTime;
-        uint256 intellModelNFTTokenId;
-        bool withdrawn;
-        bool paused;
-        bool blocked;
-        bool forUSInvestors;
-        bool cancelled;
-        string ipfsHash;
+        address paymentTokenAddr; // Payment token address
+        uint256 softcap; // Softcap
+        uint256 maxTotalSupply; // Hardcap
+        uint256 totalInvestmentAmount; // total investment amount from investors
+        uint256 price; // price per a share
+        uint256 launchEndTime; // end time
+        uint256 intellModelNFTTokenId; // Intell Model NFT token id
+        bool withdrawn; // if withdrawn already
+        bool paused; // if sale paused
+        bool blocked; // if the share collection is availabe to trade
+        bool forUSInvestors; // if it's for only U.S investors
+        bool cancelled; // if cancelled
+        string ipfsHash; // IPFS hash for metadata of model
     }
 
     error ShareCollectionNotFound();
@@ -117,7 +118,7 @@ contract IntellShareCollectionContract is
     mapping(address => mapping(uint256 => uint256))
         private _userInvestmentTracker;
 
-    // The amount of investment in total on TIEX DAO
+    // So far, the amount of investment in total on TIEX DAO
     uint256 private _totalInvestmentAmount;
 
     // The total amount of investment of an user account
@@ -161,8 +162,6 @@ contract IntellShareCollectionContract is
      * @dev Checks if share collection exists
      *
      * @param __id The shsare collection id
-     * Date: 2023-05-18
-     * Author: Created by Isom D.
      */
     modifier onlyExistingShareCollection(uint256 __id) {
         if (!shareCollectionExists(__id)) {
@@ -175,34 +174,13 @@ contract IntellShareCollectionContract is
      * @dev Checks if share collections exists
      *
      * @param __ids The share collection id(s)
-     * Date: 2023-05-18
      */
-
     modifier onlyExistingShareCollectionBatch(uint256[] calldata __ids) {
         for (uint256 i = 0; i < __ids.length; i++) {
             if (!shareCollectionExists(__ids[i])) {
                 revert ShareCollectionNotFound();
             }
         }
-        _;
-    }
-
-    modifier onlyCreator() {
-        _;
-    }
-
-    /**
-     * @dev Checks if caller is from Intell Model NFT Contract
-     * Date: 2023-06-07
-     * Author: Created by Isom D.
-     */
-
-    modifier onlyIntellModelNFT() {
-        require(
-            intellSetting.intellModelNFTContractAddr() == msg.sender &&
-                msg.sender != tx.origin,
-            "Ownable: CALLER IS NOT INTELL MODEL NFT ADDRESS"
-        );
         _;
     }
 
@@ -218,8 +196,6 @@ contract IntellShareCollectionContract is
      * transfers, the length of the `ids` and `amounts` arrays will be 1.
      *
      * Calling conditions (for each `id` and `amount` pair):
-
-     * Date: 2023-05-18
      */
 
     function _beforeTokenTransfer(
@@ -239,15 +215,153 @@ contract IntellShareCollectionContract is
             __data
         );
 
+        // Checks if all transfers except burn and mint are possible.
+        // Filters out shares that have sold successfully and are not blocked.
         if (__from != address(0) || __to != address(0)) {
             for (uint256 i = 0; i < __ids.length; i++) {
                 require(
-                    getStatus(__ids[i]) == 5 || !_shareCollections[__ids[i]].blocked,
+                    getStatus(__ids[i]) == 5 ||
+                        !_shareCollections[__ids[i]].blocked,
                     "TRANSFER IS AVAILABE WHEN THE SALE IS SUCCESSFUL"
                 );
             }
         }
     }
+
+    // Recovers signer
+    function recoverSigner(
+        bytes32 hash,
+        bytes memory signature
+    ) internal pure returns (address) {
+        bytes32 messageDigest = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
+        );
+        return ECDSA.recover(messageDigest, signature);
+    }
+
+    // Verifies bytes message
+    function verifyMessage(
+        bytes memory message,
+        bytes memory signature
+    ) internal view returns (bool) {
+        bytes32 hash = keccak256(message);
+        return recoverSigner(hash, signature) == intellSetting.truthHolder();
+    }
+
+    // Checks validation to release new share collection
+    function validation(bytes memory data) internal view returns (bool) {
+        (
+            address _USER_ADDR,
+            uint256 _INTELL_MODEL_NFT_TOKEN_ID,
+            uint256 _MAX_TOTAL_SUPPLY,
+            uint256 _MINT_PRICE,
+            bool _USER_SUSPENDED,
+            bool _APPROVED,
+            bool _HAS_SHARE
+        ) = abi.decode(
+                data,
+                (address, uint256, uint256, uint256, bool, bool, bool)
+            );
+
+        // Validation
+        uint256 __shareCollectionLength = _shareCollectionIds[
+            _INTELL_MODEL_NFT_TOKEN_ID
+        ].length;
+
+        if (__shareCollectionLength > 0) {
+            uint256 __lastShareCollectionIndex = __shareCollectionLength - 1;
+            uint256 __status = getStatus(__lastShareCollectionIndex);
+            require(
+                __status == 1 || __status == 2,
+                "CAN NOT CREATE NEW SHARE COLLECTION!"
+            );
+        }
+
+        require(_HAS_SHARE, "NO SHARE");
+
+        require(_MAX_TOTAL_SUPPLY > 0 && _MINT_PRICE > 0, "INVALID INPUT DATA");
+        require(
+            getCreator(_INTELL_MODEL_NFT_TOKEN_ID) == msg.sender,
+            "THE CALLER MUST BE CREATOR!"
+        );
+        require(_APPROVED, "MUST BE APPROVED FROM ADMIN");
+        require(_USER_ADDR == msg.sender, "THE CALLER MUST BE OWNER!");
+        require(!_USER_SUSPENDED, "YOU WAS BLOCKED FROM TIEX DAO ADMIN!");
+
+        return true;
+    }
+
+    /* ============================================== */
+    /* ================== Public ============= */
+    /* ============================================== */
+
+    function getCreator(
+        uint256 __intellModelTokenId
+    ) public view returns (address) {
+        return
+            IERC721Enumerable(intellSetting.intellModelNFTContractAddr())
+                .ownerOf(__intellModelTokenId);
+    }
+
+    // 0: Not launched
+    // 1: Cancelled
+    // 2: Unsuccess
+    // 3: In progress
+    // 4: All Sold
+    // 5: Success
+    function getStatus(
+        uint256 __shareCollectionId
+    ) public view returns (uint256) {
+        ShareCollection memory __shareCollection = _shareCollections[
+            __shareCollectionId
+        ];
+        if (!_shareCollectionLaunched[__shareCollectionId]) return 0; // Not Launched
+        if (__shareCollection.cancelled) return 1; // Cancelled by creator
+        if (
+            __shareCollection.launchEndTime <= block.timestamp &&
+            __shareCollection.softcap > totalSupply(__shareCollectionId)
+        ) return 2; // Unsuccess
+        if (
+            __shareCollection.launchEndTime > block.timestamp &&
+            __shareCollection.maxTotalSupply > totalSupply(__shareCollectionId)
+        ) return 3; // In progress
+        if (
+            __shareCollection.launchEndTime > block.timestamp &&
+            __shareCollection.maxTotalSupply == totalSupply(__shareCollectionId)
+        ) return 4; // All Sold
+        if (
+            __shareCollection.launchEndTime <= block.timestamp &&
+            __shareCollection.softcap <= totalSupply(__shareCollectionId)
+        ) return 5; // Success
+
+        return 0;
+    }
+
+    function uri(
+        uint __id
+    ) public view virtual override returns (string memory) {
+        return
+            string(
+                abi.encodePacked("ipfs://", _shareCollections[__id].ipfsHash)
+            );
+    }
+
+    function shareCollectionExists(uint256 __id) public view returns (bool) {
+        return _shareCollectionLaunched[__id];
+    }
+
+    /**
+     * @dev See {ERC1155-supportsInterface} and {AccessControl-supportsInterface}.
+     */
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC1155, AccessControl) returns (bool) {
+        return super.supportsInterface(interfaceId);
+    }
+
+    /* ============================================== */
+    /* ================== For Investors ============= */
+    /* ============================================== */
 
     function adopt(bytes calldata message, bytes calldata signature) external {
         require(verifyMessage(message, signature), "NO SIGNER");
@@ -325,52 +439,6 @@ contract IntellShareCollectionContract is
         );
     }
 
-    function recoverSigner(
-        bytes32 hash,
-        bytes memory signature
-    ) internal pure returns (address) {
-        bytes32 messageDigest = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
-        );
-        return ECDSA.recover(messageDigest, signature);
-    }
-
-    function verifyMessage(
-        bytes memory message,
-        bytes memory signature
-    ) internal view returns (bool) {
-        bytes32 hash = keccak256(message);
-        return recoverSigner(hash, signature) == intellSetting.truthHolder();
-    }
-
-    /* ============================================== */
-    /* ================== For Creators ============== */
-    /* ============================================== */
-
-    function getCreator(
-        uint256 __intellModelTokenId
-    ) public view returns (address) {
-        return
-            IERC721Enumerable(intellSetting.intellModelNFTContractAddr())
-                .ownerOf(__intellModelTokenId);
-    }
-
-    function cancel(uint256 __shareCollectionId) public {
-        uint256 __status = getStatus(__shareCollectionId);
-        uint256 __intellModelNFTTokenId = _shareCollections[__shareCollectionId]
-            .intellModelNFTTokenId;
-
-        require(__status == 3 || __status == 4, "CAN NOT CANCEL!");
-        require(
-            getCreator(__intellModelNFTTokenId) == msg.sender,
-            "THE CALLER IS NOT OWNER AS CREATOR!"
-        );
-
-        _shareCollections[__shareCollectionId].cancelled = true;
-
-        emit CollectionSaleCancelled(__shareCollectionId);
-    }
-
     function refundWhenCancelledOrUnsuccess(
         uint256 __shareCollectionId
     ) external {
@@ -413,86 +481,30 @@ contract IntellShareCollectionContract is
         );
     }
 
-    function getStatus(
-        uint256 __shareCollectionId
-    ) public view returns (uint256) {
-        //0: Not launched
-        //1: Cancelled
-        //2: Unsuccess
-        //3: In progress
-        //4: All Sold
-        //5: Success
-        ShareCollection memory __shareCollection = _shareCollections[
-            __shareCollectionId
-        ];
-        if (!_shareCollectionLaunched[__shareCollectionId]) return 0; // Not Launched
-        if (__shareCollection.cancelled) return 1; // Cancelled by creator
-        if (
-            __shareCollection.launchEndTime <= block.timestamp &&
-            __shareCollection.softcap > totalSupply(__shareCollectionId)
-        ) return 2; // Unsuccess
-        if (
-            __shareCollection.launchEndTime > block.timestamp &&
-            __shareCollection.maxTotalSupply > totalSupply(__shareCollectionId)
-        ) return 3; // In progress
-        if (
-            __shareCollection.launchEndTime > block.timestamp &&
-            __shareCollection.maxTotalSupply == totalSupply(__shareCollectionId)
-        ) return 4; // All Sold
-        if (
-            __shareCollection.launchEndTime <= block.timestamp &&
-            __shareCollection.softcap <= totalSupply(__shareCollectionId)
-        ) return 5; // Success
+    /* ============================================== */
+    /* ================== For Creators ============== */
+    /* ============================================== */
 
-        return 0;
-    }
+    // Cancels shares sale
+    function cancel(uint256 __shareCollectionId) public {
+        uint256 __status = getStatus(__shareCollectionId);
+        uint256 __intellModelNFTTokenId = _shareCollections[__shareCollectionId]
+            .intellModelNFTTokenId;
 
-    function validation(bytes memory data) internal view returns (bool) {
-        (
-            address _USER_ADDR,
-            uint256 _INTELL_MODEL_NFT_TOKEN_ID,
-            uint256 _MAX_TOTAL_SUPPLY,
-            uint256 _MINT_PRICE,
-            bool _USER_SUSPENDED,
-            bool _APPROVED,
-            bool _HAS_SHARE
-        ) = abi.decode(
-                data,
-                (address, uint256, uint256, uint256, bool, bool, bool)
-            );
-
-        // Validation
-        uint256 __shareCollectionLength = _shareCollectionIds[
-            _INTELL_MODEL_NFT_TOKEN_ID
-        ].length;
-
-        if (__shareCollectionLength > 0) {
-            uint256 __lastShareCollectionIndex = __shareCollectionLength - 1;
-            uint256 __status = getStatus(__lastShareCollectionIndex);
-            require(
-                __status == 1 || __status == 2,
-                "CAN NOT CREATE NEW SHARE COLLECTION!"
-            );
-        }
-
-        require(_HAS_SHARE, "NO SHARE");
-
-        require(_MAX_TOTAL_SUPPLY > 0 && _MINT_PRICE > 0, "INVALID INPUT DATA");
+        require(__status == 3 || __status == 4, "CAN NOT CANCEL!");
         require(
-            getCreator(_INTELL_MODEL_NFT_TOKEN_ID) == msg.sender,
-            "THE CALLER MUST BE CREATOR!"
+            getCreator(__intellModelNFTTokenId) == msg.sender,
+            "THE CALLER IS NOT OWNER AS CREATOR!"
         );
-        require(_APPROVED, "MUST BE APPROVED FROM ADMIN");
-        require(_USER_ADDR == msg.sender, "THE CALLER MUST BE OWNER!");
-        require(!_USER_SUSPENDED, "YOU WAS BLOCKED FROM TIEX DAO ADMIN!");
 
-        return true;
+        _shareCollections[__shareCollectionId].cancelled = true;
+
+        emit CollectionSaleCancelled(__shareCollectionId);
     }
 
     /**
      * @dev releases new share collection
      */
-
     function releaseShareCollection(
         bytes memory __shareCollection,
         bytes memory __shareCollectionSignature,
@@ -559,35 +571,7 @@ contract IntellShareCollectionContract is
         });
     }
 
-    /**
-     * @dev Used to edit the token URI of an Edition.
-     *
-     * Emits a {EditionURIUpdated} event.
-     *
-     */
-    function editURI(
-        uint256 __shareCollectionId,
-        string calldata __ipfsHash
-    ) external {
-        require(
-            msg.sender == intellSetting.admin(),
-            "THE CALLER MUST BE ADMIN"
-        );
-
-        require(
-            _shareCollectionLaunched[__shareCollectionId],
-            "NOT LAUNCHED YET!"
-        );
-
-        _shareCollections[__shareCollectionId].ipfsHash = __ipfsHash;
-
-        emit CollectionURIUpdated(__shareCollectionId, __ipfsHash);
-    }
-
-    function shareCollectionExists(uint256 __id) public view returns (bool) {
-        return _shareCollectionLaunched[__id];
-    }
-
+    // Pauses
     function pause(uint256 __shareCollectionId, bool __val) external {
         uint256 __intellModelNFTTokenId = _shareCollections[__shareCollectionId]
             .intellModelNFTTokenId;
@@ -599,10 +583,11 @@ contract IntellShareCollectionContract is
         _shareCollections[__shareCollectionId].paused = __val;
     }
 
+    // Withdraws investment
     function withdraw(
         bytes calldata message,
         bytes calldata signature
-    ) public onlyCreator {
+    ) external {
         require(verifyMessage(message, signature), "NO SIGNER");
 
         (
@@ -644,6 +629,35 @@ contract IntellShareCollectionContract is
         emit Withdraw(msg.sender, _SHARE_COLLECTION_ID, __amount);
     }
 
+    /* ============================================== */
+    /* ================== For Admin ============== */
+    /* ============================================== */
+
+    /**
+     * @dev Used to edit the token URI of an Edition.
+     *
+     * Emits a {EditionURIUpdated} event.
+     *
+     */
+    function editURI(
+        uint256 __shareCollectionId,
+        string calldata __ipfsHash
+    ) external {
+        require(
+            msg.sender == intellSetting.admin(),
+            "THE CALLER MUST BE ADMIN"
+        );
+
+        require(
+            _shareCollectionLaunched[__shareCollectionId],
+            "NOT LAUNCHED YET!"
+        );
+
+        _shareCollections[__shareCollectionId].ipfsHash = __ipfsHash;
+
+        emit CollectionURIUpdated(__shareCollectionId, __ipfsHash);
+    }
+
     function setBlock(uint256 __shareCollectionId) external {
         require(
             msg.sender == intellSetting.admin(),
@@ -668,14 +682,5 @@ contract IntellShareCollectionContract is
         );
 
         _shareCollections[__shareCollectionId].blocked = false;
-    }
-
-    /**
-     * @dev See {ERC1155-supportsInterface} and {AccessControl-supportsInterface}.
-     */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(ERC1155, AccessControl) returns (bool) {
-        return super.supportsInterface(interfaceId);
     }
 }
