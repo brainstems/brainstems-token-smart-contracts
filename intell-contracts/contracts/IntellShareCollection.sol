@@ -80,6 +80,7 @@ contract IntellShareCollectionContract is
         uint256 intellModelNFTTokenId;
         bool withdrawn;
         bool paused;
+        bool blocked;
         bool forUSInvestors;
         bool cancelled;
         string ipfsHash;
@@ -105,7 +106,7 @@ contract IntellShareCollectionContract is
 
     // Mapping of share collection ids and share collections strucutre
     mapping(uint256 => ShareCollection) private _shareCollections;
-    
+
     // Mapping of IntellModelNFT TokenId and Share collection ids
     mapping(uint256 => uint256[]) private _shareCollectionIds;
 
@@ -241,7 +242,7 @@ contract IntellShareCollectionContract is
         if (__from != address(0) || __to != address(0)) {
             for (uint256 i = 0; i < __ids.length; i++) {
                 require(
-                    getStatus(__ids[i]) == 5,
+                    getStatus(__ids[i]) == 5 || !_shareCollections[__ids[i]].blocked,
                     "TRANSFER IS AVAILABE WHEN THE SALE IS SUCCESSFUL"
                 );
             }
@@ -551,6 +552,7 @@ contract IntellShareCollectionContract is
             withdrawn: false,
             paused: false,
             cancelled: false,
+            blocked: false,
             forUSInvestors: _FOR_ONLY_US_INVESTOR,
             ipfsHash: _IPFS_HASH,
             intellModelNFTTokenId: _INTELL_MODEL_NFT_TOKEN_ID
@@ -640,6 +642,32 @@ contract IntellShareCollectionContract is
         );
 
         emit Withdraw(msg.sender, _SHARE_COLLECTION_ID, __amount);
+    }
+
+    function setBlock(uint256 __shareCollectionId) external {
+        require(
+            msg.sender == intellSetting.admin(),
+            "THE CALLER MUST BE ADMIN"
+        );
+        require(
+            !_shareCollections[__shareCollectionId].blocked,
+            "BLOCKED ALREADY!"
+        );
+
+        _shareCollections[__shareCollectionId].blocked = true;
+    }
+
+    function setUnblock(uint256 __shareCollectionId) external {
+        require(
+            msg.sender == intellSetting.admin(),
+            "THE CALLER MUST BE ADMIN"
+        );
+        require(
+            _shareCollections[__shareCollectionId].blocked,
+            "UNBLOCKED ALREADY!"
+        );
+
+        _shareCollections[__shareCollectionId].blocked = false;
     }
 
     /**
