@@ -64,8 +64,7 @@ library TransferHelper {
 contract IntellShareCollectionContract is
     ERC1155,
     ERC1155Burnable,
-    ERC1155Supply,
-    AccessControl
+    ERC1155Supply
 {
     using Strings for uint256;
     using SafeMath for uint256;
@@ -253,15 +252,10 @@ contract IntellShareCollectionContract is
         (
             address _USER_ADDR,
             uint256 _INTELL_MODEL_NFT_TOKEN_ID,
-            uint256 _MAX_TOTAL_SUPPLY,
-            uint256 _MINT_PRICE,
             bool _USER_SUSPENDED,
             bool _APPROVED,
             bool _HAS_SHARE
-        ) = abi.decode(
-                data,
-                (address, uint256, uint256, uint256, bool, bool, bool)
-            );
+        ) = abi.decode(data, (address, uint256, bool, bool, bool));
 
         // Validation
         uint256 __shareCollectionLength = _shareCollectionIds[
@@ -278,8 +272,6 @@ contract IntellShareCollectionContract is
         }
 
         require(_HAS_SHARE, "NO SHARE");
-
-        require(_MAX_TOTAL_SUPPLY > 0 && _MINT_PRICE > 0, "INVALID INPUT DATA");
         require(
             getCreator(_INTELL_MODEL_NFT_TOKEN_ID) == msg.sender,
             "THE CALLER MUST BE CREATOR!"
@@ -350,13 +342,33 @@ contract IntellShareCollectionContract is
         return _shareCollectionLaunched[__id];
     }
 
-    /**
-     * @dev See {ERC1155-supportsInterface} and {AccessControl-supportsInterface}.
-     */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(ERC1155, AccessControl) returns (bool) {
-        return super.supportsInterface(interfaceId);
+    function shareCollections(
+        uint256 __shareCollectionId
+    ) external view returns (ShareCollection memory) {
+        return _shareCollections[__shareCollectionId];
+    }
+
+    function shareCollectionIds(
+        uint256 __intellModelNFTTokenId
+    ) external view returns (uint256[] memory) {
+        return _shareCollectionIds[__intellModelNFTTokenId];
+    }
+
+    function userInvestmentAmountInTotal(
+        address __user
+    ) external view returns (uint256) {
+        return _userInvestmentAmountInTotal[__user];
+    }
+
+    function totalInvestmentAmount() external view returns (uint256) {
+        return _totalInvestmentAmount;
+    }
+
+    function userInvestmentTracker(
+        address __user,
+        uint256 __shareCollectionId
+    ) external view returns (uint256) {
+        return _userInvestmentTracker[__user][__shareCollectionId];
     }
 
     /* ============================================== */
