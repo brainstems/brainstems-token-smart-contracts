@@ -10,7 +10,6 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./interface/IIntellModelNFT.sol";
 import "./interface/IIntellSetting.sol";
-import "./interface/IFactory.sol";
 
 contract IntellModelNFTContract is
     ERC721Enumerable,

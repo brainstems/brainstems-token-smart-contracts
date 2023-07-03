@@ -12,7 +12,7 @@ const Web3 = require("web3");
 
 const web3 = new Web3(new Web3.providers.HttpProvider());
 
-describe("IntelligenceInvestmentToken", async function () {
+describe("IntellModelNFTContract", async function () {
   async function deployIntelligenceExchangeProtocolFixture() {
     // Contracts are deployed using the first signer/account by default
     const [owner, truthHolder, signer0, signer1] = await ethers.getSigners();
@@ -127,7 +127,7 @@ describe("IntelligenceInvestmentToken", async function () {
     });
   });
 
-  describe("IntellModdelNFTContract", function () {
+  describe("Transactions", function () {
     it("Should mint new NFT as a copyright/base IP when registering new model on TIEX DAO [adopt function]", async () => {
       const {
         intellModelNFTContract,
