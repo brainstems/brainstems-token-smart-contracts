@@ -310,6 +310,8 @@ describe("IntellShareCollectionToken", async function () {
       expect(bigNumberToDecimal(await intellShareCollection.getStatus(lastIntellShareCollectionId))).to.equal(1);
     });
 
-    
+    it("Should mint share collection [adopt function]", async () => {
+        
+    }) 
   });
 });
