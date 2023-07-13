@@ -6,6 +6,7 @@
 // global scope, and execute the script.
 const hre = require("hardhat");
 const { green } = require("console-log-colors");
+const { parseUnits } = require("../test/helper");
 
 async function main() {
   console.log(
@@ -51,7 +52,10 @@ async function main() {
   const IntellModelNFTContract = await hre.ethers.getContractFactory(
     "IntellModelNFTContract"
   );
-  const intellModelNFTContract = await IntellModelNFTContract.deploy("ipfs://intelligence-exchange-metadata/", intellSetting.address);
+  const intellModelNFTContract = await IntellModelNFTContract.deploy(
+    "ipfs://intelligence-exchange-metadata/",
+    intellSetting.address
+  );
 
   await intellModelNFTContract.deployed();
 
@@ -59,11 +63,12 @@ async function main() {
   try {
     await hre.run("verify:verify", {
       address: intellModelNFTContract.address,
-      constructorArguments: ["ipfs://intelligence-exchange-metadata/", intellSetting.address],
+      constructorArguments: [
+        "ipfs://intelligence-exchange-metadata/",
+        intellSetting.address,
+      ],
     });
   } catch (error) {}
-
-
 
   console.log(
     "-------------------------- [ Deploy IntellShareCollectionContract.sol ] ----------------------------"
@@ -72,7 +77,8 @@ async function main() {
   const IntellShareCollectionContract = await hre.ethers.getContractFactory(
     "IntellShareCollectionContract"
   );
-  const intellShareCollectionContract = await IntellShareCollectionContract.deploy(intellSetting.address);
+  const intellShareCollectionContract =
+    await IntellShareCollectionContract.deploy(intellSetting.address);
 
   await intellShareCollectionContract.deployed();
 
@@ -83,7 +89,28 @@ async function main() {
       constructorArguments: [intellSetting.address],
     });
   } catch (error) {}
-  
+
+
+  // Sets addresses of contracts deployed in intellSetting
+
+  const modelRegisterationPrice = 10000;
+  const intellShareCollectionLaunchPrice = 20000;
+
+  await intellSetting.setIntellTokenAddr(intelligenceInvestmentToken.address);
+  await intellSetting.setIntellModelNFTContractAddr(
+    intellModelNFTContract.address
+  );
+  await intellSetting.setIntellShareCollectionContractAddr(
+    intellShareCollectionContract.address
+  );
+  await intellSetting.setTruthHolder("0xF8AbE936Ff2bCc9774Db7912554c4f38368e05A2");
+  await intellSetting.setAdmin("0x171c8C090511bc95886c9AAc505dB3081FE72F97");
+  await intellSetting.setModelRegisterationPrice(
+    parseUnits(modelRegisterationPrice)
+  );
+  await intellSetting.setIntellShareCollectionLaunchPrice(
+    parseUnits(intellShareCollectionLaunchPrice)
+  );
 }
 
 // We recommend this pattern to be able to use async/await everywhere
