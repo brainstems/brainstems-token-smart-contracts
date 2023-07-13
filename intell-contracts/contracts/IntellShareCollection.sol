@@ -91,6 +91,7 @@ contract IntellShareCollectionContract is
     error NotIntellModelNFT();
     error UnverifiedMessage();
 
+    event ReleaseNewShareCollection(uint256 __whenLaunched, uint256 __intellModelNFTTokenId, uint256 __nextIntellShareCollectionId);
     event CollectionURIUpdated(uint256 __id, string __uri);
     event CollectionSaleCancelled(uint256 __id);
     event Refund(
@@ -286,6 +287,11 @@ contract IntellShareCollectionContract is
     /* ============================================== */
     /* ================== Public ============= */
     /* ============================================== */
+
+    // Get IERC20 instance for payment token
+    function paymentToken() public view returns (IERC20) {
+        return IERC20(intellSetting.intellTokenAddr());
+    }
 
     function getCreator(
         uint256 __intellModelTokenId
@@ -581,6 +587,24 @@ contract IntellShareCollectionContract is
             ipfsHash: _IPFS_HASH,
             intellModelNFTTokenId: _INTELL_MODEL_NFT_TOKEN_ID
         });
+
+        // Commission to release new share collection
+        uint256 paymentTokenAmount = intellSetting.intellShareCollectionLaunchPrice();
+
+        //Checks if user account has enough payment tokens to register
+        require(
+            paymentToken().balanceOf(msg.sender) >= paymentTokenAmount,
+            "THE ERC20 TOKEN AMOUNT SENT IS NOT CORRECT OR INSUFFIENT ERC20 TOKEN AMOUNT SENT."
+        );
+
+        // Pays commission
+        paymentToken().transferFrom(
+            msg.sender,
+            address(this),
+            paymentTokenAmount
+        );
+
+        emit ReleaseNewShareCollection(block.timestamp, _INTELL_MODEL_NFT_TOKEN_ID, nextIntellShareCollectionId);
     }
 
     // Pauses

@@ -103,12 +103,17 @@ describe("IntellShareCollectionToken", async function () {
     );
 
     //Approves for transferFrom function in intellModelNFTContract
-    await intelligenceInvestmentToken
-      .connect(signer0)
-      .approve(
-        intellModelNFTContract.address,
-        parseUnits(modelRegisterationPrice)
-      );
+    await intelligenceInvestmentToken.connect(signer0).approve(
+      intellModelNFTContract.address,
+      parseUnits(modelRegisterationPrice)
+      // bigNumberToDecimal(ethers.constants.MaxUint256)
+    );
+
+    await intelligenceInvestmentToken.connect(signer0).approve(
+      intellShareCollection.address,
+      parseUnits(intellShareCollectionLaunchPrice)
+      // bigNumberToDecimal(ethers.constants.MaxUint256)
+    );
 
     // Gets new NFT token as Copyright/base IP for creator.
     await intellModelNFTContract
@@ -127,7 +132,7 @@ describe("IntellShareCollectionToken", async function () {
       )
     ).to.equal(1);
 
-    // --------------------------- Release new share collection ------------------------------
+    // --------------------------- 2. Release new share collection ------------------------------
 
     const intellModelNFTTokenId = bigNumberToDecimal(
       await intellModelNFTContract.tokenIdByModelId(model_id)
@@ -300,18 +305,86 @@ describe("IntellShareCollectionToken", async function () {
     });
 
     it("Should cancel the share collection sale", async () => {
-      const {
-        intellShareCollection,
-        lastIntellShareCollectionId,
-        signer0
-      } = await loadFixture(deployIntelligenceExchangeProtocolFixture);
+      const { intellShareCollection, lastIntellShareCollectionId, signer0 } =
+        await loadFixture(deployIntelligenceExchangeProtocolFixture);
 
-      await intellShareCollection.connect(signer0).cancel(lastIntellShareCollectionId);
-      expect(bigNumberToDecimal(await intellShareCollection.getStatus(lastIntellShareCollectionId))).to.equal(1);
+      await intellShareCollection
+        .connect(signer0)
+        .cancel(lastIntellShareCollectionId);
+      expect(
+        bigNumberToDecimal(
+          await intellShareCollection.getStatus(lastIntellShareCollectionId)
+        )
+      ).to.equal(1);
     });
 
-    it("Should mint share collection [adopt function]", async () => {
-        
-    }) 
+    it("Should mint shares by calling [adopt function]", async () => {
+      const {
+        signer1,
+        lastIntellShareCollectionId,
+        truthHolderPrivateKey,
+        intellShareCollection,
+        mintPrice,
+        intelligenceInvestmentToken,
+      } = await loadFixture(deployIntelligenceExchangeProtocolFixture);
+
+      const __userAddr = signer1.address;
+      const __kycVerificationAsInvestor = true;
+      const __userSuspended = false;
+      const __fromUS = true;
+      const __amount = 100;
+      const __shareCollectionId = lastIntellShareCollectionId;
+
+      // The truth holder is signer as TIEX DAO admin role
+      const truthHolderSigner = web3.eth.accounts.privateKeyToAccount(
+        truthHolderPrivateKey
+      );
+
+      const __adoptParams = web3.eth.abi.encodeParameters(
+        ["address", "bool", "bool", "bool", "uint256", "uint256"],
+        [
+          __userAddr,
+          __kycVerificationAsInvestor,
+          __userSuspended,
+          __fromUS,
+          __amount,
+          __shareCollectionId,
+        ]
+      );
+
+      // Converting params encoded into hash byte
+      const __adoptParamsHash = web3.utils.keccak256(__adoptParams);
+
+      // Generates signature by truth holder to sign above params from backend and database
+      let __adoptParamsSignature =
+        truthHolderSigner.sign(__adoptParamsHash).signature;
+
+      // Transfers INTELL tokens from owner(INTELL token deployer) to user(investor - signer1)
+      await intelligenceInvestmentToken.transfer(
+        signer1.address,
+        parseUnits(__amount * mintPrice)
+      );
+
+      //Approves for transferFrom function in intellModelNFTContract
+      await intelligenceInvestmentToken
+        .connect(signer1)
+        .approve(
+          intellShareCollection.address,
+          parseUnits(__amount * mintPrice)
+        );
+
+      await intellShareCollection
+        .connect(signer1)
+        .adopt(__adoptParams, __adoptParamsSignature);
+
+      expect(
+        bigNumberToDecimal(
+          await intellShareCollection.balanceOf(
+            signer1.address,
+            lastIntellShareCollectionId
+          )
+        )
+      ).to.equal(__amount); // In progress
+    });
   });
 });

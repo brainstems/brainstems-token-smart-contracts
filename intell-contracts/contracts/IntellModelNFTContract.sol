@@ -225,7 +225,7 @@ contract IntellModelNFTContract is
         //Registers model on chain and mints new token id for data scientist(creator)
         _safeMint(msg.sender, nextTokenId);
 
-        /// Commission to register the model and get the NFT token for proving ownership of copyright/Base IP
+        // Commission to register the model and get the NFT token for proving ownership of copyright/Base IP
         uint256 paymentTokenAmount = _intellSetting.modelRegisterationPrice();
 
         //Checks if user account has enough payment tokens to register
