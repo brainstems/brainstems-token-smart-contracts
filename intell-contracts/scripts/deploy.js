@@ -19,10 +19,84 @@ async function main() {
 
   await intelligenceInvestmentToken.deployed();
   console.log(green(`Deployed to ${intelligenceInvestmentToken.address}`));
-  await hre.run("verify:verify", {
-    address: intelligenceInvestmentToken.address,
-    // constructorArguments: [NAME, SYMBOL],
-  });
+
+  try {
+    await hre.run("verify:verify", {
+      address: intelligenceInvestmentToken.address,
+      // constructorArguments: [NAME, SYMBOL],
+    });
+  } catch (error) {}
+
+  console.log(
+    "-------------------------- [ Deploy IntellSetting.sol ] ----------------------------"
+  );
+
+  const IntellSetting = await hre.ethers.getContractFactory("IntellSetting");
+  const intellSetting = await IntellSetting.deploy();
+
+  await intellSetting.deployed();
+
+  console.log(green(`Deployed to ${intellSetting.address}`));
+  try {
+    await hre.run("verify:verify", {
+      address: intellSetting.address,
+      // constructorArguments: [NAME, SYMBOL],
+    });
+  } catch (error) {}
+
+  console.log(
+    "-------------------------- [ Deploy IntellModelNFTContract.sol ] ----------------------------"
+  );
+
+  const IntellModelNFTContract = await hre.ethers.getContractFactory(
+    "IntellModelNFTContract"
+  );
+  const intellModelNFTContract = await IntellModelNFTContract.deploy("ipfs://intelligence-exchange-metadata/", intellSetting.address);
+
+  await intellModelNFTContract.deployed();
+
+  console.log(green(`Deployed to ${intellModelNFTContract.address}`));
+  try {
+    await hre.run("verify:verify", {
+      address: intellModelNFTContract.address,
+      constructorArguments: ["ipfs://intelligence-exchange-metadata/", intellSetting.address],
+    });
+  } catch (error) {}
+
+
+
+  console.log(
+    "-------------------------- [ Deploy IntellShareCollectionContract.sol ] ----------------------------"
+  );
+
+  const IntellShareCollectionContract = await hre.ethers.getContractFactory(
+    "IntellShareCollectionContract"
+  );
+  const intellShareCollectionContract = await IntellShareCollectionContract.deploy(intellSetting.address);
+
+  await intellShareCollectionContract.deployed();
+
+  console.log(green(`Deployed to ${intellShareCollectionContract.address}`));
+  try {
+    await hre.run("verify:verify", {
+      address: intellShareCollectionContract.address,
+      constructorArguments: [intellSetting.address],
+    });
+  } catch (error) {}
+
+
+
+
+
+
+  // const intellModelNFTContract = await ethers.deployContract(
+  //   "IntellModelNFTContract",
+  //   ["ipfs://intelligence-exchange-metadata/", intellSetting.address]
+  // );
+  // const intellShareCollection = await ethers.deployContract(
+  //   "IntellShareCollectionContract",
+  //   ["Intelligence Share Collections", "ISC", intellSetting.address]
+  // );
 }
 
 // We recommend this pattern to be able to use async/await everywhere

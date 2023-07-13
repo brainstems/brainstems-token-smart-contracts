@@ -18,10 +18,7 @@ contract IntellSetting is Ownable, IIntellSetting {
     uint256 private _modelRegisterationPrice;
     uint256 private _intellShareCollectionLaunchPrice;
 
-    constructor() {
-        _modelRegisterationPrice = 10000 * 10 ** 18;
-        _intellShareCollectionLaunchPrice = 10000 * 10 ** 18;
-    }
+    constructor() {}
 
     function truthHolder() external view override returns (address) {
         return _truthHolder;
@@ -31,7 +28,12 @@ contract IntellSetting is Ownable, IIntellSetting {
         _truthHolder = _newTruthHolder;
     }
 
-    function modelRegisterationPrice() external view override returns (uint256) {
+    function modelRegisterationPrice()
+        external
+        view
+        override
+        returns (uint256)
+    {
         return _modelRegisterationPrice;
     }
 
@@ -48,7 +50,7 @@ contract IntellSetting is Ownable, IIntellSetting {
         return _intellShareCollectionLaunchPrice;
     }
 
-    function setintellShareCollectionLaunchPrice(
+    function setIntellShareCollectionLaunchPrice(
         uint256 _newLaunchPrice
     ) external onlyOwner {
         _intellShareCollectionLaunchPrice = _newLaunchPrice;

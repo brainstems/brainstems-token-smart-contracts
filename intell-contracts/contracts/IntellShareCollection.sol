@@ -139,18 +139,14 @@ contract IntellShareCollectionContract is
     /**
      * @dev Sets name/symbol/intell setting in construction
      *
-     * @param __name The token name
-     * @param __symbol The token symbol
      * @param __intellSetting The instance of intellSetting
      * Date: 2023-05-18
      */
     constructor(
-        string memory __name,
-        string memory __symbol,
         IIntellSetting __intellSetting
     ) ERC1155("") {
-        name = __name;
-        symbol = __symbol;
+        name = "Intelligence Share Collections";
+        symbol = "ISC";
         intellSetting = __intellSetting;
     }
 

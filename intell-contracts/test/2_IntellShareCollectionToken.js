@@ -32,7 +32,7 @@ describe("IntellShareCollectionToken", async function () {
     );
     const intellShareCollection = await ethers.deployContract(
       "IntellShareCollectionContract",
-      ["Intelligence Share Collections", "ISC", intellSetting.address]
+      [intellSetting.address]
     );
 
     // Sets addresses of contracts deployed in intellSetting
@@ -48,7 +48,7 @@ describe("IntellShareCollectionToken", async function () {
     await intellSetting.setModelRegisterationPrice(
       parseUnits(modelRegisterationPrice)
     );
-    await intellSetting.setintellShareCollectionLaunchPrice(
+    await intellSetting.setIntellShareCollectionLaunchPrice(
       parseUnits(intellShareCollectionLaunchPrice)
     );
 

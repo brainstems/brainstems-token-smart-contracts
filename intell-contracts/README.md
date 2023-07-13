@@ -48,6 +48,17 @@ Run the tests:
 ```sh
 npm run test
 ```
+<img src="unit-test.png" 
+        alt="test-table" 
+        width="100%" 
+        height="100%" 
+        style="display: block; margin: 0 auto" />
+
+<img src="test-table.png" 
+        alt="test-table" 
+        width="100%" 
+        height="100%" 
+        style="display: block; margin: 0 auto" />
 
 
 # Deployment to a testnet or mainnet
@@ -65,7 +76,7 @@ npm run test
 
 <!-- 1. Get testnet AVAX
 
-    Head over to [faucet.avax.network](https://faucet.avax.network/) and get some tesnet AVAX. You should see the AVAX show up in your metamask. -->
+    Head over to [faucet.avax.network](https://core.app/tools/testnet-faucet/?subnet=c&token=c) and get some tesnet AVAX. You should see the AVAX show up in your metamask. -->
 
 1. Deploy on [Testnet(Fuji)](https://testnet.snowtrace.io/):
 
@@ -78,4 +89,8 @@ npm run test
     ```
     npm run deploy:mainnet
     ```
-
+<img src="deploy-console.png" 
+        alt="test-table" 
+        width="100%" 
+        height="100%" 
+        style="display: block; margin: 0 auto" />
