@@ -91,7 +91,7 @@ async function main() {
   } catch (error) {}
 
 
-  // Sets addresses of contracts deployed in intellSetting
+  // Sets addresses of contracts and some parameters deployed in intellSetting
 
   const modelRegisterationPrice = 10000;
   const intellShareCollectionLaunchPrice = 20000;
