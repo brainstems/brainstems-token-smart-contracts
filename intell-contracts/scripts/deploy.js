@@ -83,20 +83,7 @@ async function main() {
       constructorArguments: [intellSetting.address],
     });
   } catch (error) {}
-
-
-
-
-
-
-  // const intellModelNFTContract = await ethers.deployContract(
-  //   "IntellModelNFTContract",
-  //   ["ipfs://intelligence-exchange-metadata/", intellSetting.address]
-  // );
-  // const intellShareCollection = await ethers.deployContract(
-  //   "IntellShareCollectionContract",
-  //   ["Intelligence Share Collections", "ISC", intellSetting.address]
-  // );
+  
 }
 
 // We recommend this pattern to be able to use async/await everywhere
