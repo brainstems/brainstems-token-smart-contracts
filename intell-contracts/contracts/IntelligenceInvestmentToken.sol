@@ -536,19 +536,6 @@ abstract contract Ownable is Context {
 
 pragma solidity ^0.8.0;
 
-/**
- * @notice Base contract which allows children to implement an emergency stop
- * mechanism
- * @dev Forked from https://github.com/OpenZeppelin/openzeppelin-contracts/blob/feb665136c0dae9912e08397c1a21c4af3651ef3/contracts/lifecycle/Pausable.sol
- * Modifications:
- * 1. Added pauser role, switched pause/unpause to be onlyPauser (6/14/2018)
- * 2. Removed whenNotPause/whenPaused from pause/unpause (6/14/2018)
- * 3. Removed whenPaused (6/14/2018)
- * 4. Switches ownable library to use ZeppelinOS (7/12/18)
- * 5. Remove constructor (7/13/18)
- * 6. Reformat, conform to Solidity 0.6 syntax and add error messages (5/13/20)
- * 7. Make public functions external (5/27/20)
- */
 contract Pausable is Ownable {
     event Pause();
     event Unpause();
