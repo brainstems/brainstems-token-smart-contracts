@@ -23,16 +23,17 @@ describe("IntellShareCollectionToken", async function () {
 
     // Deploys intell token, intellSetting, intellModelNFT, intellShareCollection contracts
     const intelligenceInvestmentToken = await ethers.deployContract(
-      "IntelligenceInvestmentToken"
+      "IntelligenceInvestmentToken", [owner.address]
     );
-    const intellSetting = await ethers.deployContract("IntellSetting");
+    const intellSetting = await ethers.deployContract("IntellSetting", [owner.address, truthHolder.address, owner.address]);
+    await intellSetting.unlock();
     const intellModelNFTContract = await ethers.deployContract(
       "IntellModelNFTContract",
       ["ipfs://intelligence-exchange-metadata/", intellSetting.address]
     );
     const intellShareCollection = await ethers.deployContract(
       "IntellShareCollectionContract",
-      ["Intelligence Share Collections", "ISC", intellSetting.address]
+      [intellSetting.address]
     );
 
     // Sets addresses of contracts deployed in intellSetting
@@ -48,7 +49,7 @@ describe("IntellShareCollectionToken", async function () {
     await intellSetting.setModelRegisterationPrice(
       parseUnits(modelRegisterationPrice)
     );
-    await intellSetting.setintellShareCollectionLaunchPrice(
+    await intellSetting.setIntellShareCollectionLaunchPrice(
       parseUnits(intellShareCollectionLaunchPrice)
     );
 
@@ -56,11 +57,8 @@ describe("IntellShareCollectionToken", async function () {
 
     // The following params (model_id, model_progress_status, etc.) are from backend(off-chain) and database (My SQL)
     const model_id = 1; // model identification number from backend (off-chain)
-    const model_progress_status = 10; // a installation progress status of the model on machine learning server
     const user_addr = signer0.address; // if the user passed verifying KYC as creator(data scientist)
-    const verified_as_creator = true; // if the user account is suspended
     const user_suspended = false; // if the user account is suspended
-    const model_upload = true; // if the model is already uploaded to StorJ Storage.
     const approved = true; // if admin approved to allow creator to releases new share collection for investment.
     const hasShare = true; // if the model has share to get the investment from investors
     const paymentTokenAddr = intelligenceInvestmentToken.address; // INTELL token address
@@ -77,18 +75,15 @@ describe("IntellShareCollectionToken", async function () {
       truthHolderPrivateKey
     );
 
-    // Encoding params from database(My SQL) and backend (off-chain)
-    const statusMessage = web3.eth.abi.encodeParameters(
-      ["uint256", "uint256", "address", "bool", "bool", "bool"],
-      [
-        model_id,
-        model_progress_status,
-        user_addr,
-        verified_as_creator,
-        user_suspended,
-        model_upload,
-      ]
-    );
+      // Encoding params from database(My SQL) and backend (off-chain)
+      const statusMessage = web3.eth.abi.encodeParameters(
+        ["uint256", "address", "bool"],
+        [
+          model_id,
+          user_addr,
+          approved,
+        ]
+      );
 
     // Converting params encoded into hash byte
     const statusMessageHash = web3.utils.keccak256(statusMessage);

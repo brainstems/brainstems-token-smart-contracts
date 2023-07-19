@@ -139,18 +139,14 @@ contract IntellShareCollectionContract is
     /**
      * @dev Sets name/symbol/intell setting in construction
      *
-     * @param __name The token name
-     * @param __symbol The token symbol
      * @param __intellSetting The instance of intellSetting
      * Date: 2023-05-18
      */
     constructor(
-        string memory __name,
-        string memory __symbol,
         IIntellSetting __intellSetting
     ) ERC1155("") {
-        name = __name;
-        symbol = __symbol;
+        name = "Intelligence Share Collections";
+        symbol = "ISC";
         intellSetting = __intellSetting;
     }
 
@@ -181,6 +177,28 @@ contract IntellShareCollectionContract is
                 revert ShareCollectionNotFound();
             }
         }
+        _;
+    }
+
+    // Checks if the caller is admin
+    modifier onlyAdmin() {
+        require(
+            intellSetting.admin() == _msgSender(),
+            "Ownable: caller is not the admin"
+        );
+        _;
+    }
+
+    modifier onlyUnlock() {
+        require(intellSetting.unlocked(), "Lock: Locked");
+        _;
+    }
+
+    /**
+     * @dev Modifier to make a function callable only when the contract is not paused.
+     */
+    modifier whenNotPaused() {
+        require(!intellSetting.paused(), "Pausable: paused");
         _;
     }
 
@@ -232,7 +250,7 @@ contract IntellShareCollectionContract is
     function recoverSigner(
         bytes32 hash,
         bytes memory signature
-    ) internal pure returns (address) {
+    ) private pure returns (address) {
         bytes32 messageDigest = keccak256(
             abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
         );
@@ -243,13 +261,13 @@ contract IntellShareCollectionContract is
     function verifyMessage(
         bytes memory message,
         bytes memory signature
-    ) internal view returns (bool) {
+    ) private view returns (bool) {
         bytes32 hash = keccak256(message);
         return recoverSigner(hash, signature) == intellSetting.truthHolder();
     }
 
     // Checks validation to release new share collection
-    function validation(bytes memory data) internal view returns (bool) {
+    function validation(bytes memory data) private view returns (bool) {
         (
             address _USER_ADDR,
             uint256 _INTELL_MODEL_NFT_TOKEN_ID,
@@ -381,7 +399,7 @@ contract IntellShareCollectionContract is
     /* ================== For Investors ============= */
     /* ============================================== */
 
-    function adopt(bytes calldata message, bytes calldata signature) external {
+    function adopt(bytes calldata message, bytes calldata signature) external whenNotPaused {
         require(verifyMessage(message, signature), "NO SIGNER");
 
         (
@@ -459,7 +477,7 @@ contract IntellShareCollectionContract is
 
     function refundWhenCancelledOrUnsuccess(
         uint256 __shareCollectionId
-    ) external {
+    ) external whenNotPaused {
         uint256 __status = getStatus(__shareCollectionId);
         require(
             __status == 1 || __status == 2,
@@ -504,7 +522,7 @@ contract IntellShareCollectionContract is
     /* ============================================== */
 
     // Cancels shares sale
-    function cancel(uint256 __shareCollectionId) public {
+    function cancel(uint256 __shareCollectionId) public whenNotPaused {
         uint256 __status = getStatus(__shareCollectionId);
         uint256 __intellModelNFTTokenId = _shareCollections[__shareCollectionId]
             .intellModelNFTTokenId;
@@ -528,7 +546,7 @@ contract IntellShareCollectionContract is
         bytes memory __shareCollectionSignature,
         bytes memory __validation,
         bytes memory __validationSignature
-    ) external {
+    ) external whenNotPaused {
         // Verifys signature using ECDSA
         if (
             !verifyMessage(__shareCollection, __shareCollectionSignature) &&
@@ -608,7 +626,7 @@ contract IntellShareCollectionContract is
     }
 
     // Pauses
-    function pause(uint256 __shareCollectionId, bool __val) external {
+    function pause(uint256 __shareCollectionId, bool __val) external whenNotPaused {
         uint256 __intellModelNFTTokenId = _shareCollections[__shareCollectionId]
             .intellModelNFTTokenId;
         require(
@@ -623,7 +641,7 @@ contract IntellShareCollectionContract is
     function withdraw(
         bytes calldata message,
         bytes calldata signature
-    ) external {
+    ) external whenNotPaused {
         require(verifyMessage(message, signature), "NO SIGNER");
 
         (
@@ -678,11 +696,7 @@ contract IntellShareCollectionContract is
     function editURI(
         uint256 __shareCollectionId,
         string calldata __ipfsHash
-    ) external {
-        require(
-            msg.sender == intellSetting.admin(),
-            "THE CALLER MUST BE ADMIN"
-        );
+    ) external onlyAdmin onlyUnlock {
 
         require(
             _shareCollectionLaunched[__shareCollectionId],
@@ -694,11 +708,8 @@ contract IntellShareCollectionContract is
         emit CollectionURIUpdated(__shareCollectionId, __ipfsHash);
     }
 
-    function setBlock(uint256 __shareCollectionId) external {
-        require(
-            msg.sender == intellSetting.admin(),
-            "THE CALLER MUST BE ADMIN"
-        );
+    function setBlock(uint256 __shareCollectionId) external onlyAdmin onlyUnlock {
+    
         require(
             !_shareCollections[__shareCollectionId].blocked,
             "BLOCKED ALREADY!"
@@ -707,7 +718,7 @@ contract IntellShareCollectionContract is
         _shareCollections[__shareCollectionId].blocked = true;
     }
 
-    function setUnblock(uint256 __shareCollectionId) external {
+    function setUnblock(uint256 __shareCollectionId) external onlyAdmin onlyUnlock {
         require(
             msg.sender == intellSetting.admin(),
             "THE CALLER MUST BE ADMIN"

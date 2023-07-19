@@ -5,7 +5,7 @@ require("dotenv").config();
 
 const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY;
 const TESTNET_PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
-const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
+const ETHERSCAN_API_KEY = process.env.AG_API_KEY;
 const COINMARKETCAP_API_KEY = process.env.COINMARKETCAP_API_KEY;
 
 module.exports = {
@@ -26,6 +26,11 @@ module.exports = {
       chainId: 43114,
       accounts: [MAINNET_PRIVATE_KEY],
     },
+    arbitrumGoerli: {
+      url: "https://goerli-rollup.arbitrum.io/rpc",
+      chainId: 421613,
+      accounts: [TESTNET_PRIVATE_KEY]
+    }
   },
   solidity: {
     compilers: [
@@ -34,7 +39,7 @@ module.exports = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 200,
+            runs: 1000000,
           },
         },
       },

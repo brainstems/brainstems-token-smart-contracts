@@ -16,7 +16,7 @@ describe("IntelligenceInvestmentToken", function () {
       "IntelligenceInvestmentToken"
     );
     const intelligenceInvestmentToken =
-      await IntelligenceInvestmentToken.deploy();
+      await IntelligenceInvestmentToken.deploy(owner.address);
 
     return {
       owner,

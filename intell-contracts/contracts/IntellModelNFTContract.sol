@@ -6,7 +6,6 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
 import "./interface/IIntellModelNFT.sol";
 import "./interface/IIntellSetting.sol";
@@ -14,15 +13,12 @@ import "./interface/IIntellSetting.sol";
 contract IntellModelNFTContract is
     ERC721Enumerable,
     ReentrancyGuard,
-    IIntellModelNFT,
-    Ownable
+    IIntellModelNFT
 {
     using Strings for uint256;
     using SafeMath for uint256;
 
     string _baseTokenURI;
-    bool private _paused = false;
-    mapping(uint256 => uint256) private _modelNFTMintedHistory;
     mapping(uint256 => uint256) private _modelIdByTokenId;
     mapping(uint256 => uint256) private _tokenIdByModelId;
 
@@ -39,13 +35,21 @@ contract IntellModelNFTContract is
         uint256 timestamp,
         uint256 blocknumber
     );
-
+    
     constructor(
         string memory baseURI,
         IIntellSetting _intellSetting_
     ) ERC721("IntellModelNFT", "IMN") {
-        setBaseURI(baseURI);
+        _baseTokenURI = baseURI;
         _intellSetting = _intellSetting_;
+    }
+
+    /**
+     * @dev Modifier to make a function callable only when the contract is not paused.
+     */
+    modifier whenNotPaused() {
+        require(!_intellSetting.paused(), "Pausable: paused");
+        _;
     }
 
     // Checks if the caller is admin
@@ -54,6 +58,11 @@ contract IntellModelNFTContract is
             _intellSetting.admin() == _msgSender(),
             "Ownable: caller is not the admin"
         );
+        _;
+    }
+
+    modifier onlyUnlock() {
+        require(_intellSetting.unlocked(), "Lock: Locked");
         _;
     }
 
@@ -67,7 +76,7 @@ contract IntellModelNFTContract is
     // Sets intellSetting contract
     function setIntellSetting(
         IIntellSetting _intellSetting_
-    ) external onlyOwner {
+    ) external onlyAdmin onlyUnlock {
         _intellSetting = _intellSetting_;
     }
 
@@ -83,32 +92,13 @@ contract IntellModelNFTContract is
         return _tokenIdByModelId[_modelId];
     }
 
-    // Gets block number issued from model id
-    function modelNFTMintedHistory(
-        uint256 _modelId
-    ) external view override returns (uint256) {
-        return _modelNFTMintedHistory[_modelId];
-    }
-
     // Sets base uri for metadata
-    function setBaseURI(string memory baseURI) public onlyOwner {
+    function setBaseURI(string memory baseURI) public onlyAdmin onlyUnlock whenNotPaused {
         _baseTokenURI = baseURI;
     }
 
-    // Sets pausing for registering the model
-    function pause(bool val) public onlyOwner {
-        require(_paused != val, "NEW STATE IDENTICAL TO OLD STATE");
-        emit UpdatePause(_paused, val);
-        _paused = val;
-    }
-
-    // Gets pause status
-    function getPause() public view override returns (bool) {
-        return _paused;
-    }
-
     // Renounces ownership of copyright/Base IP
-    function burn(uint256 tokenId) public virtual {
+    function burn(uint256 tokenId) public virtual whenNotPaused {
         //solhint-disable-next-line max-line-length
         require(
             _isApprovedOrOwner(_msgSender(), tokenId),
@@ -126,7 +116,7 @@ contract IntellModelNFTContract is
     function recoverSigner(
         bytes32 hash,
         bytes memory signature
-    ) internal pure returns (address) {
+    ) private pure returns (address) {
         bytes32 messageDigest = keccak256(
             abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
         );
@@ -137,7 +127,7 @@ contract IntellModelNFTContract is
     function verifyMessage(
         bytes memory message,
         bytes memory signature
-    ) internal view returns (bool) {
+    ) private view returns (bool) {
         bytes32 hash = keccak256(message);
         return recoverSigner(hash, signature) == _intellSetting.truthHolder();
     }
@@ -146,22 +136,18 @@ contract IntellModelNFTContract is
     function checkStatus(
         bytes calldata statusMessage
     ) internal view returns (bool) {
+
+        require(statusMessage.length > 0, "INVALID MESSAGE");
         (
             // model identification number from backend (off-chain)
             uint256 _MODEL_ID,
-            // a installation progress status of the model on machine learning server
-            uint256 _MODEL_PROGRESS_STATUS,
             // user account address from backend and database
             address _USER_ADDR,
-            // if the user passed verifying KYC as creator(data scientist)
-            bool _VERIFIED_AS_CREATOR,
-            // if the user account is suspended
-            bool _USER_SUSPENDED,
-            // if the model is already uploaded to StorJ Storage.
-            bool _MODEL_UPLOADED
+            // if releasing is approved from TIEX
+            bool _APPROVED
         ) = abi.decode(
                 statusMessage,
-                (uint256, uint256, address, bool, bool, bool)
+                (uint256, address, bool)
             );
 
         // Checks if user account is valid and not bot
@@ -169,11 +155,8 @@ contract IntellModelNFTContract is
 
         // Checks if user account and model status is valid
         require(
-            _VERIFIED_AS_CREATOR &&
-                !_USER_SUSPENDED &&
-                _MODEL_UPLOADED &&
-                _MODEL_PROGRESS_STATUS > 9,
-            "THIS IS REQUIRED VALID"
+            _APPROVED,
+            "NOT APPROVED FROM TIEX DAO"
         );
 
         // Checks if the model already was registered
@@ -182,9 +165,6 @@ contract IntellModelNFTContract is
             "MODEL ID WAS REGISTERED ALREADY."
         );
 
-        // Checks if registeration was paused
-        require(!_paused, "REGISTERATION WAS PAUSED");
-
         return true;
     }
 
@@ -192,8 +172,7 @@ contract IntellModelNFTContract is
     function adopt(
         bytes calldata statusMessage,
         bytes calldata statusSignature
-    ) external nonReentrant {
-
+    ) external nonReentrant whenNotPaused {
         // next model identification number (token id) in on-chain
         uint256 nextTokenId = totalSupply() + 1;
 
@@ -218,9 +197,6 @@ contract IntellModelNFTContract is
         // mapping of model id (off-chain) and token id(on-chain)
         _tokenIdByModelId[_MODEL_ID] = nextTokenId;
         _modelIdByTokenId[nextTokenId] = _MODEL_ID;
-
-        // mapping of model id and block number for history
-        _modelNFTMintedHistory[_MODEL_ID] = block.number;
 
         //Registers model on chain and mints new token id for data scientist(creator)
         _safeMint(msg.sender, nextTokenId);
@@ -270,9 +246,9 @@ contract IntellModelNFTContract is
     }
 
     //Withdraws payment tokens to TIEX admin
-    function withdraw() external onlyAdmin {
+    function withdraw(address __recipient) external onlyAdmin onlyUnlock {
         paymentToken().transfer(
-            _msgSender(),
+            __recipient,
             paymentToken().balanceOf(address(this))
         );
     }

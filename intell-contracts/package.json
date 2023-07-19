@@ -11,7 +11,8 @@
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
     "deploy:testnet": "npx hardhat run scripts/deploy.js --network fuji",
-    "deploy:mainnet": "npx hardhat run scripts/deploy.js --network mainnet"
+    "deploy:mainnet": "npx hardhat run scripts/deploy.js --network mainnet",
+    "deploy:ag": "npx hardhat run scripts/deploy.js --network arbitrumGoerli"
   },
   "repository": {
     "type": "git",
@@ -41,7 +42,11 @@
     "@openzeppelin/contracts": "^4.8.3",
     "@openzeppelin/contracts-upgradeable": "^4.8.3",
     "@uniswap/snapshot-gas-cost": "^1.0.0",
+    "@uniswap/v2-core": "github:uniswap/v2-core",
+    "@uniswap/v3-core": "^1.0.1",
+    "@uniswap/v3-sdk": "github:uniswap/v3-sdk",
     "chalk": "^5.2.0",
+    "compile": "^0.0.2",
     "console-log-colors": "^0.4.0",
     "dotenv": "^16.0.3"
   }
