@@ -691,6 +691,7 @@ contract ERC20 is Context, IERC20, IERC20Metadata, Pausable {
         public
         virtual
         override
+        whenNotPaused
         returns (bool)
     {
         address owner = _msgSender();
