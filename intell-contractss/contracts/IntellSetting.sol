@@ -20,6 +20,7 @@ contract IntellSetting is Context, IIntellSetting {
     uint256 private _modelRegisterationPrice;
     uint256 private _intellShareCollectionLaunchPrice;
 
+<<<<<<< HEAD
     uint256 public constant UNLOCK_DURATION = 15 minutes;
     address private _unlocker;
     uint256 private _unlockTimestamp;
@@ -105,6 +106,9 @@ contract IntellSetting is Context, IIntellSetting {
         
         emit Unlocked(_unlockTimestamp);
     }
+=======
+    constructor() {}
+>>>>>>> 21f20f6b09b6cbc76023ef5178af522db82146ad
 
     function truthHolder() external view override returns (address) {
         return _truthHolder;
@@ -143,12 +147,18 @@ contract IntellSetting is Context, IIntellSetting {
     }
 
     function setIntellShareCollectionLaunchPrice(
+<<<<<<< HEAD
         uint256 __val
     ) external onlyAdmin onlyUnlock {
         require(__val > 0, "Launch commission not greater than 0");
 
         emit UpdateIntellShareCollectionLaunchPrice(_intellShareCollectionLaunchPrice, __val);
         _intellShareCollectionLaunchPrice = __val;
+=======
+        uint256 _newLaunchPrice
+    ) external onlyOwner {
+        _intellShareCollectionLaunchPrice = _newLaunchPrice;
+>>>>>>> 21f20f6b09b6cbc76023ef5178af522db82146ad
     }
 
     function admin() external view override returns (address) {
