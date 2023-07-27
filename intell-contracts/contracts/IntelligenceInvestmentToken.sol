@@ -952,13 +952,32 @@ pragma solidity ^0.8.0;
 contract IntelligenceInvestmentToken is ERC20 {
     using SafeERC20 for IERC20;
 
+    mapping(address => bool) public burners;
+
     event Burned(address request, uint256 amount);
+    event UpdateBurner(address burner, bool val);
+
+    /**
+     * @dev Throws if called by any account other than the owner or burners.
+     */
+    modifier onlyBurner() {
+        require(burners[msg.sender] || owner() == msg.sender, "The caller is not the burner");
+        _;
+    }
+
+    function setBurner(address __burner, bool __val) external onlyOwner {
+        require(burners[__burner] != __val, "No change");
+        require(__burner != address(0), "Address zero is not a valid burner");
+
+        burners[__burner] = __val;
+        emit UpdateBurner(__burner, __val);
+    }
 
     constructor(address __recipient) ERC20("Intelligence Investment Token", "INTELL") {
         _mint(__recipient, (10**9) * (10**18));
     }
 
-    function burn(uint256 _amount) external whenNotPaused onlyOwner returns (bool) {
+    function burn(uint256 _amount) external whenNotPaused onlyBurner returns (bool) {
         require(_amount > 0, "INTELL Token: burn amount not greater than 0");
         _burn(msg.sender, _amount);
         emit Burned(msg.sender, _amount);
