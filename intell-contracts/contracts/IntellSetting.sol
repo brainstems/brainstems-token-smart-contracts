@@ -127,7 +127,7 @@ contract IntellSetting is Context, IIntellSetting {
     }
 
     function setModelRegisterationPrice(uint256 __val) external onlyAdmin onlyUnlock {
-        require(__val > 0, "launch commission not greater than 0");
+        require(__val > 0, "The launch commission not greater than 0");
 
         emit UpdateModelRegisterationPrice(_modelRegisterationPrice, __val);
         _modelRegisterationPrice = __val;

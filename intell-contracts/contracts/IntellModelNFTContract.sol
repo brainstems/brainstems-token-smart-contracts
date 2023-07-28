@@ -138,6 +138,7 @@ contract IntellModelNFTContract is
     ) internal view returns (bool) {
 
         require(statusMessage.length > 0, "INVALID MESSAGE");
+        
         (
             // model identification number from backend (off-chain)
             uint256 _MODEL_ID,
