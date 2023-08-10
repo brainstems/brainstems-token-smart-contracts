@@ -536,45 +536,11 @@ abstract contract Ownable is Context {
 
 pragma solidity ^0.8.0;
 
-contract Pausable is Ownable {
-    event Pause();
-    event Unpause();
-
-    bool public paused = false;
-
-    /**
-     * @dev Modifier to make a function callable only when the contract is not paused.
-     */
-    modifier whenNotPaused() {
-        require(!paused, "Pausable: paused");
-        _;
-    }
-
-    /**
-     * @dev called by the owner to pause, triggers stopped state
-     */
-    function pause() external onlyOwner {
-        paused = true;
-        emit Pause();
-    }
-
-    /**
-     * @dev called by the owner to unpause, returns to normal state
-     */
-    function unpause() external onlyOwner {
-        paused = false;
-        emit Unpause();
-    }
-
-}
-
-pragma solidity ^0.8.0;
-
 /**
  * @dev Implementation of the {IERC20} interface.
  * allowances. See {IERC20-approve}.
  */
-contract ERC20 is Context, IERC20, IERC20Metadata, Pausable {
+contract ERC20 is Context, IERC20, IERC20Metadata {
     mapping(address => uint256) private _balances;
 
     mapping(address => mapping(address => uint256)) private _allowances;
@@ -656,7 +622,6 @@ contract ERC20 is Context, IERC20, IERC20Metadata, Pausable {
         public
         virtual
         override
-        whenNotPaused
         returns (bool)
     {
         address owner = _msgSender();
@@ -691,7 +656,6 @@ contract ERC20 is Context, IERC20, IERC20Metadata, Pausable {
         public
         virtual
         override
-        whenNotPaused
         returns (bool)
     {
         address owner = _msgSender();
@@ -719,7 +683,7 @@ contract ERC20 is Context, IERC20, IERC20Metadata, Pausable {
         address from,
         address to,
         uint256 amount
-    ) public virtual override whenNotPaused returns (bool) {
+    ) public virtual override returns (bool) {
         address spender = _msgSender();
         _spendAllowance(from, spender, amount);
         _transfer(from, to, amount);
@@ -952,32 +916,12 @@ pragma solidity ^0.8.0;
 contract IntelligenceInvestmentToken is ERC20 {
     using SafeERC20 for IERC20;
 
-    mapping(address => bool) public burners;
-
     event Burned(address request, uint256 amount);
-    event UpdateBurner(address burner, bool val);
-
-    /**
-     * @dev Throws if called by any account other than the owner or burners.
-     */
-    modifier onlyBurner() {
-        require(burners[msg.sender] || owner() == msg.sender, "The caller is not the burner");
-        _;
-    }
-
-    function setBurner(address __burner, bool __val) external onlyOwner {
-        require(burners[__burner] != __val, "No change");
-        require(__burner != address(0), "Address zero is not a valid burner");
-
-        burners[__burner] = __val;
-        emit UpdateBurner(__burner, __val);
-    }
-
     constructor(address __recipient) ERC20("Intelligence Investment Token", "INTELL") {
-        _mint(__recipient, (10**9) * (10**18));
+        _mint(__recipient, (10 ** 9) * (10 ** decimals()));
     }
 
-    function burn(uint256 _amount) external whenNotPaused onlyBurner returns (bool) {
+    function burn(uint256 _amount) external returns (bool) {
         require(_amount > 0, "INTELL Token: burn amount not greater than 0");
         _burn(msg.sender, _amount);
         emit Burned(msg.sender, _amount);
