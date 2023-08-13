@@ -801,15 +801,15 @@ pragma solidity ^0.8.0;
 
 contract IntelligenceInvestmentToken is ERC20 {
 
-    event Burned(address request, uint256 amount);
     constructor(address __recipient) ERC20("Intelligence Investment Token", "INTELL") {
         _mint(__recipient, (10 ** 9) * (10 ** decimals()));
     }
 
     function burn(uint256 _amount) external returns (bool) {
         require(_amount > 0, "INTELL Token: burn amount not greater than 0");
+        
         _burn(msg.sender, _amount);
-        emit Burned(msg.sender, _amount);
+
         return true;
     }
 }
