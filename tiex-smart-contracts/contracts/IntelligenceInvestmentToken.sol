@@ -806,8 +806,8 @@ contract IntelligenceInvestmentToken is ERC20 {
     }
 
     function burn(uint256 _amount) external returns (bool) {
-        require(_amount > 0, "INTELL Token: burn amount not greater than 0");
         
+        require(_amount > 0, "INTELL Token: burn amount not greater than 0");
         _burn(msg.sender, _amount);
 
         return true;
