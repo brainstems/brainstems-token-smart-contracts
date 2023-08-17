@@ -8,24 +8,22 @@ const hre = require("hardhat");
 const { green } = require("console-log-colors");
 
 async function main() {
-  console.log(green("******** Deploy IntellTokenContract.sol*********"));
+  console.log(green("******** Deploying TIExShareCollections.sol*********"));
 
-  let recipient = "0x2da2D276FEfe4E9675dD0416Cc0D97Ab6896a3c2";
-  recipient = hre.ethers.utils.getAddress(recipient);
-  const IntelligenceInvestmentToken = await hre.ethers.getContractFactory(
-    "IntelligenceInvestmentToken"
-  );
-  const intelligenceInvestmentToken = await IntelligenceInvestmentToken.deploy(
-    recipient
-  );
+  const truthHolder = "0xF8AbE936Ff2bCc9774Db7912554c4f38368e05A2";
+  const paymentToken = "0x762030A3bf845513F67583b2B8A4e4bAF2364262"
+  const admin = "0x2da2D276FEfe4E9675dD0416Cc0D97Ab6896a3c2";
 
-  await intelligenceInvestmentToken.deployed();
-  console.log(green(`Deployed to ${intelligenceInvestmentToken.address}`));
+  const TIExShareCollections = await hre.ethers.getContractFactory("TIExShareCollections");
+  const _TIExShareCollections = await hre.upgrades.deployProxy(TIExShareCollections, [truthHolder, paymentToken, admin], {
+      initializer: "initialize",
+  });
+  await _TIExShareCollections.deployed();
+  console.log("Calculator deployed to:", _TIExShareCollections.address);
 
   try {
     await hre.run("verify:verify", {
-      address: intelligenceInvestmentToken.address,
-      constructorArguments: [recipient],
+      address: _TIExShareCollections.address,
     });
   } catch (error) {
     console.log(error);

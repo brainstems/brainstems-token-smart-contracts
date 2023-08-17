@@ -8,24 +8,17 @@ const hre = require("hardhat");
 const { green } = require("console-log-colors");
 
 async function main() {
-  console.log(green("******** Deploy IntellTokenContract.sol*********"));
+    const PROXY = "0xCC5eC6E9AA058e5684a2D7468d9F518886e55684";
+//   console.log(green("******** Deploying TIExShareCollections.sol*********"));
 
-  let recipient = "0x2da2D276FEfe4E9675dD0416Cc0D97Ab6896a3c2";
-  recipient = hre.ethers.utils.getAddress(recipient);
-  const IntelligenceInvestmentToken = await hre.ethers.getContractFactory(
-    "IntelligenceInvestmentToken"
-  );
-  const intelligenceInvestmentToken = await IntelligenceInvestmentToken.deploy(
-    recipient
-  );
-
-  await intelligenceInvestmentToken.deployed();
-  console.log(green(`Deployed to ${intelligenceInvestmentToken.address}`));
+//   const TIExShareCollections = await hre.ethers.getContractFactory("TIExShareCollections");
+//   console.log("Upgrading TIExShareCollections...");
+//   await hre.upgrades.upgradeProxy(PROXY, TIExShareCollections);
+//   console.log("TIExShareCollections upgraded");
 
   try {
     await hre.run("verify:verify", {
-      address: intelligenceInvestmentToken.address,
-      constructorArguments: [recipient],
+      address: PROXY,
     });
   } catch (error) {
     console.log(error);

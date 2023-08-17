@@ -12,7 +12,11 @@
     "test": "npx hardhat test",
     "deploy:testnet": "npx hardhat run scripts/deploy.js --network fuji",
     "deploy:mainnet": "npx hardhat run scripts/deploy.js --network mainnet",
-    "deploy:ag": "npx hardhat run scripts/deploy.js --network arbitrumGoerli"
+    "deploy:go:intell-token": "npx hardhat run scripts/001_deploy_intell_token.js --network goerli",
+    "deploy:go:share-token": "npx hardhat run scripts/002_deploy_tiex_share_collection.js --network goerli",
+    "deploy:go:upgrade-share-token": "npx hardhat run scripts/003_upgrade_tiex_share.js --network goerli",
+    "deploy:ag:intell-token": "npx hardhat run scripts/001_deploy_intell_token.js --network arbitrumGoerli"
+    
   },
   "repository": {
     "type": "git",
@@ -40,7 +44,7 @@
     "@nomicfoundation/hardhat-toolbox": "^2.0.2",
     "@nomicfoundation/hardhat-verify": "^1.0.0",
     "@openzeppelin/contracts": "^4.8.3",
-    "@openzeppelin/contracts-upgradeable": "^4.8.3",
+    "@openzeppelin/contracts-upgradeable": "^4.9.3",
     "@uniswap/snapshot-gas-cost": "^1.0.0",
     "@uniswap/v2-core": "github:uniswap/v2-core",
     "@uniswap/v3-core": "^1.0.1",
@@ -48,6 +52,7 @@
     "chalk": "^5.2.0",
     "compile": "^0.0.2",
     "console-log-colors": "^0.4.0",
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.0.3",
+    "prompt-sync": "^4.2.0"
   }
 }
