@@ -22,14 +22,6 @@ async function main() {
   await intelligenceInvestmentToken.deployed();
   console.log(green(`Deployed to ${intelligenceInvestmentToken.address}`));
 
-  try {
-    await hre.run("verify:verify", {
-      address: intelligenceInvestmentToken.address,
-      constructorArguments: [recipient],
-    });
-  } catch (error) {
-    console.log(error);
-  }
 }
 
 // We recommend this pattern to be able to use async/await everywhere

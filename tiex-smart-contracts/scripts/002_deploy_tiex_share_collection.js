@@ -21,13 +21,13 @@ async function main() {
   await _TIExShareCollections.deployed();
   console.log("Calculator deployed to:", _TIExShareCollections.address);
 
-  try {
-    await hre.run("verify:verify", {
-      address: _TIExShareCollections.address,
-    });
-  } catch (error) {
-    console.log(error);
-  }
+  // try {
+  //   await hre.run("verify:verify", {
+  //     address: _TIExShareCollections.address,
+  //   });
+  // } catch (error) {
+  //   console.log(error);
+  // }
 }
 
 // We recommend this pattern to be able to use async/await everywhere
