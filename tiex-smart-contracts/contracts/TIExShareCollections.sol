@@ -56,7 +56,7 @@ contract TIExShareCollections is
     error ErrorTIExShareCollectionReleasedAlready(uint256 modelId);
     error ErrorNotEnoughSupply();
     error ErrorShareCollectionPaused(uint256 modelId);
-    error ErrorShareCollectionNotExistsOrBlocked(uint256 modelId);
+    error ErrorShareCollectionNotExistsOrBlockedOrPaused(uint256 modelId);
     error ErrorExceedMaxSharePurchase();
     error ErrorInvalidSignature();
     error ErrorInvalidCountry();
@@ -144,19 +144,6 @@ contract TIExShareCollections is
     }
 
     /**
-    * @notice Checks if modelIds exist and not blocked batch
-    * @param __modelIds uint256[] must be of existing Share Collections
-    *
-    */
-    modifier whenShareCollectionsExistAndNotBlockedBatch(uint256[] memory __modelIds) {
-        for (uint256 i = 0; i < __modelIds.length; i++) {
-            if (_shareCollections[__modelIds[i]].blocked || !shareCollectionExists(__modelIds[i]))
-                revert ErrorShareCollectionNotExistsOrBlocked(__modelIds[i]);
-        }
-        _;
-    }
-
-    /**
      * @notice Checks if Share Collection exists.
      * @param __modelId must be of existing Share Collection.
      */
@@ -193,8 +180,6 @@ contract TIExShareCollections is
         internal
         virtual
         override(ERC1155Upgradeable, ERC1155SupplyUpgradeable)
-        whenNotPaused
-        whenShareCollectionsExistAndNotBlockedBatch(__modelIds)
     {
         super._beforeTokenTransfer(
             __operator,
@@ -204,6 +189,14 @@ contract TIExShareCollections is
             __amounts,
             __data
         );
+
+        if(__to != address(0)) {
+            for (uint256 i = 0; i < __modelIds.length; i++) {
+                if (_shareCollections[__modelIds[i]].blocked || !shareCollectionExists(__modelIds[i]) || paused())
+                    revert ErrorShareCollectionNotExistsOrBlockedOrPaused(__modelIds[i]);
+            }
+        }
+
     }
 
     /**

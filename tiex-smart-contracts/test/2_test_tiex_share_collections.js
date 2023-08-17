@@ -104,7 +104,7 @@ describe("TIExShareCollections", () => {
   })
 
   describe("TIExBaseIPAllocation", async () => {
-    beforeEach(async () => {
+    before(async () => {
       await tiexShareCollections.connect(admin).giveCreatorTIExIP(
         models[0].modelId,
         models[0].creator,
@@ -168,18 +168,37 @@ describe("TIExShareCollections", () => {
       const payloadHash = ethers.utils.keccak256(payload);
       const signature = await truthHolderSigner.signMessage(ethers.utils.arrayify(payloadHash));
       const shares = i2b(1000);
-      
+
       const intellBalanceOfSigner0Before = await intellToken.balanceOf(signer0.address);
       const shareBalanceOfSigner0Before = await tiexShareCollections.balanceOf(signer0.address, models[0].modelId);
       const intellBalanceOfTiexShareContractBefore = await intellToken.balanceOf(tiexShareCollections.address);
 
       await intellToken.connect(signer0).approve(tiexShareCollections.address, ethers.constants.MaxUint256);
-      await tiexShareCollections.connect(signer0).buyShares(models[0].modelId, shares, nonce, true, signature);
-      
-      expect(intellBalanceOfSigner0Before.sub(shares.mul(models[0].price))).to.eq(await intellToken.balanceOf(signer0.address));
-      expect(shareBalanceOfSigner0Before.add(shares)).to.eq(await tiexShareCollections.balanceOf(signer0.address, models[0].modelId));
-      expect(intellBalanceOfTiexShareContractBefore.add(shares.mul(models[0].price))).to.eq(await intellToken.balanceOf(tiexShareCollections.address));
 
+      await tiexShareCollections.connect(admin).emergency();
+      await expect(tiexShareCollections.connect(signer0).buyShares(models[0].modelId, shares, nonce, true, signature)).to.be.reverted;
+      await tiexShareCollections.connect(admin).resume();
+
+      await tiexShareCollections.connect(admin).setBlock(models[0].modelId);
+      await expect(tiexShareCollections.connect(signer0).buyShares(models[0].modelId, shares, nonce, true, signature)).to.be.reverted;
+      await tiexShareCollections.connect(admin).setUnblock(models[0].modelId);
+
+      await tiexShareCollections.connect(admin).setPause(models[0].modelId);
+      await expect(tiexShareCollections.connect(signer0).buyShares(models[0].modelId, shares, nonce, true, signature)).to.be.reverted;
+      await tiexShareCollections.connect(admin).setUnpause(models[0].modelId);
+
+
+      await tiexShareCollections.connect(signer0).buyShares(models[0].modelId, shares, nonce, true, signature);
+
+      const intellBalanceOfSigner0After = await intellToken.balanceOf(signer0.address);
+      const shareBalanceOfSigner0After = await tiexShareCollections.balanceOf(signer0.address, models[0].modelId);
+      const intellBalanceOfTiexShareContractAfter = await intellToken.balanceOf(tiexShareCollections.address);
+
+      expect(intellBalanceOfSigner0Before.sub(shares.mul(models[0].price))).to.eq(intellBalanceOfSigner0After);
+      expect(shareBalanceOfSigner0Before.add(shares)).to.eq(shareBalanceOfSigner0After);
+      expect(intellBalanceOfTiexShareContractBefore.add(shares.mul(models[0].price))).to.eq(intellBalanceOfTiexShareContractAfter);
+
+      await expect(tiexShareCollections.connect(signer0).buyShares(models[0].modelId, shares, nonce, true, signature)).to.be.reverted;
     })
 
     it("Should transfer shares between accounts", async () => {
@@ -187,7 +206,7 @@ describe("TIExShareCollections", () => {
       const shareBalanceOfSigner1Before = await tiexShareCollections.balanceOf(signer1.address, models[0].modelId);
       const toSendShares = i2b(10);
 
-      await tiexShareCollections.connect(signer0).safeTransferFrom(signer0.address, signer1.address, models[0].modelId, 10, "0x");
+      await tiexShareCollections.connect(signer0).safeTransferFrom(signer0.address, signer1.address, models[0].modelId, toSendShares, "0x");
 
       const shareBalanceOfSigner0After = await tiexShareCollections.balanceOf(signer0.address, models[0].modelId);
       const shareBalanceOfSigner1After = await tiexShareCollections.balanceOf(signer1.address, models[0].modelId);
@@ -195,6 +214,42 @@ describe("TIExShareCollections", () => {
       expect(shareBalanceOfSigner0Before.sub(toSendShares)).to.eq(shareBalanceOfSigner0After);
       expect(shareBalanceOfSigner1Before.add(toSendShares)).to.eq(shareBalanceOfSigner1After);
 
+      await tiexShareCollections.connect(admin).emergency();
+      await expect(tiexShareCollections.connect(signer0).safeTransferFrom(signer0.address, signer1.address, models[0].modelId, toSendShares, "0x")).to.be.reverted;
+
+      await tiexShareCollections.connect(admin).resume();
+      await tiexShareCollections.connect(signer0).safeTransferFrom(signer0.address, signer1.address, models[0].modelId, toSendShares, "0x");
+
+      await tiexShareCollections.connect(admin).setBlock(models[0].modelId);
+      await expect(tiexShareCollections.connect(signer0).safeTransferFrom(signer0.address, signer1.address, models[0].modelId, toSendShares, "0x")).to.be.reverted;
+
+      await tiexShareCollections.connect(admin).setUnblock(models[0].modelId);
+      await tiexShareCollections.connect(signer0).safeTransferFrom(signer0.address, signer1.address, models[0].modelId, toSendShares, "0x");
+
+    })
+
+    it("Should burn shasres to zero address", async () => {
+      const toBurn = i2b(10);
+
+      const shareBalanceOfSigner0Before = await tiexShareCollections.balanceOf(signer0.address, models[0].modelId);
+
+      await tiexShareCollections.connect(signer0).burn(signer0.address, models[0].modelId, toBurn);
+      
+      const shareBalanceOfSigner0After = await tiexShareCollections.balanceOf(signer0.address, models[0].modelId);
+
+      expect(shareBalanceOfSigner0Before.sub(toBurn)).to.eq(shareBalanceOfSigner0After);
+
+      await tiexShareCollections.connect(admin).emergency();
+      await tiexShareCollections.connect(signer0).burn(signer0.address, models[0].modelId, toBurn);
+      await tiexShareCollections.connect(admin).resume();
+
+      await tiexShareCollections.connect(admin).setBlock(models[0].modelId);
+      await tiexShareCollections.connect(signer0).burn(signer0.address, models[0].modelId, toBurn);
+      await tiexShareCollections.connect(admin).setUnblock(models[0].modelId);
+
+      await tiexShareCollections.connect(admin).setPause(models[0].modelId);
+      await tiexShareCollections.connect(signer0).burn(signer0.address, models[0].modelId, toBurn);
+      await tiexShareCollections.connect(admin).setUnpause(models[0].modelId);
     })
 
   })
