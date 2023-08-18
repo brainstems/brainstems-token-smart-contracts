@@ -3,7 +3,7 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const crypto = require('crypto');
 const { getHardhatPrivateKey, h2d } = require("./helper");
-const deploy_config = require("../scripts/deploy_config");
+const { creator_rate, tiex_share_collection_name, tiex_share_collection_symbol, marketing_rate, reserve_rate, presale_rate } = require("../scripts/deploy_config");
 
 describe("TIExShareCollections", () => {
 
@@ -14,6 +14,9 @@ describe("TIExShareCollections", () => {
   let signer0;
   let signer1;
   let signer2;
+  let reserve;
+  let presale;
+  let marketing;
   let models;
   let truthHolderPrivateKey;
   let tiexShareCollections;
@@ -22,7 +25,7 @@ describe("TIExShareCollections", () => {
   const i2b = i => ethers.BigNumber.from(i);
 
   before(async () => {
-    [deployer, admin, truthHolder, recipient, signer0, signer1, signer2] = await ethers.getSigners();
+    [deployer, admin, truthHolder, recipient, signer0, signer1, signer2, reserve, presale, marketing] = await ethers.getSigners();
     truthHolderPrivateKey = getHardhatPrivateKey(2);
     intellToken = await ethers.deployContract("IntelligenceInvestmentToken", [recipient.address]);
     tiexShareCollections = await ethers.deployContract("TIExShareCollections");
@@ -78,7 +81,7 @@ describe("TIExShareCollections", () => {
       },
     ]
 
-    await tiexShareCollections.initialize(truthHolder.address, intellToken.address, admin.address);
+    await tiexShareCollections.initialize(truthHolder.address, intellToken.address, admin.address, [creator_rate, marketing_rate, reserve_rate, presale_rate, marketing.address, reserve.address, presale.address]);
 
     const toSend = ethers.utils.parseEther("100000000");
     await intellToken.connect(recipient).transfer(signer0.address, toSend);
@@ -94,12 +97,22 @@ describe("TIExShareCollections", () => {
 
     it("Should set right symbol and name, payment token, truth holder, admin role.", async function () {
       const default_amdin_role = await tiexShareCollections.DEFAULT_ADMIN_ROLE();
+      const investmentDistribution = await tiexShareCollections.investmentDistribution();
 
-      expect(await tiexShareCollections.name()).to.eq(deploy_config.tiex_share_collection_name);
-      expect(await tiexShareCollections.symbol()).to.eq(deploy_config.tiex_share_collection_symbol);
+      expect(investmentDistribution[0]).to.eq(i2b(creator_rate));
+      expect(investmentDistribution[1]).to.eq(i2b(marketing_rate));
+      expect(investmentDistribution[2]).to.eq(i2b(reserve_rate));
+      expect(investmentDistribution[3]).to.eq(i2b(presale_rate));
+      expect(investmentDistribution[4]).to.eq(marketing.address);
+      expect(investmentDistribution[5]).to.eq(reserve.address);
+      expect(investmentDistribution[6]).to.eq(presale.address);
+
+      expect(await tiexShareCollections.name()).to.eq(tiex_share_collection_name);
+      expect(await tiexShareCollections.symbol()).to.eq(tiex_share_collection_symbol);
       expect(await tiexShareCollections.paymentToken()).to.eq(intellToken.address);
       expect(await tiexShareCollections.truthHolder()).to.eq(truthHolder.address);
       expect(await tiexShareCollections.hasRole(default_amdin_role, admin.address)).to.eq(true);
+
     });
   })
 
@@ -234,7 +247,7 @@ describe("TIExShareCollections", () => {
       const shareBalanceOfSigner0Before = await tiexShareCollections.balanceOf(signer0.address, models[0].modelId);
 
       await tiexShareCollections.connect(signer0).burn(signer0.address, models[0].modelId, toBurn);
-      
+
       const shareBalanceOfSigner0After = await tiexShareCollections.balanceOf(signer0.address, models[0].modelId);
 
       expect(shareBalanceOfSigner0Before.sub(toBurn)).to.eq(shareBalanceOfSigner0After);
