@@ -113,6 +113,9 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
      *
      * Emits a {AllocateTIExIP} event.
      *
+     * Requirements:
+     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
+     * - The model with the given `__modelId` must not exist.
      */
     function giveCreatorTIExIP(
         uint256 __modelId,
@@ -165,6 +168,10 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     *
     * Emits a {ContributationRatesUpdated} event.
     *
+    * Requirements:
+    * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
+    * - The model with the given `__modelId` must exist.
+    *
     */
 
     function updateContributionRates(uint256 __modelId, Contribution[] calldata __contributors) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
@@ -196,7 +203,9 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
      * @param __modelId must exist.
      *
      * Emits a {RemoveTIExIP} event.
-     *
+     * 
+     * Requirement:
+     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
      */
     function removeModel(uint256 __modelId) external onlyRole(DEFAULT_ADMIN_ROLE) {
         address __creator = creatorOf(__modelId);
@@ -220,7 +229,10 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
      * @notice Used to edit the model URI.
      *
      * Emits a {TIExModelURIUpdated} event.
-     *
+     * 
+     * Requirements:
+     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
+     * - The model with the given `__modelId` must exist.
      */
     function editURI(uint256 __modelId, string calldata __ipfsHash)
         external
@@ -256,7 +268,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @notice Used to get detailed model information
+    * @notice Used to get the detail of model
     * @param __modelId uint256 must exist
     *
     */
