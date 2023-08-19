@@ -42,19 +42,19 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     error ErrorTIExIPModelIdNotFound(uint256 modelId);
     error ErrorTIExContributionRateInvalid(uint256 contributionRate);
 
-    // Mapping from model ID to creator address
+    /// @notice Mapping from model ID to creator address
     mapping(uint256 => address) private _creators;
 
-    // Mapping from creator to list of owned model IDs
+    /// @notice Mapping from creator to list of owned model IDs
     mapping(address => mapping(uint256 => uint256)) private _ownedModels;
 
-    // Mapping from model ID to index of the creator models list
+    /// @notice Mapping from model ID to index of the creator models list
     mapping(uint256 => uint256) private _ownedModelsIndex;
 
-    // Array with all model ids, used for enumeration
+    /// @notice Array with all model ids, used for enumeration
     uint256[] private _allModels;
 
-    // Mapping from model id to position in the allModels array
+    /// @notice Mapping from model id to position in the allModels array
     mapping(uint256 => uint256) private _allModelsIndex;
 
     /// @notice Mapping creator address to model count
@@ -63,7 +63,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     /// @notice Mapping modelId to metadata(IPFS)
     mapping(uint256 => string) internal  _modelURIs;
 
-    // Mapping model id to contriuted model list
+    /// @notice Mapping model id to contriuted model list
     mapping(uint256 => Contribution[]) private _contributedModels;
 
     function __TIExBaseIPAllocation_init() internal onlyInitializing {
