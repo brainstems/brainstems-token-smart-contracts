@@ -220,7 +220,8 @@ contract TIExShareCollections is
         address indexed newReserveAddress
     );
 
-    event Distribute(uint256 indexed amount, uint256 indexed when);
+    /// @notice Emitted when distributing funds fromm investors to creators, marketing etc.
+    event Distribute(uint256 modelId, uint256 indexed amount, uint256 indexed when);
 
     /// @notice The token name
     string public name;
@@ -483,7 +484,7 @@ contract TIExShareCollections is
         paymentToken.safeTransfer(investmentDistribution.reserve, toReserve.div(10000));
         paymentToken.safeTransfer(investmentDistribution.presale, toPresale.div(10000));
 
-        emit Distribute(restOfAmount, block.timestamp);
+        emit Distribute(__modelId, restOfAmount, block.timestamp);
     }
 
     /**

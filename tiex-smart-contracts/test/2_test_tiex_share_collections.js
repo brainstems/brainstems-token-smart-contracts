@@ -259,7 +259,33 @@ describe("TIExShareCollections", () => {
     })
 
     it("Should distriibute the funds from investor to creators, marketing, reserve, and presale", async () => {
+      for(var i = 0 ; i < models.length; i++) {
+        const marketingBefore = await intellToken.balanceOf(marketing.address);
+        const reserveBefore = await intellToken.balanceOf(reserve.address);
+        const presaleBefore = await intellToken.balanceOf(presale.address);
+        const shareCollectionBefore = await tiexShareCollections.shareCollection(models[i].modelId);
 
+        const restOfAmount = shareCollectionBefore[0][1].sub(shareCollectionBefore[0][2]);
+        const toCreators = restOfAmount.mul(creator_rate);
+        const toMarketing = restOfAmount.mul(marketing_rate);
+        const toPresale = restOfAmount.mul(presale_rate);
+        const toReserve = restOfAmount.mul(reserve_rate);
+
+        await tiexShareCollections.connect(admin).distribute(models[i].modelId);
+
+        const marketingAfter = await intellToken.balanceOf(marketing.address);
+        const reserveAfter = await intellToken.balanceOf(reserve.address);
+        const presaleAfter = await intellToken.balanceOf(presale.address);
+        const shareCollectionAfter = await tiexShareCollections.shareCollection(models[i].modelId);
+
+        expect(marketingBefore.add(toMarketing.div(10000))).to.eq(marketingAfter);
+        expect(reserveBefore.add(toReserve.div(10000))).to.eq(reserveAfter);
+        expect(presaleBefore.add(toPresale.div(10000))).to.eq(presaleAfter);
+        expect(shareCollectionAfter[0][1]).to.eq(shareCollectionAfter[0][2]);
+
+        await expect(tiexShareCollections.distribute(models[i].modelId)).to.be.reverted;
+
+      }
     })
 
     it("Should burn shasres to zero address", async () => {
