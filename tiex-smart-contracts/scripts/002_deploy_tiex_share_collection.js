@@ -6,20 +6,19 @@
 // global scope, and execute the script.
 const hre = require("hardhat");
 const { green } = require("console-log-colors");
+const { truthHolder, paymentToken, admin, creator_rate, marketing_rate, reserve_rate, presale_rate, marketing_address, reserve_address, presale_address } = require("./deploy_config");
 
 async function main() {
-  console.log(green("******** Deploying TIExShareCollections.sol*********"));
-
-  const truthHolder = "0xF8AbE936Ff2bCc9774Db7912554c4f38368e05A2";
-  const paymentToken = "0x762030A3bf845513F67583b2B8A4e4bAF2364262"
-  const admin = "0x2da2D276FEfe4E9675dD0416Cc0D97Ab6896a3c2";
+  console.log(green("Deploying TIExShareCollections ...."));
 
   const TIExShareCollections = await hre.ethers.getContractFactory("TIExShareCollections");
-  const _TIExShareCollections = await hre.upgrades.deployProxy(TIExShareCollections, [truthHolder, paymentToken, admin], {
-      initializer: "initialize",
+  const _TIExShareCollections = await hre.upgrades.deployProxy(TIExShareCollections, [truthHolder, paymentToken, admin, [creator_rate, marketing_rate, reserve_rate, presale_rate, marketing_address, reserve_address, presale_address]], {
+    initializer: "initialize",
   });
+
   await _TIExShareCollections.deployed();
-  console.log("Calculator deployed to:", _TIExShareCollections.address);
+  
+  console.log("TIExShareCollections deployed to:", _TIExShareCollections.address);
 
   // try {
   //   await hre.run("verify:verify", {

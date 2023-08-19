@@ -6,12 +6,11 @@
 // global scope, and execute the script.
 const hre = require("hardhat");
 const { green } = require("console-log-colors");
+const { recipient } = require("./deploy_config");
 
 async function main() {
   console.log(green("******** Deploy IntellTokenContract.sol*********"));
 
-  let recipient = "0x2da2D276FEfe4E9675dD0416Cc0D97Ab6896a3c2";
-  recipient = hre.ethers.utils.getAddress(recipient);
   const IntelligenceInvestmentToken = await hre.ethers.getContractFactory(
     "IntelligenceInvestmentToken"
   );

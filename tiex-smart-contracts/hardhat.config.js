@@ -88,7 +88,7 @@ module.exports = {
     timeout: 40000,
   },
   etherscan: {
-    apiKey: "RU7HIF6C1DYFB9HGTWJZKCTDSHZDD7VD53",
+    apiKey: ETHERSCAN_API_KEY,
   },
   // gasReporter: {
   //   enabled: false,

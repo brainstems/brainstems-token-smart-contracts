@@ -1,4 +1,8 @@
 module.exports = {
+    recipient: "xxxxx",
+    truthHolder: "xzzzz",
+    paymentToken: "xxx",
+    admin: "kkkk",
     tiex_share_collection_name: "TIEx Share Collections",
     tiex_share_collection_symbol: "TIExSHARE",
     truthHolder: "xxxx",
@@ -11,6 +15,7 @@ module.exports = {
     marketing_address: "xxxx",
     presale_address: "xxxxx",
     reserve_address: "xxxxx",
+    proxy: "xxxxx",
     model_001: {
         model_id: 1,
         creator: "xxxxx",
