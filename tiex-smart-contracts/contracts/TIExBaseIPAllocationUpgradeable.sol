@@ -57,10 +57,10 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     // Mapping from model id to position in the allModels array
     mapping(uint256 => uint256) private _allModelsIndex;
 
-    // Mapping creator address to model count
+    /// @notice Mapping creator address to model count
     mapping(address => uint256) private _modelBalances;
 
-    // Mapping modelId to metadata(IPFS)
+    /// @notice Mapping modelId to metadata(IPFS)
     mapping(uint256 => string) internal  _modelURIs;
 
     // Mapping model id to contriuted model list
@@ -72,9 +72,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         __TIExBaseIPAllocation_init_unchained();
     }
 
-    function __TIExBaseIPAllocation_init_unchained() internal onlyInitializing {
-
-    }
+    function __TIExBaseIPAllocation_init_unchained() internal onlyInitializing { }
 
     ////////////////////////////////////////////////////////////////////////////
     // MODIFIERS
@@ -83,7 +81,6 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     /**
      * @notice Checks if modelId allocated exists.
      * @param __modelId must be of existing ID of model.
-     *
      */
     modifier onlyExistingModelId(uint256 __modelId) {
         if (!modelExists(__modelId)) {
@@ -95,7 +92,6 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     /**
      * @notice Checks if modelId allocated exists.
      * @param __modelId uint256 must be of existing ID of model.
-     *
      */
     modifier onlyNotExistingModelId(uint256 __modelId) {
         if (modelExists(__modelId)) {
@@ -152,7 +148,6 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
 
             if(contributionRate != 10000) revert ErrorTIExContributionRateInvalid(contributionRate);
 
-
         } else {
             _contributedModels[__modelId].push(Contribution({
                 modelId: __modelId,
@@ -167,6 +162,9 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
 
     /**
     * @notice Updates contribution rates of model
+    *
+    * Emits a {ContributationRatesUpdated} event.
+    *
     */
 
     function updateContributionRates(uint256 __modelId, Contribution[] calldata __contributors) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
@@ -247,8 +245,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     }
 
     /**
-     * @notice Hook that is called after a model is removed.
-     *
+     * @notice Used to clean up data related to a model after it has been removed.
     */
     function _afterRemoveModel(
         uint256 __modelId
@@ -263,7 +260,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     * @param __modelId uint256 must exist
     *
     */
-    function getModelDetail(uint256 __modelId) external view returns(address creator, string memory ipfsHash, Contribution[] memory contributors) {
+    function getModelDetail(uint256 __modelId) public view returns(address creator, string memory ipfsHash, Contribution[] memory contributors) {
         creator = creatorOf(__modelId);
         ipfsHash = _modelURIs[__modelId];
         contributors = _contributedModels[__modelId];
