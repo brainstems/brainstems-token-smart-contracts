@@ -270,6 +270,20 @@ describe("TIExShareCollections", () => {
         const toMarketing = restOfAmount.mul(marketing_rate);
         const toPresale = restOfAmount.mul(presale_rate);
         const toReserve = restOfAmount.mul(reserve_rate);
+        const creators = [];
+        const toEachCreator = {};
+
+        for(var j = 0; j < models[i].contributors.length; j++ ) {
+          const contributor = models[i].contributors[j];
+          const creator = await tiexShareCollections.creatorOf(contributor[0]);
+          const balanceOfCreatorBefore = await intellToken.balanceOf(creator);
+          if(toEachCreator[creator] == undefined) toEachCreator[creator] = i2b(0);
+          toEachCreator[creator] = toEachCreator[creator].add(toCreators.mul(contributor[1]).div(10000_0000));
+          creators.push({
+            creator,
+            balanceOfCreatorBefore,
+          });
+        }
 
         await tiexShareCollections.connect(admin).distribute(models[i].modelId);
 
@@ -277,6 +291,11 @@ describe("TIExShareCollections", () => {
         const reserveAfter = await intellToken.balanceOf(reserve.address);
         const presaleAfter = await intellToken.balanceOf(presale.address);
         const shareCollectionAfter = await tiexShareCollections.shareCollection(models[i].modelId);
+
+        for(var j = 0; j < models[i].contributors.length; j++ ) {
+          const balanceOfCreatorAfter = await intellToken.balanceOf(creators[j].creator);
+          expect(creators[j].balanceOfCreatorBefore.add(toEachCreator[creators[j].creator])).to.eq(balanceOfCreatorAfter);
+        }
 
         expect(marketingBefore.add(toMarketing.div(10000))).to.eq(marketingAfter);
         expect(reserveBefore.add(toReserve.div(10000))).to.eq(reserveAfter);
