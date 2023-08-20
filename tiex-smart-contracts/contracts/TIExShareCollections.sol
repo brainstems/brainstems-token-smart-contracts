@@ -189,7 +189,7 @@ contract TIExShareCollections is
     event TIExShareCollectionUnpaused(uint256 indexed modelId);
 
     /// @notice Emitted when the investor position of share collection is updated.
-    /// e.g. U.S. investor => Non-U.S. or investor or Non-U.S. investor => U.S. Investor
+    /// e.g. U.S. investor => Non-U.S. investor or Non-U.S. investor => U.S. Investor
     event TIExShareCollectionInvestorPositionUpdated(
         uint256 indexed modelId,
         bool indexed oldInvestorPosition,
