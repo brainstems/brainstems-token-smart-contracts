@@ -966,8 +966,10 @@ contract TIExShareCollections is
         if (purchasedPerAccount[__modelId][msg.sender].add(__amount) > _shareCollections[__modelId].maxSharePurchase) revert ErrorExceedMaxSharePurchase();
 
         if(paymentToken.allowance(msg.sender, address(this)) < paymentTokenAmount) {
-            (uint8 v, bytes32 r, bytes32 s, uint256 deadline) = abi.decode(__permitMessage, (uint8, bytes32, bytes32, uint256));
-            paymentToken.permit(msg.sender, address(this), MAX_INT, deadline, v, r, s);
+            {
+                (uint8 v, bytes32 r, bytes32 s, uint256 deadline) = abi.decode(__permitMessage, (uint8, bytes32, bytes32, uint256));
+                paymentToken.permit(msg.sender, address(this), MAX_INT, deadline, v, r, s);
+            }
         }
 
 

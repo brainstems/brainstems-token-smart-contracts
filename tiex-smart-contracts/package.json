@@ -35,7 +35,7 @@
     "@nomiclabs/hardhat-ethers": "^2.2.3",
     "@openzeppelin/hardhat-upgrades": "^1.26.0",
     "ethers": "^5.7.2",
-    "hardhat": "^2.14.0",
+    "hardhat": "^2.17.1",
     "web3": "^1.10.0"
   },
   "dependencies": {
