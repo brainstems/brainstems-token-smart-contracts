@@ -190,10 +190,10 @@ describe("TIExShareCollections", () => {
           ]);
         const payloadHash = ethers.utils.keccak256(payload);
         const signature = await truthHolderSigner.signMessage(ethers.utils.arrayify(payloadHash));
-        let sig = ethers.utils.splitSignature(signature);
-        console.log(
-          sig.v, sig.r, sig.s
-        );
+        // let sig = ethers.utils.splitSignature(signature);
+        // console.log(
+        //   sig.v, sig.r, sig.s
+        // );
         const shares = i2b(1000);
 
         const intellBalanceOfSigner0Before = await intellToken.balanceOf(signer0.address);
