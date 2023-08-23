@@ -258,7 +258,6 @@ describe("TIExShareCollections", () => {
 
         await tiexShareCollections.connect(admin).setUnblock(models[i].modelId);
         await tiexShareCollections.connect(signer0).safeTransferFrom(signer0.address, signer1.address, models[i].modelId, toSendShares, "0x");
-
       }
     })
 
