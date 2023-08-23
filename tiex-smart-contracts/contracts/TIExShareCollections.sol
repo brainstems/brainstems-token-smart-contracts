@@ -12,7 +12,7 @@
         | '--------------' || '--------------' || '--------------' || '--------------' |
         '----------------'  '----------------'  '----------------'  '----------------' */
 
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.21;
 
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155BurnableUpgradeable.sol";
@@ -24,8 +24,11 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
 import "./TIExBaseIPAllocationUpgradeable.sol";
+
+interface IPaymentToken is IERC20, IERC20Permit { }
 
 contract TIExShareCollections is
     Initializable,
@@ -37,7 +40,9 @@ contract TIExShareCollections is
 {
     using Strings for uint256;
     using SafeMath for uint256;
-    using SafeERC20 for IERC20;
+    using SafeERC20 for IPaymentToken;
+
+    uint256 constant MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
     /**
      * @notice Defines details of each share collection for investors.
@@ -145,8 +150,8 @@ contract TIExShareCollections is
 
     /// @notice Emitted when the payment token used in the contract is updated.
     event TIExPaymentTokenUpdated(
-        IERC20 indexed oldPaymentToken,
-        IERC20 indexed newPaymentToken
+        IPaymentToken indexed oldPaymentToken,
+        IPaymentToken indexed newPaymentToken
     );
 
     /// @notice Emitted when the truth holder address is updated.
@@ -242,7 +247,7 @@ contract TIExShareCollections is
     address public truthHolder;
 
     /// @notice The payment token (ERC20: INTELL token)
-    IERC20 public paymentToken;
+    IPaymentToken public paymentToken;
 
     /// @notice Mapping of nonces used
     mapping(uint256 => bool) public noncesUsed;
@@ -257,7 +262,7 @@ contract TIExShareCollections is
      */
     function initialize(
         address __truthHolder,
-        IERC20 __paymentToken,
+        IPaymentToken __paymentToken,
         address __admin,
         InvestmentDistribution memory __investmentDistribution
     ) public virtual initializer {
@@ -643,7 +648,7 @@ contract TIExShareCollections is
      * current truth holder address.
      */
     function updatePaymentToken(
-        IERC20 __paymentToken
+        IPaymentToken __paymentToken
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (
             address(__paymentToken) == address(0) ||
@@ -933,7 +938,8 @@ contract TIExShareCollections is
         uint256 __amount,
         uint256 __nonce,
         bool __usInvestor,
-        bytes calldata __signature
+        bytes calldata __signature,
+        bytes calldata __permitMessage
     ) external whenShareCollectionNotPaused(__modelId) {
         // abi: [address, bool, address, string], [account, usInvestor, to, actionName]
         // Encodes a message using the provided parameters.
@@ -958,6 +964,11 @@ contract TIExShareCollections is
 
         // Checks if the investor has exceeded the maximum allowed share purchase for the model and reverts the transaction if they have.
         if (purchasedPerAccount[__modelId][msg.sender].add(__amount) > _shareCollections[__modelId].maxSharePurchase) revert ErrorExceedMaxSharePurchase();
+
+        if(paymentToken.allowance(msg.sender, address(this)) < paymentTokenAmount) {
+            (uint8 v, bytes32 r, bytes32 s, uint256 deadline) = abi.decode(__permitMessage, (uint8, bytes32, bytes32, uint256));
+            paymentToken.permit(msg.sender, address(this), MAX_INT, deadline, v, r, s);
+        }
 
 
         // Marks the nonce as used.
