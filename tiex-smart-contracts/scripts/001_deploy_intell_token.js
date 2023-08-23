@@ -9,7 +9,7 @@ const { green } = require("console-log-colors");
 const { recipient } = require("./deploy_config");
 
 async function main() {
-  console.log(green("******** Deploy IntellTokenContract.sol*********"));
+  console.log(green("Deploying IntellTokenContract...."));
 
   const IntelligenceInvestmentToken = await hre.ethers.getContractFactory(
     "IntelligenceInvestmentToken"
