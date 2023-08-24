@@ -42,6 +42,7 @@ contract TIExShareCollections is
     using SafeMath for uint256;
     using SafeERC20 for IPaymentToken;
 
+    /// @notice MAX_INT = 2**256 - 1 = uint256(-1)
     uint256 constant MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
     /**
@@ -929,6 +930,7 @@ contract TIExShareCollections is
      * @param __nonce uint256 A unique identifier for the transaction.
      * @param __usInvestor boolean Indicates whether the investor is a US investor or not.
      * @param __signature bytes A signature that verifies the authenticity of the transaction
+     * @param __permitMessage bytes message for `permit` of ERC20Permit without (instead of) `approve`.
      * signed by truth holder.
      * 
      * NOTE: 
@@ -965,6 +967,7 @@ contract TIExShareCollections is
         // Checks if the investor has exceeded the maximum allowed share purchase for the model and reverts the transaction if they have.
         if (purchasedPerAccount[__modelId][msg.sender].add(__amount) > _shareCollections[__modelId].maxSharePurchase) revert ErrorExceedMaxSharePurchase();
 
+        // Checks if the allowance of payment token is insufficient.
         if(paymentToken.allowance(msg.sender, address(this)) < paymentTokenAmount) {
             {
                 (uint8 v, bytes32 r, bytes32 s, uint256 deadline) = abi.decode(__permitMessage, (uint8, bytes32, bytes32, uint256));
