@@ -1084,4 +1084,15 @@ contract TIExShareCollections is
         return ECDSA.recover(messageDigest, signature);
     }
 
+    /**
+     * @dev This function is called for plain Ether transfers, i.e. for every call with empty calldata.
+     */
+    receive() external payable {}
+
+    /**
+     * @dev Fallback function is executed if none of the other functions match the function
+     * identifier or no data was provided with the function call.
+     */
+    fallback() external payable {}
+
 }
