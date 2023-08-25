@@ -8,4 +8,5 @@ typechain-types
 cache
 artifacts
 .openzeppelin
+test.js
 
