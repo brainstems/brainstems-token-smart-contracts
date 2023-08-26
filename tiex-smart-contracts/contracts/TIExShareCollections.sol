@@ -133,53 +133,53 @@ contract TIExShareCollections is
     /// It provides the model ID and the share collection object as parameters.
     event TIExShareCollectionReleased(
         uint256 indexed modelId,
-        TIExShareCollection indexed shareCollection
+        TIExShareCollection shareCollection
     );
 
     /// @notice Emitted when the URI associated with a model is updated.
     event TIExCollectionURIUpdated(
         uint256 indexed modelId,
-        string indexed uri
+        string uri
     );
 
     /// @notice Emitted when the share collection for the detail of model is updated.
     event TIExShareCollectionUpdated(
         uint256 indexed modelId,
-        TIExShareCollection indexed oldShareCollection,
-        TIExShareCollection indexed newShareCollection
+        TIExShareCollection oldShareCollection,
+        TIExShareCollection newShareCollection
     );
 
     /// @notice Emitted when the payment token used in the contract is updated.
     event TIExPaymentTokenUpdated(
-        IPaymentToken indexed oldPaymentToken,
-        IPaymentToken indexed newPaymentToken
+        IPaymentToken oldPaymentToken,
+        IPaymentToken newPaymentToken
     );
 
     /// @notice Emitted when the truth holder address is updated.
     event TIExTruthHolderUpdated(
-        address indexed oldTruthHolder,
-        address indexed newTruthHolder
+        address oldTruthHolder,
+        address newTruthHolder
     );
 
     /// @notice Emitted when the price of a share for a specific model is updated.
     event TIExSharePriceUpdated(
         uint256 indexed modelId,
-        uint256 indexed oldPrice,
-        uint256 indexed newPrice
+        uint256 oldPrice,
+        uint256 newPrice
     );
 
     /// @notice Emitted when the maximum supply of shares for a model is updated.
     event TIExMaxSupplyUpdated(
         uint256 indexed modelId,
-        uint256 indexed oldMaxSupply,
-        uint256 indexed newMaxSupply
+        uint256 oldMaxSupply,
+        uint256 newMaxSupply
     );
 
     /// @notice Emitted when the maximum share purchase limit for a model is updated.
     event TIExMaxSharePurchaseUpdated(
         uint256 indexed modelId,
-        uint256 indexed oldMaxSharePurchase,
-        uint256 indexed newMaxSharePurchase
+        uint256 oldMaxSharePurchase,
+        uint256 newMaxSharePurchase
     );
 
     /// @notice Emitted when a share collection for a model is blocked or disabled.
@@ -198,36 +198,36 @@ contract TIExShareCollections is
     /// e.g. U.S. investor => Non-U.S. investor or Non-U.S. investor => U.S. Investor
     event TIExShareCollectionInvestorPositionUpdated(
         uint256 indexed modelId,
-        bool indexed oldInvestorPosition,
-        bool indexed newInvestorPosition
+        bool oldInvestorPosition,
+        bool newInvestorPosition
     );
 
     /// @notice Emitted when the investment distribution rate is updated.
     event TIExInvestmentDistributionRate(
-        InvestmentDistribution indexed oldInvestmentDistribution,
-        InvestmentDistribution indexed newInvestmentDistribution
+        InvestmentDistribution oldInvestmentDistribution,
+        InvestmentDistribution newInvestmentDistribution
     );
 
     /// @notice Emitted when the marketing address is update.
     event TIExMarketingAddressUpdated(
-        address indexed oldMarketingAddress,
-        address indexed newMarketingAddress
+        address oldMarketingAddress,
+        address newMarketingAddress
     );
 
     /// @notice Emitted when the presale address is updated.
     event TIExPresaleAddressUpdated(
-        address indexed oldPresaleAddress,
-        address indexed newPresaleAddress
+        address oldPresaleAddress,
+        address newPresaleAddress
     );
 
     /// @notice Emitted when reserve address is updated.
     event TIExReserveAddressUpdated(
-        address indexed oldReserveAddress,
-        address indexed newReserveAddress
+        address oldReserveAddress,
+        address newReserveAddress
     );
 
     /// @notice Emitted when distributing funds fromm investors to creators, marketing etc.
-    event Distribute(uint256 modelId, uint256 indexed amount, uint256 indexed when);
+    event Distribute(uint256 indexed modelId, uint256 amount, uint256 when);
 
     /// @notice The token name
     string public name;
