@@ -45,37 +45,38 @@ module.exports = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 1,
+            runs: 800,
           },
+          "viaIR": true,
         },
       },
-      {
-        version: "0.8.19",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1,
-          },
-        },
-      },
-      {
-        version: "0.8.9",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1,
-          },
-        },
-      },
-      {
-        version: "0.8.7",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 1,
-          },
-        },
-      },
+      // {
+      //   version: "0.8.19",
+      //   settings: {
+      //     optimizer: {
+      //       enabled: true,
+      //       runs: 1,
+      //     },
+      //   },
+      // },
+      // {
+      //   version: "0.8.9",
+      //   settings: {
+      //     optimizer: {
+      //       enabled: true,
+      //       runs: 1,
+      //     },
+      //   },
+      // },
+      // {
+      //   version: "0.8.7",
+      //   settings: {
+      //     optimizer: {
+      //       enabled: true,
+      //       runs: 1,
+      //     },
+      //   },
+      // },
     ],
   },
   paths: {

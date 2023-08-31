@@ -82,7 +82,6 @@ describe("TIExShareCollections", () => {
       expect(verifiedAddress).to.eq(_owner.address);
 
       const permitMessage = ethers.utils.defaultAbiCoder.encode(["uint8", "bytes32", "bytes32", "uint256"], [sig.v, sig.r, sig.s, deadline]);
-      console.log(nonce, deadline)
       return permitMessage;
 
   };
