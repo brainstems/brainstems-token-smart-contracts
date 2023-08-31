@@ -22,7 +22,6 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-//import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -43,7 +42,6 @@ contract TIExShareCollections is
     ReentrancyGuardUpgradeable,
     TIExBaseIPAllocationUpgradeable
 {
-    ////using Strings for uint256;
     using SafeMath for uint256;
     using SafeERC20 for IPaymentToken;
 
