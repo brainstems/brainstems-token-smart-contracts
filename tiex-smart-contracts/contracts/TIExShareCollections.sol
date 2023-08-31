@@ -18,6 +18,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155BurnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
@@ -25,6 +26,7 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
+
 
 import "./TIExBaseIPAllocationUpgradeable.sol";
 
@@ -942,7 +944,7 @@ contract TIExShareCollections is
         bool __usInvestor,
         bytes calldata __signature,
         bytes calldata __permitMessage
-    ) external whenShareCollectionNotPaused(__modelId) {
+    ) external whenShareCollectionNotPaused(__modelId) nonReentrant {
         // abi: [address, bool, address, string], [account, usInvestor, to, actionName]
         // Encodes a message using the provided parameters.
         bytes memory message = abi.encode(msg.sender, __usInvestor, address(this), __nonce);
