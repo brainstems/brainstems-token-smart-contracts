@@ -935,8 +935,6 @@ contract TIExShareCollections is
      * @param __signature bytes A signature that verifies the authenticity of the transaction
      * @param __permitMessage bytes message for `permit` of ERC20Permit without (instead of) `approve`.
      * signed by truth holder.
-     * 
-     * NOTE: 
      */
     function buyShares(
         uint256 __modelId,

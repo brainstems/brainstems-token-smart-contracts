@@ -43,6 +43,7 @@ module.exports = {
       {
         version: "0.8.21",
         settings: {
+          evmVersion: "paris",
           optimizer: {
             enabled: true,
             runs: 800,
@@ -50,33 +51,6 @@ module.exports = {
           "viaIR": true,
         },
       },
-      // {
-      //   version: "0.8.19",
-      //   settings: {
-      //     optimizer: {
-      //       enabled: true,
-      //       runs: 1,
-      //     },
-      //   },
-      // },
-      // {
-      //   version: "0.8.9",
-      //   settings: {
-      //     optimizer: {
-      //       enabled: true,
-      //       runs: 1,
-      //     },
-      //   },
-      // },
-      // {
-      //   version: "0.8.7",
-      //   settings: {
-      //     optimizer: {
-      //       enabled: true,
-      //       runs: 1,
-      //     },
-      //   },
-      // },
     ],
   },
   paths: {
@@ -89,13 +63,7 @@ module.exports = {
     timeout: 40000,
   },
   etherscan: {
-    apiKey: ETHERSCAN_API_KEY,
+    ///apiKey: "RU7HIF6C1DYFB9HGTWJZKCTDSHZDD7VD53",
+    apiKey: "BECHJWKK5SPQDCUTNIAMPCEZFKYWIGW8WK"
   },
-  // gasReporter: {
-  //   enabled: false,
-  //   currency: "USD",
-  //   outputFile: "gas-report.txt",
-  //   noColors: true,
-  //   coinmarketcap: COINMARKETCAP_API_KEY,
-  // },
 };
