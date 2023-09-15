@@ -30,17 +30,60 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         uint256 contributionRate;
     }
 
-    event AllocateTIExIP(address provider, address creator, uint256 modelId, Contribution[], uint256 startTime);
-    event RemoveTIExIP(address creator, address to, uint256 modelId, uint256 removedTime);
-    event TIExModelURIUpdated(uint256 modelId, string ipfsHash);
-    event ContributationRatesUpdated(uint256 modelId, Contribution[] contributionRates);
+    struct ModelMetadata {
+        string name;
+        bytes32 ecosystemId;
+        uint256 version;
+        string description;
+        bytes modelFingerprint;
+        bool trained;
+        bytes watermarkFingerprint;
+        bytes watermarkSequence;
+        uint256 performance;
+    }
+
+    mapping(uint256 => ModelMetadata) private _modelMetadata;
+
+    function upgradeStubbedModelToTrainedModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+        if(_modelMetadata[__modelId].trained) revert ErrorTIExIPTrainedAlready(__modelId);
+        if (__newModelFingerprint.length == 0) revert ErrorTIExIPInvalidMetadata(__modelId);
+        
+        ModelMetadata memory oldModelMetadata = _modelMetadata[__modelId];
+
+
+        _modelMetadata[__modelId].trained = true;
+        _modelMetadata[__modelId].version = 1;
+        _modelMetadata[__modelId].modelFingerprint = __newModelFingerprint;
+
+        emit UpgradeModel(oldModelMetadata, _modelMetadata[__modelId]);
+    }
+
+    function upgradeModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+        ModelMetadata memory oldModelMetadata = _modelMetadata[__modelId];
+        
+        if (__newModelFingerprint.length == 0) revert ErrorTIExIPInvalidMetadata(__modelId);
+
+        _modelMetadata[__modelId].version++;
+        _modelMetadata[__modelId].modelFingerprint = __newModelFingerprint;
+
+        emit UpgradeModel(oldModelMetadata, _modelMetadata[__modelId]);
+    }
+
+
+    event AllocateTIExIP(address provider, address indexed creator, uint256 indexed modelId, ModelMetadata modelMetadata,Contribution[], uint256 startTime);
+    event RemoveTIExIP(address creator, address to, uint256 indexed modelId, uint256 removedTime);
+    event TIExModelURIUpdated(uint256 indexed modelId, string ipfsHash);
+    event ContributationRatesUpdated(uint256 indexed modelId, Contribution[] contributionRates);
+    event UpgradeModel(ModelMetadata oldModelMetadata, ModelMetadata newModelMetadata);
 
     error ErrorTIExIPInvalidCreator(address creator);
     error ErrorTIExIPAllocatedAlready(uint256 modelId);
     error ErrorTIExIPInvalidProvider(address provider);
     error ErrorTIExIPOutOfBoundsIndex(address creator, uint256 index);
     error ErrorTIExIPModelIdNotFound(uint256 modelId);
-    error ErrorTIExContributionRateInvalid(uint256 contributionRate);
+    error ErrorTIExIPContributionRateInvalid(uint256 contributionRate);
+    error ErrorTIExIPTrainedAlready(uint256 modelId);
+    error ErrorTIExIPInvalidMetadata(uint256 modelId);
 
     /// @notice Mapping from model ID to creator address
     mapping(uint256 => address) private _creators;
@@ -121,7 +164,8 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         uint256 __modelId,
         address __creator,
         string calldata __ipfsHash,
-        Contribution[] calldata __contributors
+        Contribution[] calldata __contributors,
+        ModelMetadata calldata __modelMetadata
     ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyNotExistingModelId(__modelId) {
         if (__creator == address(0)) {
             revert ErrorTIExIPInvalidCreator(address(0));
@@ -149,7 +193,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
                 _contributedModels[__modelId].push(__contributors[i]);
             }
 
-            if(contributionRate != 10000) revert ErrorTIExContributionRateInvalid(contributionRate);
+            if(contributionRate != 10000) revert ErrorTIExIPContributionRateInvalid(contributionRate);
 
         } else {
             _contributedModels[__modelId].push(Contribution({
@@ -159,7 +203,19 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
 
         }
 
-        emit AllocateTIExIP(msg.sender, __creator, __modelId, _contributedModels[__modelId], block.timestamp);
+        bool validForMetadata = bytes(__modelMetadata.name).length > 0 
+            && bytes(__modelMetadata.description).length > 0 
+            && __modelMetadata.ecosystemId.length > 0 
+            && __modelMetadata.version == 1
+            && __modelMetadata.modelFingerprint.length > 0
+            && __modelMetadata.watermarkFingerprint.length > 0
+            && __modelMetadata.watermarkSequence.length > 0
+            && __modelMetadata.performance > 0;
+
+        if (!validForMetadata) revert ErrorTIExIPInvalidMetadata(__modelId);
+        _modelMetadata[__modelId] = __modelMetadata;
+
+        emit AllocateTIExIP(msg.sender, __creator, __modelId, __modelMetadata, _contributedModels[__modelId], block.timestamp);
 
     }
 
@@ -185,7 +241,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
                 _contributedModels[__modelId].push(__contributors[i]);
             }
 
-            if(contributionRate != 10000) revert ErrorTIExContributionRateInvalid(contributionRate);
+            if(contributionRate != 10000) revert ErrorTIExIPContributionRateInvalid(contributionRate);
 
 
         } else {
