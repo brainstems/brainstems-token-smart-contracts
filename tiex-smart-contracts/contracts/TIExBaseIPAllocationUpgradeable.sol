@@ -25,65 +25,72 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     using Strings for uint256;
     using SafeMath for uint256;
     
+    // Struct to represent a contribution to a model
     struct Contribution {
-        uint256 modelId;
-        uint256 contributionRate;
+        uint256 modelId; // The ID of the model
+        uint256 contributionRate; // The rate of the contribution
     }
 
+    // Struct to represent the metadata of a model
     struct ModelMetadata {
-        string name;
-        bytes32 ecosystemId;
-        uint256 version;
-        string description;
-        bytes modelFingerprint;
-        bool trained;
-        bytes watermarkFingerprint;
-        bytes watermarkSequence;
-        uint256 performance;
+        string name; // The name of the model
+        bytes32 ecosystemId; // The ID of the ecosystem the model belongs to
+        uint256 version; // The version of the model
+        string description; // A description of the model
+        bytes modelFingerprint; // The fingerprint of the model
+        bool trained; // Whether the model is trained or not
+        bytes watermarkFingerprint; // The fingerprint of the watermark
+        bytes watermarkSequence; // The sequence of the watermark
+        uint256 performance; // The performance of the model
     }
 
+    // Mapping from model ID to its metadata
     mapping(uint256 => ModelMetadata) private _modelMetadata;
 
-    function upgradeStubbedModelToTrainedModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
-        if(_modelMetadata[__modelId].trained) revert ErrorTIExIPTrainedAlready(__modelId);
-        if (__newModelFingerprint.length == 0) revert ErrorTIExIPInvalidMetadata(__modelId);
-        
-        ModelMetadata memory oldModelMetadata = _modelMetadata[__modelId];
 
-
-        _modelMetadata[__modelId].trained = true;
-        _modelMetadata[__modelId].version = 1;
-        _modelMetadata[__modelId].modelFingerprint = __newModelFingerprint;
-
-        emit UpgradeModel(oldModelMetadata, _modelMetadata[__modelId]);
-    }
-
-    function upgradeModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
-        ModelMetadata memory oldModelMetadata = _modelMetadata[__modelId];
-        
-        if (__newModelFingerprint.length == 0) revert ErrorTIExIPInvalidMetadata(__modelId);
-
-        _modelMetadata[__modelId].version++;
-        _modelMetadata[__modelId].modelFingerprint = __newModelFingerprint;
-
-        emit UpgradeModel(oldModelMetadata, _modelMetadata[__modelId]);
-    }
-
-
-    event AllocateTIExIP(address provider, address indexed creator, uint256 indexed modelId, ModelMetadata modelMetadata,Contribution[], uint256 startTime);
+    // Event emitted when a new TIEx IP is allocated to a creator
+    event AllocateTIExIP(address provider, address indexed creator, uint256 indexed modelId, ModelMetadata modelMetadata, Contribution[] contribution, uint256 startTime);
+    
+    // Event emitted when a TIEx IP is removed
     event RemoveTIExIP(address creator, address to, uint256 indexed modelId, uint256 removedTime);
+    
+    // Event emitted when the URI of a TIEx model is updated
     event TIExModelURIUpdated(uint256 indexed modelId, string ipfsHash);
+    
+    // Event emitted when the contribution rates of a model are updated
     event ContributationRatesUpdated(uint256 indexed modelId, Contribution[] contributionRates);
-    event UpgradeModel(ModelMetadata oldModelMetadata, ModelMetadata newModelMetadata);
+    
+    // Event emitted when a model is upgraded
+    event UpgradeModel(uint256 indexed modelId, ModelMetadata oldModelMetadata, ModelMetadata newModelMetadata);
+    
+    // Event emitted when the metadata of a model is updated
+    event UpdateModelMetadata(uint256 indexed modelId, ModelMetadata oldModelMetadata, ModelMetadata newModelMetadata);
 
+    // Error thrown when an invalid creator address is provided
     error ErrorTIExIPInvalidCreator(address creator);
+    
+    // Error thrown when a model ID that is already allocated is used
     error ErrorTIExIPAllocatedAlready(uint256 modelId);
+    
+    // Error thrown when an invalid provider address is provided
     error ErrorTIExIPInvalidProvider(address provider);
+    
+    // Error thrown when an out of bounds index is used for a creator
     error ErrorTIExIPOutOfBoundsIndex(address creator, uint256 index);
+    
+    // Error thrown when a non-existent model ID is used
     error ErrorTIExIPModelIdNotFound(uint256 modelId);
+    
+    // Error thrown when an invalid contribution rate is used
     error ErrorTIExIPContributionRateInvalid(uint256 contributionRate);
+    
+    // Error thrown when a model that is already trained is used
     error ErrorTIExIPTrainedAlready(uint256 modelId);
+    
+    // Error thrown when invalid metadata is provided for a model
     error ErrorTIExIPInvalidMetadata(uint256 modelId);
+
+
 
     /// @notice Mapping from model ID to creator address
     mapping(uint256 => address) private _creators;
@@ -148,6 +155,101 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     ////////////////////////////////////////////////////////////////////////////
 
     /**
+     * @notice Upgrades a stubbed model to a trained model.
+     * @param __modelId uint256 must exist.
+     * @param __newModelFingerprint bytes is the new fingerprint of the model.
+     *
+     * Emits a {UpgradeModel} event.
+     *
+     * Requirements:
+     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
+     * - The model with the given `__modelId` must not be trained already.
+     * - The `__newModelFingerprint` must not be empty.
+     */
+    function upgradeStubbedModelToTrainedModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+        // Check if the model is already trained, if so, revert the transaction
+        if(_modelMetadata[__modelId].trained) revert ErrorTIExIPTrainedAlready(__modelId);
+        
+        // Check if the new model fingerprint is valid, if not, revert the transaction
+        if (__newModelFingerprint.length == 0) revert ErrorTIExIPInvalidMetadata(__modelId);
+        
+        // Store the old model metadata before the upgrade
+        ModelMetadata memory oldModelMetadata = _modelMetadata[__modelId];
+
+        // Set the model as trained
+        _modelMetadata[__modelId].trained = true;
+        // Set the model version to 1
+        _modelMetadata[__modelId].version = 1;
+        // Update the model fingerprint with the new one
+        _modelMetadata[__modelId].modelFingerprint = __newModelFingerprint;
+
+        // Emit an event to log the model upgrade
+        emit UpgradeModel(__modelId, oldModelMetadata, _modelMetadata[__modelId]);
+    }
+
+
+    /**
+     * @notice Upgrades a model by updating its fingerprint and incrementing its version.
+     * @param __modelId The ID of the model to be upgraded.
+     * @param __newModelFingerprint The new fingerprint of the model.
+     *
+     * Emits an {UpgradeModel} event.
+     *
+     * Requirements:
+     * - The caller must have the `DEFAULT_ADMIN_ROLE`.
+     * - The model with the given `__modelId` must exist.
+     * - The `__newModelFingerprint` must not be empty.
+     */
+    function upgradeModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+        // Store the old model metadata before the upgrade
+        ModelMetadata memory oldModelMetadata = _modelMetadata[__modelId];
+        
+        // Check if the new model fingerprint is valid, if not, revert the transaction
+        if (__newModelFingerprint.length == 0) revert ErrorTIExIPInvalidMetadata(__modelId);
+
+        // Increment the version of the model
+        _modelMetadata[__modelId].version++;
+        // Update the model fingerprint with the new one
+        _modelMetadata[__modelId].modelFingerprint = __newModelFingerprint;
+
+        // Emit an event to log the model upgrade
+        emit UpgradeModel(__modelId, oldModelMetadata, _modelMetadata[__modelId]);
+    }
+
+    /**
+     * @notice Updates the metadata of a model.
+     * @param __modelId The ID of the model to be updated.
+     * @param __modelMetadata The new metadata of the model.
+     *
+     * Emits an {UpdateModelMetadata} event.
+     *
+     * Requirements:
+     * - The caller must have the `DEFAULT_ADMIN_ROLE`.
+     * - The model with the given `__modelId` must exist.
+     * - The `__modelMetadata` must be valid.
+     */
+    function updateModelMetadata(uint256 __modelId, ModelMetadata calldata __modelMetadata) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+        // Store the old model metadata before the update
+        ModelMetadata memory oldModelMetadata = _modelMetadata[__modelId];
+        // Check if the model metadata is valid
+        bool validForMetadata = bytes(__modelMetadata.name).length > 0 
+            && bytes(__modelMetadata.description).length > 0 
+            && __modelMetadata.ecosystemId.length > 0 
+            && __modelMetadata.version > 0
+            && __modelMetadata.modelFingerprint.length > 0
+            && __modelMetadata.watermarkFingerprint.length > 0
+            && __modelMetadata.watermarkSequence.length > 0
+            && __modelMetadata.performance > 0;
+
+        if (!validForMetadata) revert ErrorTIExIPInvalidMetadata(__modelId);
+        // Update the model metadata
+        _modelMetadata[__modelId] = __modelMetadata;
+
+        // Emit an event to log the update of model metadata
+        emit UpdateModelMetadata(__modelId, oldModelMetadata, _modelMetadata[__modelId]);
+    }
+
+    /**
      * @notice Allocates `modelId` as TIEx IP to `creator`.
      * @param __modelId uint256 must not exist.
      * @param __creator address cannot be the zero address.
@@ -167,13 +269,18 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         Contribution[] calldata __contributors,
         ModelMetadata calldata __modelMetadata
     ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyNotExistingModelId(__modelId) {
+
+        // Check if the creator address is valid
         if (__creator == address(0)) {
             revert ErrorTIExIPInvalidCreator(address(0));
         }
 
+        // Add the model ID to the list of all model IDs
         _addModelToAllModelsEnumeration(__modelId);
+        // Add the model ID to the list of model IDs owned by the creator
         _addModelToCreatorEnumeration(__creator, __modelId);
 
+        // Increase the balance of model IDs owned by the creator
         unchecked {
             // Will not overflow unless all 2**256 model ids are allocated to the same creator.
             // Given that models are allocated one by one, it is impossible in practice that
@@ -181,21 +288,29 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
             _modelBalances[__creator] += 1;
         }
 
-
+        // Set the creator of the model ID
         _creators[__modelId] = __creator;
+        // Set the IPFS hash of the model's metadata
         _modelURIs[__modelId] = __ipfsHash;
-
+        
+        // If there are contributors, calculate the total contribution rate and add each contributor to the list of contributors for the model ID
         if (__contributors.length > 0) {
             uint256 contributionRate = 0;
+            // Iterate over each contributor
             for(uint256 i; i < __contributors.length; i++) {
+                // If the model does not exist, revert the transaction
                 if(!modelExists(__contributors[i].modelId)) revert ErrorTIExIPModelIdNotFound(__contributors[i].modelId);
+                // Add the contribution rate of the current contributor to the total contribution rate
                 contributionRate = contributionRate.add(__contributors[i].contributionRate);
+                // Add the current contributor to the list of contributors for the model
                 _contributedModels[__modelId].push(__contributors[i]);
             }
 
+            // If the total contribution rate is not 10000 (representing 100%), revert the transaction
             if(contributionRate != 10000) revert ErrorTIExIPContributionRateInvalid(contributionRate);
 
         } else {
+            // If there are no new contributors, add a default contribution of 10000 (representing 100%) for the model itself
             _contributedModels[__modelId].push(Contribution({
                 modelId: __modelId,
                 contributionRate: 10000
@@ -203,6 +318,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
 
         }
 
+        // Check if the model metadata is valid
         bool validForMetadata = bytes(__modelMetadata.name).length > 0 
             && bytes(__modelMetadata.description).length > 0 
             && __modelMetadata.ecosystemId.length > 0 
@@ -213,44 +329,65 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
             && __modelMetadata.performance > 0;
 
         if (!validForMetadata) revert ErrorTIExIPInvalidMetadata(__modelId);
+        // Set the model metadata
         _modelMetadata[__modelId] = __modelMetadata;
 
+        // Emit an event to log the allocation of the model ID
         emit AllocateTIExIP(msg.sender, __creator, __modelId, __modelMetadata, _contributedModels[__modelId], block.timestamp);
 
     }
 
     /**
-    * @notice Updates contribution rates of model
-    *
-    * Emits a {ContributationRatesUpdated} event.
-    *
-    * Requirements:
-    * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
-    * - The model with the given `__modelId` must exist.
-    *
-    */
+     * @notice Retrieves the metadata of a model.
+     * @param __modelId uint256 ID of the model to retrieve metadata for. Must exist.
+     *
+     * Returns a ModelMetadata struct in memory.
+     *
+     * Requirements:
+     * - The model with the given `__modelId` must exist.
+     */
 
+    function modelMetadata(uint256 __modelId) external onlyExistingModelId(__modelId) view returns(ModelMetadata memory) {
+        return _modelMetadata[__modelId];
+    }
+
+    /**
+     * @notice Updates the contribution rates of a model.
+     *
+     * Emits a {ContributationRatesUpdated} event.
+     *
+     * Requirements:
+     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
+     * - The model with the given `__modelId` must exist.
+     */
     function updateContributionRates(uint256 __modelId, Contribution[] calldata __contributors) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+        // Delete the existing contributions for the model
         delete _contributedModels[__modelId];
 
+        // If there are new contributors
         if (__contributors.length > 0) {
             uint256 contributionRate = 0;
+            // Iterate over each contributor
             for(uint256 i; i < __contributors.length; i++) {
+                // If the model does not exist, revert the transaction
                 if(!modelExists(__contributors[i].modelId)) revert ErrorTIExIPModelIdNotFound(__contributors[i].modelId);
+                // Add the contribution rate of the current contributor to the total contribution rate
                 contributionRate = contributionRate.add(__contributors[i].contributionRate);
+                // Add the current contributor to the list of contributors for the model
                 _contributedModels[__modelId].push(__contributors[i]);
             }
 
+            // If the total contribution rate is not 10000 (representing 100%), revert the transaction
             if(contributionRate != 10000) revert ErrorTIExIPContributionRateInvalid(contributionRate);
-
-
         } else {
+            // If there are no new contributors, add a default contribution of 10000 (representing 100%) for the model itself
             _contributedModels[__modelId].push(Contribution({
                 modelId: __modelId,
                 contributionRate: 10000
             }));
         }
 
+        // Emit an event to log the update of contribution rates
         emit ContributationRatesUpdated(__modelId, _contributedModels[__modelId]);
     }
 
