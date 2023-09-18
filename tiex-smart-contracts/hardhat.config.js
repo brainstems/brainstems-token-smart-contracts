@@ -46,7 +46,7 @@ module.exports = {
           evmVersion: "paris",
           optimizer: {
             enabled: true,
-            runs: 800,
+            runs: 1,
           },
           "viaIR": true,
         },
