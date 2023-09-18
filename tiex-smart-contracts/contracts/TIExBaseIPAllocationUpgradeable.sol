@@ -338,6 +338,20 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     }
 
     /**
+     * @notice Retrieves the metadata of a model.
+     * @param __modelId uint256 ID of the model to retrieve metadata for. Must exist.
+     *
+     * Returns a ModelMetadata struct in memory.
+     *
+     * Requirements:
+     * - The model with the given `__modelId` must exist.
+     */
+
+    function modelMetadata(uint256 __modelId) external onlyExistingModelId(__modelId) view returns(ModelMetadata memory) {
+        return _modelMetadata[__modelId];
+    }
+    
+    /**
      * @notice Updates the contribution rates of a model.
      *
      * Emits a {ContributationRatesUpdated} event.
