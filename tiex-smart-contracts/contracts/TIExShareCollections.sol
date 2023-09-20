@@ -31,6 +31,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
 import "./TIExBaseIPAllocationUpgradeable.sol";
 
+// Interface for payment token
 interface IPaymentToken is IERC20, IERC20Permit { }
 
 contract TIExShareCollections is
@@ -122,15 +123,14 @@ contract TIExShareCollections is
     /// purposes is invalid or cannot be verified.
     error ErrorInvalidSignature();
 
-    /// @notice Indicates that the specified country is not valid. Identifies investors
-    /// and non-U.S. investors here
-    error ErrorInvalidCountry();
-
     /// @notice Indicates that one or more parameters provided in the request are invalid or missing.
     error ErrorInvalidParam();
 
     /// @notice Indicates that the provided nonce (a unique identifier) is invalid or has already been used.
     error ErrorInvalidNonce();
+    
+    // @notice Indicates that the deadline for a certain operation has been reached.
+    error ErrorDeadlineReached();
 
     /// @notice Emitted when a share collection is released for a specific model.
     /// It provides the model ID and the share collection object as parameters.
@@ -931,7 +931,7 @@ contract TIExShareCollections is
      * @param __modelId uint256 The model id that the investor wants to invest in.
      * @param __amount uint256 The number of tokens the investor wants to buy.
      * @param __nonce uint256 A unique identifier for the transaction.
-     * @param __usInvestor boolean Indicates whether the investor is a US investor or not.
+     * @param __deadline uint256 The deadline for the transaction.
      * @param __signature bytes A signature that verifies the authenticity of the transaction
      * @param __permitMessage bytes message for `permit` of ERC20Permit without (instead of) `approve`.
      * signed by truth holder.
@@ -940,27 +940,27 @@ contract TIExShareCollections is
         uint256 __modelId,
         uint256 __amount,
         uint256 __nonce,
-        bool __usInvestor,
+        uint256 __deadline,
         bytes calldata __signature,
         bytes calldata __permitMessage
     ) external whenShareCollectionNotPaused(__modelId) nonReentrant {
-        // abi: [address, bool, address, string], [account, usInvestor, to, actionName]
+        // abi: [address, bool, address, uint256, uint256], [account, usInvestor, to, nonce, deadline]
         // Encodes a message using the provided parameters.
-        bytes memory message = abi.encode(msg.sender, __usInvestor, address(this), __nonce);
+        bytes memory message = abi.encode(msg.sender, _shareCollections[__modelId].forOnlyUSInvestors, address(this), __nonce, __deadline);
         // Calculates the amount of payment tokens required based on the price of the model and the desired amount of tokens.
         uint256 paymentTokenAmount = _shareCollections[__modelId].price.mul(__amount);
 
         // Checks if the nonce has already been used and reverts the transaction if it has.
         if (noncesUsed[__nonce]) revert ErrorInvalidNonce();
+
+        // Checks if the deadline has passed and reverts the transaction if it has.
+        if (__deadline > block.timestamp) revert ErrorDeadlineReached();
         
         // Checks if the amount of tokens is 0 and reverts the transaction if it is.
         if (__amount == 0) revert ErrorInvalidParam();
         
         // Verifies the authenticity of the message using the provided signature and reverts the transaction if it is invalid.
         if (!verifyMessage(message, __signature)) revert ErrorInvalidSignature();
-        
-        // Checks if the investor's country matches the allowed country for the model and reverts the transaction if it doesn't.
-        if (__usInvestor != _shareCollections[__modelId].forOnlyUSInvestors) revert ErrorInvalidCountry();
         
         // Checks if there is enough supply of tokens for the model and reverts the transaction if there isn't.
         if (totalSupply(__modelId).add(__amount) > _shareCollections[__modelId].maxSupply) revert ErrorNotEnoughSupply();
@@ -969,7 +969,7 @@ contract TIExShareCollections is
         if (purchasedPerAccount[__modelId][msg.sender].add(__amount) > _shareCollections[__modelId].maxSharePurchase) revert ErrorExceedMaxSharePurchase();
 
         // Checks if the allowance of payment token is insufficient.
-        if(paymentToken.allowance(msg.sender, address(this)) < paymentTokenAmount) {
+        if (paymentToken.allowance(msg.sender, address(this)) < paymentTokenAmount) {
             {
                 (uint8 v, bytes32 r, bytes32 s, uint256 deadline) = abi.decode(__permitMessage, (uint8, bytes32, bytes32, uint256));
                 paymentToken.permit(msg.sender, address(this), MAX_INT, deadline, v, r, s);
