@@ -14,386 +14,138 @@
 
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155BurnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
-
+import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 
-import "./TIExBaseIPAllocationUpgradeable.sol";
+contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerableUpgradeable {
 
-interface IPaymentToken is IERC20, IERC20Permit { }
-
-contract TIExShareCollections is
-    Initializable,
-    ERC1155Upgradeable,
-    ERC1155BurnableUpgradeable,
-    ERC1155SupplyUpgradeable,
-    PausableUpgradeable,
-    ReentrancyGuardUpgradeable,
-    TIExBaseIPAllocationUpgradeable
-{
+    using Strings for uint256;
     using SafeMath for uint256;
-    using SafeERC20 for IPaymentToken;
-    using ECDSA for bytes32;
-
-    /// @notice MAX_INT = 2**256 - 1 = uint256(-1)
-    uint256 constant MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-
-    /**
-     * @notice Defines details of each share collection for investors.
-     */
-    struct TIExShareCollection {
-        /// @notice Indicates the maximum share supply.
-        uint256 maxSupply;
-        /// @notice Indicates the total investment in the share
-        uint256 totalInvestment;
-        /// @notice Indicates the amount that has been withdrawn.
-        uint256 withdrawnAmount;
-        /// @notice Indicates the price per share.
-        uint256 price;
-        /// @notice Indicates the time when the share collection was launched.
-        uint256 launchStartTime;
-        /// @notice Indicates the maximum share purchase allowed per account.
-        uint256 maxSharePurchase;
-        /// @notice Indicates whether the sale is paused or not.
-        bool paused;
-        /// @notice Indicates whether the share collection is available for
-        /// trading and share sale or not.
-        bool blocked;
-        /// @notice Indicates whether the share collection is only available
-        /// for U.S. investors or not.
-        bool forOnlyUSInvestors;
+    
+    // Struct to represent a contribution to a model
+    struct Contribution {
+        uint256 modelId; // The ID of the model
+        uint256 contributionRate; // The rate of the contribution
     }
 
-    /**
-     * @notice Defines the distribution rates and addresses for different aspects
-     * of an investment.
-     */
-    struct InvestmentDistribution {
-        /// @notice Indicates the rate of investment distribution for the creator.
-        uint256 creatorRate;
-        /// @notice Indicates the rate of investment distribution for marketing.
-        uint256 marketingtRate;
-        /// @notice Indicates the rate of investment distribution for reserves.
-        uint256 reserveRate;
-        /// @notice Indicates the rate of investment distribution for presale.
-        uint256 presaleRate;
-        /// @notice Indicates the address where the marketing funds will be distributed.
-        address marketing;
-        /// @notice Indicates the address where the reserve funds will be distributed.
-        address reserve;
-        /// @notice Indicates the address where the presale funds will be distributed.
-        address presale;
+    // Struct to represent the metadata of a model
+    struct ModelMetadata {
+        string name; // The name of the model
+        bytes32 ecosystemId; // The ID of the ecosystem the model belongs to
+        uint256 version; // The version of the model
+        string description; // A description of the model
+        bytes modelFingerprint; // The fingerprint of the model
+        bool trained; // Whether the model is trained or not
+        bytes watermarkFingerprint; // The fingerprint of the watermark
+        bytes watermarkSequence; // The sequence of the watermark
+        uint256 performance; // The performance of the model
     }
 
-    /// @notice Indicates that a share collection cannot be found
-    error ErrorShareCollectionNotFound(uint256 modelId);
+    struct TIExModel {
+        address creator;
+        ModelMetadata modelMetadata;
+        string modelURI;
+    }
 
-    /// @notice Indicates that a share collection with the specified
-    /// model ID has already been released.
-    error ErrorTIExShareCollectionReleasedAlready(uint256 modelId);
+    // Event emitted when a new TIEx IP is allocated to a creator
+    event AllocateTIExIP(address provider, uint256 indexed modelId, TIExModel TIExModel, uint256 startTime);
+    
+    // Event emitted when a TIEx IP is removed
+    event RemoveTIExIP(address creator, address to, uint256 indexed modelId, uint256 removedTime);
+    
+    // Event emitted when the URI of a TIEx model is updated
+    event TIExModelURIUpdated(uint256 indexed modelId, string ipfsHash);
+    
+    // Event emitted when the contribution rates of a model are updated
+    event ContributationRatesUpdated(uint256 indexed modelId, Contribution[] contributionRates);
+    
+    // Event emitted when a model is upgraded
+    event UpgradeModel(uint256 indexed modelId, ModelMetadata newModelMetadata);
+    
+    // Event emitted when the metadata of a model is updated
+    event UpdateModelMetadata(uint256 indexed modelId, ModelMetadata newModelMetadata);
 
-    /// @notice Indicates that there is not enough supply available for share sale.
-    error ErrorNotEnoughSupply();
+    // Error thrown when an invalid creator address is provided
+    error ErrorTIExIPInvalidCreator(address creator);
+    
+    // Error thrown when a model ID that is already allocated is used
+    error ErrorTIExIPAllocatedAlready(uint256 modelId);
+    
+    // Error thrown when an invalid provider address is provided
+    error ErrorTIExIPInvalidProvider(address provider);
+    
+    // Error thrown when an out of bounds index is used for a creator
+    error ErrorTIExIPOutOfBoundsIndex(address creator, uint256 index);
+    
+    // Error thrown when a non-existent model ID is used
+    error ErrorTIExIPModelIdNotFound(uint256 modelId);
+    
+    // Error thrown when an invalid contribution rate is used
+    error ErrorTIExIPContributionRateInvalid(uint256 contributionRate);
+    
+    // Error thrown when a model that is already trained is used
+    error ErrorTIExIPTrainedAlready(uint256 modelId);
+    
+    // Error thrown when invalid metadata is provided for a model
+    error ErrorTIExIPInvalidMetadata(uint256 modelId);
 
-    /// @notice Indicates that a share collection with the specified model ID has been
-    /// paused and is currently not available.
-    error ErrorShareCollectionPaused(uint256 modelId);
 
-    /// @notice Indicates that the share collection with the specified model ID is blocked.
-    error ErrorShareCollectionBlocked(uint256 modelId);
+    /// @notice Mapping from creator to list of owned model IDs
+    mapping(address => mapping(uint256 => uint256)) private _ownedModels;
 
-    /// @notice Indicates that the TIEx is currently paused.
-    error ErrorTIExPaused();
+    /// @notice Mapping from model ID to index of the creator models list
+    mapping(uint256 => uint256) private _ownedModelsIndex;
 
-    /// @notice Indicates that the maximum limit for share purchases has been exceeded.
-    error ErrorExceedMaxSharePurchase();
+    /// @notice Array with all model ids, used for enumeration
+    uint256[] private _allModels;
 
-    /// @notice Indicates that the signature provided for authentication or verification
-    /// purposes is invalid or cannot be verified.
-    error ErrorInvalidSignature();
+    /// @notice Mapping from model id to position in the allModels array
+    mapping(uint256 => uint256) private _allModelsIndex;
 
-    /// @notice Indicates that the specified country is not valid. Identifies investors
-    /// and non-U.S. investors here
-    error ErrorInvalidCountry();
+    /// @notice Mapping creator address to model count
+    mapping(address => uint256) private _modelBalances;
 
-    /// @notice Indicates that one or more parameters provided in the request are invalid or missing.
-    error ErrorInvalidParam();
+    /// @notice Mapping model id to TIEx Model
+    mapping(uint256 => TIExModel) public TIExModels;
 
-    /// @notice Indicates that the provided nonce (a unique identifier) is invalid or has already been used.
-    error ErrorInvalidNonce();
+    /// @notice Mapping model id to contriuted model list
+    mapping(uint256 => Contribution[]) public contributedModels;
 
-    /// @notice Emitted when a share collection is released for a specific model.
-    /// It provides the model ID and the share collection object as parameters.
-    event TIExShareCollectionReleased(
-        uint256 indexed modelId,
-        TIExShareCollection shareCollection
-    );
-
-    /// @notice Emitted when the URI associated with a model is updated.
-    event TIExCollectionURIUpdated(
-        uint256 indexed modelId,
-        string uri
-    );
-
-    /// @notice Emitted when the share collection for the detail of model is updated.
-    event TIExShareCollectionUpdated(
-        uint256 indexed modelId,
-        TIExShareCollection newShareCollection
-    );
-
-    /// @notice Emitted when the payment token used in the contract is updated.
-    event TIExPaymentTokenUpdated(
-        IPaymentToken newPaymentToken
-    );
-
-    /// @notice Emitted when the truth holder address is updated.
-    event TIExTruthHolderUpdated(
-        address newTruthHolder
-    );
-
-    /// @notice Emitted when the price of a share for a specific model is updated.
-    event TIExSharePriceUpdated(
-        uint256 indexed modelId,
-        uint256 newPrice
-    );
-
-    /// @notice Emitted when the maximum supply of shares for a model is updated.
-    event TIExMaxSupplyUpdated(
-        uint256 indexed modelId,
-        uint256 newMaxSupply
-    );
-
-    /// @notice Emitted when the maximum share purchase limit for a model is updated.
-    event TIExMaxSharePurchaseUpdated(
-        uint256 indexed modelId,
-        uint256 newMaxSharePurchase
-    );
-
-    /// @notice Emitted when a share collection for a model is blocked or disabled.
-    event TIExShareCollectionBlocked(uint256 indexed modelId);
-
-    /// @notice Emitted when a previously blocked share collection for a model is unblocked or enabled.
-    event TIExShareCollectionUnblocked(uint256 indexed modelId);
-
-    /// @notice Emitted when a share collection for a model is paused.
-    event TIExShareCollectionPaused(uint256 indexed modelId);
-
-    /// @notice Emitted when a previously paused share collection for a model is unpaused.
-    event TIExShareCollectionUnpaused(uint256 indexed modelId);
-
-    /// @notice Emitted when the investor position of share collection is updated.
-    /// e.g. U.S. investor => Non-U.S. investor or Non-U.S. investor => U.S. Investor
-    event TIExShareCollectionInvestorPositionUpdated(
-        uint256 indexed modelId,
-        bool newInvestorPosition
-    );
-
-    /// @notice Emitted when the investment distribution rate is updated.
-    event TIExInvestmentDistributionRate(
-        InvestmentDistribution newInvestmentDistribution
-    );
-
-    /// @notice Emitted when the marketing address is update.
-    event TIExMarketingAddressUpdated(
-        address newMarketingAddress
-    );
-
-    /// @notice Emitted when the presale address is updated.
-    event TIExPresaleAddressUpdated(
-        address newPresaleAddress
-    );
-
-    /// @notice Emitted when reserve address is updated.
-    event TIExReserveAddressUpdated(
-        address newReserveAddress
-    );
-
-    /// @notice Emitted when distributing funds fromm investors to creators, marketing etc.
-    event Distribute(uint256 indexed modelId, uint256 amount, uint256 when);
-
-    /// @notice The token name
-    string public name;
-
-    /// @notice The token symbol
-    string public symbol;
-
-    /// @notice Mapping of share collctions
-    mapping(uint256 => TIExShareCollection) public shareCollections;
-
-    /// @notice Mapping of share collection released
-    mapping(uint256 => bool) public shareCollectionExists;
-
-    /// @notice Mapping the number of shares purchased per account in every share collection
-    mapping(uint256 => mapping(address => uint256)) public purchasedPerAccount;
-
-    /// @notice The truth holder (TIEx Signer for generating ECDSA Signature)
-    address public truthHolder;
-
-    /// @notice The payment token (ERC20: INTELL token)
-    IPaymentToken public paymentToken;
-
-    /// @notice Mapping of nonces used
-    mapping(uint256 => bool) public noncesUsed;
-
-    /// @notice Investment distribution rates and addresses
-    InvestmentDistribution public investmentDistribution;
-
-    /**
-     * @notice Defines the initialize function, which sets the name, symbol,
-     * truth holder, payment token, and investment distribution for the token when deploying Proxy.
-     * It also grants the initial roles to the owner upon construction.
-     */
-    function initialize(
-        address __truthHolder,
-        IPaymentToken __paymentToken,
-        address __admin,
-        InvestmentDistribution memory __investmentDistribution
-    ) public virtual initializer {
-        uint256 _tRate = __investmentDistribution
-            .creatorRate
-            .add(__investmentDistribution.marketingtRate)
-            .add(__investmentDistribution.presaleRate)
-            .add(__investmentDistribution.reserveRate);
-
-        if (_tRate != 10000) revert ErrorInvalidParam();
-
-        name = "TIEx Share Collections";
-        symbol = "TIExSHARE";
-
-        truthHolder = __truthHolder;
-        paymentToken = __paymentToken;
-
-        investmentDistribution = __investmentDistribution;
-
-        __TIExBaseIPAllocation_init();
-        __Context_init_unchained();
-        __ERC165_init_unchained();
-        __ERC1155_init_unchained("");
-        __ERC1155Burnable_init_unchained();
-        __Pausable_init_unchained();
+    function __TIExBaseIPAllocation_init() internal onlyInitializing {
+        __AccessControl_init_unchained();
+		__AccessControlEnumerable_init_unchained();
         __TIExBaseIPAllocation_init_unchained();
-
-        _grantRole(DEFAULT_ADMIN_ROLE, __admin);
     }
+
+    function __TIExBaseIPAllocation_init_unchained() internal onlyInitializing { }
 
     ////////////////////////////////////////////////////////////////////////////
     // MODIFIERS
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @notice Modifier that checks if a Share Collection with the given modelId is not paused.
-     * @param __modelId The modelId of the Share Collection to check.
+     * @notice Checks if modelId allocated exists.
+     * @param __modelId must be of existing ID of model.
      */
-    modifier whenShareCollectionNotPaused(uint256 __modelId) {
-        if (shareCollections[__modelId].paused) {
-            revert ErrorShareCollectionPaused(__modelId);
+    modifier onlyExistingModelId(uint256 __modelId) {
+        if (!modelExists(__modelId)) {
+            revert ErrorTIExIPModelIdNotFound(__modelId);
         }
         _;
     }
 
     /**
-     * @notice Modifier that checks if a Share Collection with the given modelId exists.
-     * @param __modelId The modelId of the Share Collection to check.
+     * @notice Checks if modelId allocated exists.
+     * @param __modelId uint256 must be of existing ID of model.
      */
-    modifier onlyExistingShareCollection(uint256 __modelId) {
-        if (!shareCollectionExists[__modelId]) {
-            revert ErrorShareCollectionNotFound(__modelId);
+    modifier onlyNotExistingModelId(uint256 __modelId) {
+        if (modelExists(__modelId)) {
+            revert ErrorTIExIPAllocatedAlready(__modelId);
         }
         _;
-    }
-
-    /**
-     * @notice Modifier that checks if a Share Collection with the given modelId doesn't exist.
-     * @param __modelId The modelId of the Share Collection to check.
-     */
-    modifier onlyNotExistingShareCollection(uint256 __modelId) {
-        if (shareCollectionExists[__modelId]) {
-            revert ErrorTIExShareCollectionReleasedAlready(__modelId);
-        }
-        _;
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    // INTERNALS
-    ////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * @notice Internal function that overrides two functions, "ERC1155Upgradeable._beforeTokenTransfer" and 
-     * "ERC1155SupplyUpgradeable._beforeTokenTransfer".
-     * 
-     * NOTE: The purpose of this function is to perform some checks before transferring tokens from one address to 
-     * another. 
-     *
-     * Here's a breakdown of what the function does:
-     * 1. It calls the "_beforeTokenTransfer" function from the parent contracts, "ERC1155Upgradeable" and 
-     * "ERC1155SupplyUpgradeable", passing the provided arguments.
-     * 2. It checks if the recipient address (__to) is not the zero address (address(0)). 
-     * 3. If it is not the zero address, it proceeds with the following checks:
-     * It iterates over the __modelIds array using a for loop. For each modelId, it performs the following checks:
-     * - It checks if the Share Collection with the given modelId is blocked by accessing the "blocked" property of the 
-     * Share Collection in the "shareCollections" mapping. If it is blocked, it reverts the transaction with an error 
-     * using the "ErrorShareCollectionBlocked" function, passing the modelId as an argument.
-     * - It checks if the Share Collection with the given modelId exists by calling the "shareCollectionExists" 
-     * function. If it doesn't exist, it reverts the transaction with an error using the "ErrorShareCollectionNotFound" 
-     * function, passing the modelId as an argument.
-     * - It checks if the contract is paused by calling the "paused" function. If it is paused, it reverts the 
-     * transaction with an error using the "ErrorTIExPaused" function.
-
-     * Overall, this function ensures that certain conditions are met before transferring tokens, such as checking if 
-     * the Share Collection is blocked, if it exists, and if the contract is paused.
-     */
-    function _beforeTokenTransfer(
-        address __operator,
-        address __from,
-        address __to,
-        uint256[] memory __modelIds,
-        uint256[] memory __amounts,
-        bytes memory __data
-    ) internal virtual override(ERC1155Upgradeable, ERC1155SupplyUpgradeable) {
-        super._beforeTokenTransfer(
-            __operator,
-            __from,
-            __to,
-            __modelIds,
-            __amounts,
-            __data
-        );
-
-        if (__to != address(0)) {
-            for (uint256 i = 0; i < __modelIds.length; i++) {
-                if (shareCollections[__modelIds[i]].blocked)
-                    revert ErrorShareCollectionBlocked(__modelIds[i]);
-                if (!shareCollectionExists[__modelIds[i]])
-                    revert ErrorShareCollectionNotFound(__modelIds[i]);
-                if (paused()) revert ErrorTIExPaused();
-            }
-        }
-    }
-
-    /**
-     * @notice See { TIExBaseIPAllocationUpgradeable } 
-     * 
-     * Internal function that overrides the `TIExBaseIPAllocationUpgradeable` contract's `_afterRemoveModel` function.
-     * Used to clean up data related to a model after it has been removed.
-     */
-    function _afterRemoveModel(
-        uint256 __modelId
-    ) internal virtual override(TIExBaseIPAllocationUpgradeable) {
-        if (shareCollectionExists[__modelId]) {
-            shareCollectionExists[__modelId] = false;
-            delete shareCollections[__modelId];
-        }
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -401,651 +153,462 @@ contract TIExShareCollections is
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @notice Used to release a new Share Collection.
-     * @param __maxSupply uint256 The maximum supply of shares for the collection.
-     * @param __modelId uint256 The ID of the model associated with the Share Collection.
-     * @param __price uint256 The price of each share in the collection.
-     * @param __maxSharePurchase uint256 The maximum number of shares that can be purchased per account.
-     * @param __forOnlyUSInvestors bool Indicates whether the Share Collection is only available to U.S. investors.
+     * @notice Upgrades a stubbed model to a trained model.
+     * @param __modelId uint256 must exist.
+     * @param __newModelFingerprint bytes is the new fingerprint of the model.
      *
-     * Emits a {TIExShareCollectionReleased} event.
+     * Emits a {UpgradeModel} event.
      *
      * Requirements:
-     *
      * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
-     * - A shared collection with the given `__modelId` must not already exist.
+     * - The model with the given `__modelId` must not be trained already.
+     * - The `__newModelFingerprint` must not be empty.
+     */
+    function upgradeStubbedModelToTrainedModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+        // Check if the model is already trained, if so, revert the transaction
+        if(TIExModels[__modelId].modelMetadata.trained) revert ErrorTIExIPTrainedAlready(__modelId);
+        
+        // Check if the new model fingerprint is valid, if not, revert the transaction
+        if (__newModelFingerprint.length == 0) revert ErrorTIExIPInvalidMetadata(__modelId);
+        
+        // Set the model as trained
+        TIExModels[__modelId].modelMetadata.trained = true;
+        // Set the model version to 1
+        TIExModels[__modelId].modelMetadata.version = 1;
+        // Update the model fingerprint with the new one
+        TIExModels[__modelId].modelMetadata.modelFingerprint = __newModelFingerprint;
+
+        // Emit an event to log the model upgrade
+        emit UpgradeModel(__modelId, TIExModels[__modelId].modelMetadata);
+    }
+
+
+    /**
+     * @notice Upgrades a model by updating its fingerprint and incrementing its version.
+     * @param __modelId The ID of the model to be upgraded.
+     * @param __newModelFingerprint The new fingerprint of the model.
+     *
+     * Emits an {UpgradeModel} event.
+     *
+     * Requirements:
+     * - The caller must have the `DEFAULT_ADMIN_ROLE`.
      * - The model with the given `__modelId` must exist.
-     * - `__maxSupply` must be greater than 0.
-     * - `__price` must be greater than 0.
-     * - `__maxSharePurchase` must be greater than 0.
+     * - The `__newModelFingerprint` must not be empty.
      */
-    function releaseShareCollection(
-        uint256 __maxSupply,
-        uint256 __modelId,
-        uint256 __price,
-        uint256 __maxSharePurchase,
-        bool __forOnlyUSInvestors
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyNotExistingShareCollection(__modelId)
-        onlyExistingModelId(__modelId)
-    {
-        if (__maxSupply > 0 && __price > 0 && __maxSharePurchase > 0) {
-            shareCollections[__modelId] = TIExShareCollection({
-                maxSupply: __maxSupply,
-                totalInvestment: 0,
-                withdrawnAmount: 0,
-                price: __price,
-                launchStartTime: block.timestamp,
-                paused: true,
-                blocked: false,
-                forOnlyUSInvestors: __forOnlyUSInvestors,
-                maxSharePurchase: __maxSharePurchase
-            });
+    function upgradeModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+        
+        // Check if the new model fingerprint is valid, if not, revert the transaction
+        if (__newModelFingerprint.length == 0) revert ErrorTIExIPInvalidMetadata(__modelId);
 
-            shareCollectionExists[__modelId] = true;
+        // Increment the version of the model
+        TIExModels[__modelId].modelMetadata.version++;
+        // Update the model fingerprint with the new one
+        TIExModels[__modelId].modelMetadata.modelFingerprint = __newModelFingerprint;
 
-            emit TIExShareCollectionReleased(
-                __modelId,
-                shareCollections[__modelId]
-            );
-        } else revert ErrorInvalidParam();
+        // Emit an event to log the model upgrade
+        emit UpgradeModel(__modelId, TIExModels[__modelId].modelMetadata);
     }
 
     /**
-     * @notice Distributes funds from investor
+     * @notice Updates the metadata of a model.
+     * @param __modelId The ID of the model to be updated.
+     * @param __modelMetadata The new metadata of the model.
+     *
+     * Emits an {UpdateModelMetadata} event.
+     *
+     * Requirements:
+     * - The caller must have the `DEFAULT_ADMIN_ROLE`.
+     * - The model with the given `__modelId` must exist.
+     * - The `__modelMetadata` must be valid.
      */
-    function distribute(uint256 __modelId) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) onlyExistingShareCollection(__modelId) nonReentrant {
-        uint256 restOfAmount = shareCollections[__modelId].totalInvestment.sub(shareCollections[__modelId].withdrawnAmount);
+    function updateModelMetadata(uint256 __modelId, ModelMetadata calldata __modelMetadata) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+        // Check if the model metadata is valid
+        bool validForMetadata = bytes(__modelMetadata.name).length > 0 
+            && bytes(__modelMetadata.description).length > 0 
+            && __modelMetadata.ecosystemId.length > 0 
+            && __modelMetadata.version > 0
+            && __modelMetadata.modelFingerprint.length > 0
+            && __modelMetadata.watermarkFingerprint.length > 0
+            && __modelMetadata.watermarkSequence.length > 0
+            && __modelMetadata.performance > 0;
 
-        if(restOfAmount == 0) revert();
+        if (!validForMetadata) revert ErrorTIExIPInvalidMetadata(__modelId);
+        // Update the model metadata
+        TIExModels[__modelId].modelMetadata = __modelMetadata;
 
-        uint256 toCreators = restOfAmount.mul(investmentDistribution.creatorRate);
-        uint256 toMarketing = restOfAmount.mul(investmentDistribution.marketingtRate);
-        uint256 toReserve = restOfAmount.mul(investmentDistribution.reserveRate);
-        uint256 toPresale = restOfAmount.mul(investmentDistribution.presaleRate);
+        // Emit an event to log the update of model metadata
+        emit UpdateModelMetadata(__modelId, TIExModels[__modelId].modelMetadata);
+    }
 
-        shareCollections[__modelId].withdrawnAmount = shareCollections[__modelId].withdrawnAmount.add(restOfAmount);
+    /**
+     * @notice Allocates `modelId` as TIEx IP to `creator`.
+     * @param __modelId uint256 must not exist.
+     * @param __creator address cannot be the zero address.
+     * @param __ipfsHash string is for Metadata of model
+     * @param __contributors Contribution struct is for contribution rate of each model
+     *
+     * Emits a {AllocateTIExIP} event.
+     *
+     * Requirements:
+     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
+     * - The model with the given `__modelId` must not exist.
+     */
+    function giveCreatorTIExIP(
+        uint256 __modelId,
+        address __creator,
+        string calldata __ipfsHash,
+        Contribution[] calldata __contributors,
+        ModelMetadata calldata __modelMetadata
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyNotExistingModelId(__modelId) {
 
-        for(uint256 i = 0; i < contributedModels[__modelId].length; i++) {
-            address contributer = _creatorOf(contributedModels[__modelId][i].modelId);
-
-            if(contributer == address(0)) continue;
-
-            uint256 toContributer = toCreators.mul(contributedModels[__modelId][i].contributionRate);
-
-            paymentToken.safeTransfer(contributer, toContributer.div(10000).div(10000));
+        // Check if the creator address is valid
+        if (__creator == address(0)) {
+            revert ErrorTIExIPInvalidCreator(address(0));
         }
 
-        paymentToken.safeTransfer(investmentDistribution.marketing, toMarketing.div(10000));
-        paymentToken.safeTransfer(investmentDistribution.reserve, toReserve.div(10000));
-        paymentToken.safeTransfer(investmentDistribution.presale, toPresale.div(10000));
+        // Add the model ID to the list of all model IDs
+        _addModelToAllModelsEnumeration(__modelId);
+        // Add the model ID to the list of model IDs owned by the creator
+        _addModelToCreatorEnumeration(__creator, __modelId);
 
-        emit Distribute(__modelId, restOfAmount, block.timestamp);
-    }
+        // Increase the balance of model IDs owned by the creator
+        unchecked {
+            // Will not overflow unless all 2**256 model ids are allocated to the same creator.
+            // Given that models are allocated one by one, it is impossible in practice that
+            // this ever happens. Might change if we allow batch allocating.
+            _modelBalances[__creator] += 1;
+        }
 
-    /**
-     * @notice Updates the address of truth holder, which is responsible for generating and
-     * signing ECDSA singatures for rquested messages from investors.
-     * 
-     * Emits a {TIExTruthHolderUpdated} event.
-     * 
-     * Requirements:
-     * 
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - `__truthHolder` address must not be the zero address(address(0)) or the same as the
-     * current truth holder address.
-     */
-    function updateTruthHolder(
-        address __truthHolder
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (__truthHolder == address(0) || __truthHolder == truthHolder)
-            revert ErrorInvalidParam();
-        truthHolder = __truthHolder;
-
-        emit TIExTruthHolderUpdated(__truthHolder);
-
-    }
-
-    /**
-     * @notice Update investment distribution rates.
-     * @param __creatorRate uint256 The rate for the creators.
-     * @param __marketingRate uint256 The rate for theh marketing.
-     * @param __presaleRate uint256 The rate for the presale.
-     * @param __reserveRate uint256 The rate for the reserve.
-     * 
-     * Emits a {TIExInvestmentDistributionRate} event.
-     *
-     * Requirements:
-     *
-     * - `__creatorRate` + `__marketingRate` + `__presaleRate` + `__reserveRate` must be equal to 10000 (100%).
-     * - `__creatorRate` must not be less than 2000 (20%).
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     */
-    function updateInvestmentDistributionRate(
-        uint256 __creatorRate,
-        uint256 __marketingRate,
-        uint256 __presaleRate,
-        uint256 __reserveRate
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        uint256 _tRate = __creatorRate
-            .add(__marketingRate)
-            .add(__presaleRate)
-            .add(__reserveRate);
-        if (_tRate != 10000 || __creatorRate < 2000) revert ErrorInvalidParam();
-
-        investmentDistribution.creatorRate = __creatorRate;
-        investmentDistribution.marketingtRate = __marketingRate;
-        investmentDistribution.presaleRate = __presaleRate;
-        investmentDistribution.reserveRate = __reserveRate;
-
-        emit TIExInvestmentDistributionRate(
-            investmentDistribution
-        );
-    }
-
-
-    /**
-     * @notice Updates the marketing address.
-     * @param __marketing address The address where the marketing funds will be distributed.
-     * 
-     * Emits a {TIExMarketingAddressUpdated} event.
-     * 
-     * Requirements:
-     * 
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - `__marketing` address must not be the zero address(address(0)) or the same as the
-     * current truth holder address.
-     */
-    function updateMarketingAddress(
-        address __marketing
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (
-            __marketing == address(0) ||
-            __marketing == investmentDistribution.marketing
-        ) revert ErrorInvalidParam();
-
-        investmentDistribution.marketing = __marketing;
+        // Set the creator of the model ID
+        TIExModels[__modelId].creator = __creator;
+        // Set the IPFS hash of the model's metadata
+        TIExModels[__modelId].modelURI = __ipfsHash;
         
-        emit TIExMarketingAddressUpdated(
-            investmentDistribution.marketing
-        );
-    }
-
-    /**
-     * @notice Updates the presale address.
-     * @param __presale address The address where the presale funds will be distributed.
-     * 
-     * Emits a {TIExPresaleAddressUpdated} event.
-     * 
-     * Requirements:
-     * 
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - `__presale` address must not be the zero address(address(0)) or the same as the
-     * current truth holder address.
-     */
-    function updatePresaleAddress(
-        address __presale
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (
-            __presale == address(0) ||
-            __presale == investmentDistribution.presale
-        ) revert ErrorInvalidParam();
-
-        investmentDistribution.presale = __presale;
-
-        emit TIExPresaleAddressUpdated(
-            investmentDistribution.presale
-        );
-    }
-
-    /**
-     * @notice Updates the reserve address.
-     * @param __reserve address The address where the reserve funds will be distributed.
-     * 
-     * Emits a {TIExReserveAddressUpdated} event.
-     * 
-     * Requirements:
-     * 
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - `__reserve` address must not be the zero address(address(0)) or the same as the
-     * current truth holder address.
-     */
-    function updateReserveAddress(
-        address __reserve
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (
-            __reserve == address(0) ||
-            __reserve == investmentDistribution.reserve
-        ) revert ErrorInvalidParam();
-
-        investmentDistribution.reserve = __reserve;
-
-        emit TIExReserveAddressUpdated(
-            __reserve
-        );
-    }
-
-    /**
-     * @notice Updates the payment token address.
-     * @param __paymentToken address The address for ERC20 token used as utility token on TIEx.
-     *
-     * Emits a {TIExPaymentTokenUpdated} event.
-     * 
-     * Requirements:
-     * 
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - `__paymentToken` address must not be the zero address(address(0)) or the same as the
-     * current truth holder address.
-     */
-    function updatePaymentToken(
-        IPaymentToken __paymentToken
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (
-            address(__paymentToken) == address(0) ||
-            address(paymentToken) == address(__paymentToken)
-        ) revert ErrorInvalidParam();
-        paymentToken = __paymentToken;
-
-        emit TIExPaymentTokenUpdated(__paymentToken);
-
-    }
-
-    /**
-     * @notice Pauses the selling of shares for the share collection with a specific `__modelId`.
-     * @param __modelId uint256 The model id
-     *
-     * Emits a {TIExShareCollectionPaused} event.
-     *
-     * Requirements:
-     * 
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - The share collection with the given `__modelId` must exist.
-     *
-     * WARNING: If the share collection is already paused, the function will throw an error.
-     */
-    function setPause(
-        uint256 __modelId
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyExistingShareCollection(__modelId)
-    {
-        if (shareCollections[__modelId].paused) revert ErrorInvalidParam();
-        shareCollections[__modelId].paused = true;
-        emit TIExShareCollectionPaused(__modelId);
-    }
-
-    /**
-     * @notice Unpauses the selling of shares for the share collection with a specific `__modelId`.
-     * @param __modelId uint256 The model id
-     *
-     * Emits a {TIExShareCollectionUnpaused} event.
-     *
-     * Requirements:
-     * 
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - The share collection with the given `__modelId` must exist.
-     *
-     * WARNING: If the share collection is already unpaused, the function will throw an error.
-     */
-    function setUnpause(
-        uint256 __modelId
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyExistingShareCollection(__modelId)
-    {
-        if (!shareCollections[__modelId].paused) revert ErrorInvalidParam();
-        shareCollections[__modelId].paused = false;
-        emit TIExShareCollectionUnpaused(__modelId);
-    }
-
-    /**
-     * @notice Blocks a share collection
-     * @param __modelId uint256 The model id.
-     *
-     * Emits a {TIExShareCollectionBlocked} event.
-     *
-     * Requirements:
-     * 
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - The share collection with the given `__modelId` must exist.
-     * WARNING: If the share collection is already blocked, the function will throw an error.
-     */
-    function setBlock(
-        uint256 __modelId
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyExistingShareCollection(__modelId)
-    {
-        if (shareCollections[__modelId].blocked) revert ErrorInvalidParam();
-        shareCollections[__modelId].blocked = true;
-        emit TIExShareCollectionBlocked(__modelId);
-    }
-
-    /**
-     * @notice Unblocks a share collection
-     * @param __modelId uint256 The model id.
-     *
-     * Emits a {TIExShareCollectionUnblocked} event.
-     *
-     * Requirements:
-     * 
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - The share collection with the given `__modelId` must exist.
-     * WARNING: If the share collection is already unblocked, the function will throw an error.
-     */
-    function setUnblock(
-        uint256 __modelId
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyExistingShareCollection(__modelId)
-    {
-        if (!shareCollections[__modelId].blocked) revert ErrorInvalidParam();
-        shareCollections[__modelId].blocked = false;
-        emit TIExShareCollectionUnblocked(__modelId);
-    }
-
-    /**
-     * @notice Updates the price per share for a specific share collection.
-     * @param __modelId uint256 The model id.
-     * @param __price uint256 The price per share.
-     *
-     * Emits a {TIExSharePriceUpdated} event.
-     *
-     * Requirements:
-     *
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - The share collection with the given `__modelId` must exist.
-     * - `__price` must not be zero.
-     * 
-     * WARNING: If `__price` is equal to the current price, it reverts with 
-     * an `ErrorInvalidParam` error.
-     */
-    function updateSharePrice(
-        uint256 __modelId,
-        uint256 __price
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyExistingShareCollection(__modelId)
-    {
-        if (__price == 0 || __price == shareCollections[__modelId].price)
-            revert ErrorInvalidParam();
-
-        shareCollections[__modelId].price = __price;
-
-        emit TIExSharePriceUpdated(
-            __modelId,
-            __price
-        );
-    }
-
-    /**
-     * @notice Updates maximum supply of a share collection.
-     * @param __modelId uint256 The model id.
-     * @param __maxSupply uint256 The maximum supply.
-     *
-     * Emits a {TIExMaxSupplyUpdated} event.
-     *
-     * Requirements:
-     *
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - The share collection with the given `__modelId` must exist.
-     * - `__maxSupply` must not be zero.
-     * 
-     * WARNING: If `__maxSupply` is equal to the current maximum supply, it reverts with 
-     * an `ErrorInvalidParam` error.
-     */
-    function updateMaxSupply(
-        uint256 __modelId,
-        uint256 __maxSupply
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyExistingShareCollection(__modelId)
-    {
-        if (
-            __maxSupply == 0 ||
-            __maxSupply == shareCollections[__modelId].maxSupply
-        ) revert ErrorInvalidParam();
-
-        shareCollections[__modelId].maxSupply = __maxSupply;
-
-        emit TIExMaxSupplyUpdated(
-            __modelId,
-            __maxSupply
-        );
-    }
-
-    /**
-     * @notice Updates maximum share purchase allowed per account.
-     * @param __modelId uint256 The model id.
-     * @param __maxSharePurchase uint256 The maximum share purchase allowed per account.
-     *
-     * Emits a {TIExMaxSharePurchaseUpdated} event.
-     *
-     * Requirements:
-     *
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - The share collection with the given `__modelId` must exist.
-     * - `__maxSharePurchase` must not be zero.
-     * 
-     * WARNING: If `__maxSharePurchase` is equal to the current maximum share purchase, it reverts with 
-     * an `ErrorInvalidParam` error.
-     */
-    function updateMaxSharePurchase(
-        uint256 __modelId,
-        uint256 __maxSharePurchase
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyExistingShareCollection(__modelId)
-    {
-        if (
-            __maxSharePurchase == 0 ||
-            __maxSharePurchase == shareCollections[__modelId].maxSharePurchase
-        ) revert ErrorInvalidParam();
-
-        shareCollections[__modelId].maxSharePurchase = __maxSharePurchase;
-
-        emit TIExMaxSharePurchaseUpdated(
-            __modelId,
-            __maxSharePurchase
-        );
-    }
-
-    /**
-     * @notice Updates the available position for investors
-     * @param __modelId uint256 The model id.
-     * @param __forOnlyUSInvestors bool Indicates whether the Share Collection is only available to U.S. investors.
-     *
-     * Emits a {TIExShareCollectionInvestorPositionUpdated} event.
-     *
-     * Requirements:
-     * 
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - The share collection with the given `__modelId` must exist.
-     * - the `__forOnlyUSInvestors` parameter must not be the same as the current value of `forOnlyUSInvestors` in the share collection
-     */
-    function updateInvestorPosition(
-        uint256 __modelId,
-        bool __forOnlyUSInvestors
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyExistingShareCollection(__modelId)
-    {
-        if (
-            __forOnlyUSInvestors ==
-            shareCollections[__modelId].forOnlyUSInvestors
-        ) revert ErrorInvalidParam();
-
-        shareCollections[__modelId].forOnlyUSInvestors = __forOnlyUSInvestors;
-
-        emit TIExShareCollectionInvestorPositionUpdated(
-            __modelId,
-            __forOnlyUSInvestors
-        );
-    }
-
-    /**
-     * @notice Resumes operating the platform
-     * 
-     * Requirements:
-     * 
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     */
-    function resume() external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _unpause();
-    }
-
-    /**
-     * @notice Pauses operating the platform
-     * 
-     * Requirements:
-     * 
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     */
-    function emergency() external onlyRole(DEFAULT_ADMIN_ROLE) {
-        _pause();
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    // INVESTOR (OR MINTER)
-    ////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * @notice Used to mint tokens and assigns them to the investor's account 
-     * when they want to invest in a model with a specific model ID.
-     * @param __modelId uint256 The model id that the investor wants to invest in.
-     * @param __amount uint256 The number of tokens the investor wants to buy.
-     * @param __nonce uint256 A unique identifier for the transaction.
-     * @param __usInvestor boolean Indicates whether the investor is a US investor or not.
-     * @param __signature bytes A signature that verifies the authenticity of the transaction
-     * @param __permitMessage bytes message for `permit` of ERC20Permit without (instead of) `approve`.
-     * signed by truth holder.
-     */
-    function buyShares(
-        uint256 __modelId,
-        uint256 __amount,
-        uint256 __nonce,
-        bool __usInvestor,
-        bytes calldata __signature,
-        bytes calldata __permitMessage
-    ) external whenShareCollectionNotPaused(__modelId) nonReentrant {
-        // abi: [address, bool, address, string], [account, usInvestor, to, actionName]
-        // Encodes a message using the provided parameters.
-        bytes memory message = abi.encode(msg.sender, __usInvestor, address(this), __nonce);
-        // Calculates the amount of payment tokens required based on the price of the model and the desired amount of tokens.
-        uint256 paymentTokenAmount = shareCollections[__modelId].price.mul(__amount);
-
-        // Checks if the nonce has already been used and reverts the transaction if it has.
-        if (noncesUsed[__nonce]) revert ErrorInvalidNonce();
-        
-        // Checks if the amount of tokens is 0 and reverts the transaction if it is.
-        if (__amount == 0) revert ErrorInvalidParam();
-        
-        // Verifies the authenticity of the message using the provided signature and reverts the transaction if it is invalid.
-        if (!verifyMessage(message, __signature)) revert ErrorInvalidSignature();
-        
-        // Checks if the investor's country matches the allowed country for the model and reverts the transaction if it doesn't.
-        if (__usInvestor != shareCollections[__modelId].forOnlyUSInvestors) revert ErrorInvalidCountry();
-        
-        // Checks if there is enough supply of tokens for the model and reverts the transaction if there isn't.
-        if (totalSupply(__modelId).add(__amount) > shareCollections[__modelId].maxSupply) revert ErrorNotEnoughSupply();
-
-        // Checks if the investor has exceeded the maximum allowed share purchase for the model and reverts the transaction if they have.
-        if (purchasedPerAccount[__modelId][msg.sender].add(__amount) > shareCollections[__modelId].maxSharePurchase) revert ErrorExceedMaxSharePurchase();
-
-        // Checks if the allowance of payment token is insufficient.
-        if(paymentToken.allowance(msg.sender, address(this)) < paymentTokenAmount) {
-            {
-                (uint8 v, bytes32 r, bytes32 s, uint256 deadline) = abi.decode(__permitMessage, (uint8, bytes32, bytes32, uint256));
-                paymentToken.permit(msg.sender, address(this), MAX_INT, deadline, v, r, s);
+        // If there are contributors, calculate the total contribution rate and add each contributor to the list of contributors for the model ID
+        if (__contributors.length > 0) {
+            uint256 contributionRate = 0;
+            // Iterate over each contributor
+            for(uint256 i; i < __contributors.length; i++) {
+                // If the model does not exist, revert the transaction
+                if(!modelExists(__contributors[i].modelId)) revert ErrorTIExIPModelIdNotFound(__contributors[i].modelId);
+                // Add the contribution rate of the current contributor to the total contribution rate
+                contributionRate = contributionRate.add(__contributors[i].contributionRate);
+                // Add the current contributor to the list of contributors for the model
+                contributedModels[__modelId].push(__contributors[i]);
             }
+
+            // If the total contribution rate is not 10000 (representing 100%), revert the transaction
+            if(contributionRate != 10000) revert ErrorTIExIPContributionRateInvalid(contributionRate);
+
+        } else {
+            // If there are no new contributors, add a default contribution of 10000 (representing 100%) for the model itself
+            contributedModels[__modelId].push(Contribution({
+                modelId: __modelId,
+                contributionRate: 10000
+            }));
+
         }
 
+        // Check if the model metadata is valid
+        bool validForMetadata = bytes(__modelMetadata.name).length > 0 
+            && bytes(__modelMetadata.description).length > 0 
+            && __modelMetadata.ecosystemId.length > 0 
+            && __modelMetadata.version == 1
+            && __modelMetadata.modelFingerprint.length > 0
+            && __modelMetadata.watermarkFingerprint.length > 0
+            && __modelMetadata.watermarkSequence.length > 0
+            && __modelMetadata.performance > 0;
 
-        // Marks the nonce as used.
-        noncesUsed[__nonce] = true;
+        if (!validForMetadata) revert ErrorTIExIPInvalidMetadata(__modelId);
+        // Set the model metadata
+        TIExModels[__modelId].modelMetadata = __modelMetadata;
 
-        // Transfers the required amount of payment tokens from the investor to the contract.
-        paymentToken.safeTransferFrom(msg.sender, address(this), paymentTokenAmount);
+        // Emit an event to log the allocation of the model ID
+        emit AllocateTIExIP(msg.sender, __modelId, TIExModels[__modelId], block.timestamp);
 
-        // Updates the total investment for the model.
-        shareCollections[__modelId].totalInvestment = shareCollections[__modelId].totalInvestment.add(paymentTokenAmount);
+    }
 
-        // Increases the amount of tokens purchased by the investor for the model.
-        purchasedPerAccount[__modelId][msg.sender] += __amount;
 
-        // Mints the tokens and assigns them to the investor's account.
-        _mint(msg.sender, __modelId, __amount, "");
+    /**
+     * @notice Updates the contribution rates of a model.
+     *
+     * Emits a {ContributationRatesUpdated} event.
+     *
+     * Requirements:
+     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
+     * - The model with the given `__modelId` must exist.
+     */
+    function updateContributionRates(uint256 __modelId, Contribution[] calldata __contributors) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+        // Delete the existing contributions for the model
+        delete contributedModels[__modelId];
+
+        // If there are new contributors
+        if (__contributors.length > 0) {
+            uint256 contributionRate = 0;
+            // Iterate over each contributor
+            for(uint256 i; i < __contributors.length; i++) {
+                // If the model does not exist, revert the transaction
+                if(!modelExists(__contributors[i].modelId)) revert ErrorTIExIPModelIdNotFound(__contributors[i].modelId);
+                // Add the contribution rate of the current contributor to the total contribution rate
+                contributionRate = contributionRate.add(__contributors[i].contributionRate);
+                // Add the current contributor to the list of contributors for the model
+                contributedModels[__modelId].push(__contributors[i]);
+            }
+
+            // If the total contribution rate is not 10000 (representing 100%), revert the transaction
+            if(contributionRate != 10000) revert ErrorTIExIPContributionRateInvalid(contributionRate);
+        } else {
+            // If there are no new contributors, add a default contribution of 10000 (representing 100%) for the model itself
+            contributedModels[__modelId].push(Contribution({
+                modelId: __modelId,
+                contributionRate: 10000
+            }));
+        }
+
+        // Emit an event to log the update of contribution rates
+        emit ContributationRatesUpdated(__modelId, contributedModels[__modelId]);
+    }
+
+    /**
+     * @notice Destroys `modelId`.
+     * @param __modelId must exist.
+     *
+     * Emits a {RemoveTIExIP} event.
+     * 
+     * Requirement:
+     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
+     */
+    function removeModel(uint256 __modelId) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        address __creator = creatorOf(__modelId);
+
+        _removeModelFromCreatorEnumeration(__creator, __modelId);
+        _removeModelFromAllModelsEnumeration(__modelId);
+
+        // Decrease balance with checked arithmetic, because an `creatorOf` override may
+        // invalidate the assumption that `_modelBalances[from] >= 1`.
+        _modelBalances[__creator] -= 1;
+        
+        delete TIExModels[__modelId];
+
+        _afterRemoveModel(__modelId);
+
+        emit RemoveTIExIP(__creator, address(0), __modelId, block.timestamp);
+    }
+
+    /**
+     * @notice Used to edit the model URI.
+     *
+     * Emits a {TIExModelURIUpdated} event.
+     * 
+     * Requirements:
+     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
+     * - The model with the given `__modelId` must exist.
+     */
+    function editURI(uint256 __modelId, string calldata __ipfsHash)
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        onlyExistingModelId(__modelId)
+    {
+        TIExModels[__modelId].modelURI = __ipfsHash;
+
+        emit TIExModelURIUpdated(__modelId, __ipfsHash);
     }
 
     ////////////////////////////////////////////////////////////////////////////
-    // READS
+    // INTERNAL
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @notice Returns the model URI.
+     * @notice Returns the creator of the `__modelId`. Does NOT revert if model doesn't exist
      *
      */
-    function uri(
+    function _creatorOf(uint256 __modelId) internal view returns (address) {
+        return TIExModels[__modelId].creator;
+    }
+
+    /**
+     * @notice Used to clean up data related to a model after it has been removed.
+    */
+    function _afterRemoveModel(
         uint256 __modelId
-    )
-        public
-        view
-        override
-        onlyExistingModelId(__modelId)
-        returns (string memory)
-    {
-        return string(abi.encodePacked("ipfs://", TIExModels[__modelId].modelURI));
-    }
-
-    /**
-     * @notice See {ERC1155-supportsInterface} and {AccessControl-supportsInterface}.
-     */
-    function supportsInterface(
-        bytes4 interfaceId
-    )
-        public
-        view
-        virtual
-        override(ERC1155Upgradeable, AccessControlEnumerableUpgradeable)
-        returns (bool)
-    {
-        return super.supportsInterface(interfaceId);
-    }
+    ) internal virtual {}
 
     ////////////////////////////////////////////////////////////////////////////
-    // PRIVATES
+    // READ
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @notice Verifies bytes message
+     * @notice Returns the number of models in ``creator``'s account.
+     *
      */
-    function verifyMessage(
-        bytes memory message,
-        bytes memory signature
-    ) private view returns (bool) {
-        bytes32 signedMessageHash = keccak256(message).toEthSignedMessageHash();
-        return signedMessageHash.recover(signature) == truthHolder;
+    function modelBalanceOf(address __creator) public view returns (uint256) {
+        if (__creator == address(0)) {
+            revert ErrorTIExIPInvalidCreator(address(0));
+        }
+        return _modelBalances[__creator];
     }
 
     /**
-     * @dev This function is called for plain Ether transfers, i.e. for every call with empty calldata.
+     * @notice Returns the creator of the `modelId` model.
+     * @param __modelId uint256 ID of the model must exist.
+     *
      */
-    receive() external payable {}
+    function creatorOf(uint256 __modelId) public view returns (address) {
+        address creator = _creatorOf(__modelId);
+        if (creator == address(0)) {
+            revert ErrorTIExIPModelIdNotFound(__modelId);
+        }
+        return creator;
+    }
 
     /**
-     * @dev Fallback function is executed if none of the other functions match the function
-     * identifier or no data was provided with the function call.
+     * @notice Returns whether `__modelId` exists.
+     *
+     * Models start existing when TIEx are allocated,
+     * and stop existing when TIEx are removed (`removeModel`).
+     *
      */
-    fallback() external payable {}
+    function modelExists(uint256 __modelId) public view returns (bool) {
+        return _creatorOf(__modelId) != address(0);
+    }
+
+    /**
+     * @notice Returns a model ID owned by `creator` at a given `index` of its model list.
+     * Use along with {modelBalanceOf} to enumerate all of ``creator``'s models.
+     *
+     */
+    function modelOfCreatorByIndex(address __creator, uint256 __index)
+        public
+        view
+        returns (uint256)
+    {
+        if (__index >= modelBalanceOf(__creator)) {
+            revert ErrorTIExIPOutOfBoundsIndex(__creator, __index);
+        }
+        return _ownedModels[__creator][__index];
+    }
+
+    /**
+     * @notice Returns the total amount of models stored by the contract.
+     *
+     */
+    function totalModelSupply() public view returns (uint256) {
+        return _allModels.length;
+    }
+
+    /**
+     * @notice Returns a model ID at a given `index` of all the models stored by the contract.
+     * Use along with {totalModelSupply} to enumerate all models.
+     *
+     */
+    function modelByIndex(uint256 __index) public view returns (uint256) {
+        if (__index >= totalModelSupply()) {
+            revert ErrorTIExIPOutOfBoundsIndex(address(0), __index);
+        }
+        return _allModels[__index];
+    }
+
+    /**
+     * @notice Returns model ids allocated from account of creator.
+     *
+     */
+    function modelsOfCreator(address __creator)
+        public
+        view
+        returns (uint256[] memory)
+    {
+        uint256 modelCount = modelBalanceOf(__creator);
+
+        uint256[] memory modelsId = new uint256[](modelCount);
+        for (uint256 i; i < modelCount; i++) {
+            modelsId[i] = modelOfCreatorByIndex(__creator, i);
+        }
+        return modelsId;
+    }
+
+
+    ////////////////////////////////////////////////////////////////////////////
+    // PRIVATE
+    ////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @notice Private function to add a model to this extension's model tracking data structures.
+     * @param __modelId uint256 ID of the model to be added to the models list
+     *
+     */
+    function _addModelToAllModelsEnumeration(uint256 __modelId) private {
+        _allModelsIndex[__modelId] = _allModels.length;
+        _allModels.push(__modelId);
+    }
+
+    /**
+     * @notice Private function to add a model to this extension's ownership-tracking data structures.
+     * @param __to address representing the new owner of the given model ID
+     * @param __modelId uint256 ID of the model to be added to the models list of the given address
+     *
+     */
+    function _addModelToCreatorEnumeration(address __to, uint256 __modelId)
+        private
+    {
+        uint256 length = modelBalanceOf(__to);
+        _ownedModels[__to][length] = __modelId;
+        _ownedModelsIndex[__modelId] = length;
+    }
+
+    /**
+     * @notice Private function to remove a model from this extension's model tracking data structures.
+     * This has O(1) time complexity, but alters the order of the _allModels array.
+     * @param __modelId uint256 ID of the model to be removed from the models list
+     *
+     */
+    function _removeModelFromAllModelsEnumeration(uint256 __modelId) private {
+        // To prevent a gap in the models array, we store the last model in the index of the model to delete, and
+        // then delete the last slot.
+
+        uint256 lastModelIndex = _allModels.length - 1;
+        uint256 modelIndex = _allModelsIndex[__modelId];
+
+        // When the model to delete is the last model. However, since this occurs so
+        // an 'if' statement (like in _removeModelFromCreatorEnumeration)
+        uint256 lastModelId = _allModels[lastModelIndex];
+
+        _allModels[modelIndex] = lastModelId; // Move the last model to the slot of the to-delete model
+        _allModelsIndex[lastModelId] = modelIndex; // Update the moved model's index
+
+        // This also deletes the contents at the last position of the array
+        delete _allModelsIndex[__modelId];
+        _allModels.pop();
+    }
+
+    /**
+     * @notice Private function to remove a model from this extension's ownership-tracking data structures. Note that
+     * while the model is not assigned a new creator, the `_ownedModelsIndex` mapping is _not_ updated: this allows for
+     * gas optimizations e.g. when performing a allocate operation (avoiding double writes).
+     * This has O(1) time complexity, but alters the order of the _ownedModels array.
+     * @param __from address representing the previous creator of the given model ID
+     * @param __modelId uint256 ID of the model to be removed from the models list of the given address
+     *
+     */
+    function _removeModelFromCreatorEnumeration(address __from, uint256 __modelId)
+        private
+    {
+        // To prevent a gap in from's models array, we store the last model in the index of the model to delete, and
+        // then delete the last slot
+
+        uint256 lastModelIndex = modelBalanceOf(__from) - 1;
+        uint256 modelIndex = _ownedModelsIndex[__modelId];
+
+        // When the model to delete is the last model
+        if (modelIndex != lastModelIndex) {
+            uint256 lastModelId = _ownedModels[__from][lastModelIndex];
+
+            _ownedModels[__from][modelIndex] = lastModelId; // Move the last model to the slot of the to-delete model
+            _ownedModelsIndex[lastModelId] = modelIndex; // Update the moved model's index
+        }
+
+        // This also deletes the contents at the last position of the array
+        delete _ownedModelsIndex[__modelId];
+        delete _ownedModels[__from][lastModelIndex];
+    }
 
 }
