@@ -456,7 +456,7 @@ contract TIExShareCollections is
     /**
      * @notice Distributes funds from investor
      */
-    function distribute(uint256 __modelId) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) onlyExistingShareCollection(__modelId) {
+    function distribute(uint256 __modelId) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) onlyExistingShareCollection(__modelId) nonReentrant {
         uint256 restOfAmount = shareCollections[__modelId].totalInvestment.sub(shareCollections[__modelId].withdrawnAmount);
 
         if(restOfAmount == 0) revert();
@@ -465,16 +465,15 @@ contract TIExShareCollections is
         uint256 toMarketing = restOfAmount.mul(investmentDistribution.marketingtRate);
         uint256 toReserve = restOfAmount.mul(investmentDistribution.reserveRate);
         uint256 toPresale = restOfAmount.mul(investmentDistribution.presaleRate);
-        (, , Contribution[] memory contributedModels) = getModelDetail(__modelId);
 
         shareCollections[__modelId].withdrawnAmount = shareCollections[__modelId].withdrawnAmount.add(restOfAmount);
 
-        for(uint256 i = 0; i < contributedModels.length; i++) {
-            address contributer = _creatorOf(contributedModels[i].modelId);
+        for(uint256 i = 0; i < contributedModels[__modelId].length; i++) {
+            address contributer = _creatorOf(contributedModels[__modelId][i].modelId);
 
             if(contributer == address(0)) continue;
 
-            uint256 toContributer = toCreators * contributedModels[i].contributionRate;
+            uint256 toContributer = toCreators.mul(contributedModels[__modelId][i].contributionRate);
 
             paymentToken.safeTransfer(contributer, toContributer.div(10000).div(10000));
         }
@@ -1005,7 +1004,7 @@ contract TIExShareCollections is
         onlyExistingModelId(__modelId)
         returns (string memory)
     {
-        return string(abi.encodePacked("ipfs://", _modelURIs[__modelId]));
+        return string(abi.encodePacked("ipfs://", TIExModels[__modelId].modelURI));
     }
 
     /**
