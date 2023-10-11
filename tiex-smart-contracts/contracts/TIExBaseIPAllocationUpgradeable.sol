@@ -61,10 +61,10 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     event ContributationRatesUpdated(uint256 indexed modelId, Contribution[] contributionRates);
     
     // Event emitted when a model is upgraded
-    event UpgradeModel(uint256 indexed modelId, ModelMetadata oldModelMetadata, ModelMetadata newModelMetadata);
+    event UpgradeModel(uint256 indexed modelId, ModelMetadata newModelMetadata);
     
     // Event emitted when the metadata of a model is updated
-    event UpdateModelMetadata(uint256 indexed modelId, ModelMetadata oldModelMetadata, ModelMetadata newModelMetadata);
+    event UpdateModelMetadata(uint256 indexed modelId, ModelMetadata newModelMetadata);
 
     // Error thrown when an invalid creator address is provided
     error ErrorTIExIPInvalidCreator(address creator);
@@ -173,9 +173,6 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         // Check if the new model fingerprint is valid, if not, revert the transaction
         if (__newModelFingerprint.length == 0) revert ErrorTIExIPInvalidMetadata(__modelId);
         
-        // Store the old model metadata before the upgrade
-        ModelMetadata memory oldModelMetadata = _modelMetadata[__modelId];
-
         // Set the model as trained
         _modelMetadata[__modelId].trained = true;
         // Set the model version to 1
@@ -184,7 +181,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         _modelMetadata[__modelId].modelFingerprint = __newModelFingerprint;
 
         // Emit an event to log the model upgrade
-        emit UpgradeModel(__modelId, oldModelMetadata, _modelMetadata[__modelId]);
+        emit UpgradeModel(__modelId, _modelMetadata[__modelId]);
     }
 
 
@@ -201,8 +198,6 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
      * - The `__newModelFingerprint` must not be empty.
      */
     function upgradeModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
-        // Store the old model metadata before the upgrade
-        ModelMetadata memory oldModelMetadata = _modelMetadata[__modelId];
         
         // Check if the new model fingerprint is valid, if not, revert the transaction
         if (__newModelFingerprint.length == 0) revert ErrorTIExIPInvalidMetadata(__modelId);
@@ -213,7 +208,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         _modelMetadata[__modelId].modelFingerprint = __newModelFingerprint;
 
         // Emit an event to log the model upgrade
-        emit UpgradeModel(__modelId, oldModelMetadata, _modelMetadata[__modelId]);
+        emit UpgradeModel(__modelId, _modelMetadata[__modelId]);
     }
 
     /**
@@ -229,8 +224,6 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
      * - The `__modelMetadata` must be valid.
      */
     function updateModelMetadata(uint256 __modelId, ModelMetadata calldata __modelMetadata) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
-        // Store the old model metadata before the update
-        ModelMetadata memory oldModelMetadata = _modelMetadata[__modelId];
         // Check if the model metadata is valid
         bool validForMetadata = bytes(__modelMetadata.name).length > 0 
             && bytes(__modelMetadata.description).length > 0 
@@ -246,7 +239,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         _modelMetadata[__modelId] = __modelMetadata;
 
         // Emit an event to log the update of model metadata
-        emit UpdateModelMetadata(__modelId, oldModelMetadata, _modelMetadata[__modelId]);
+        emit UpdateModelMetadata(__modelId, _modelMetadata[__modelId]);
     }
 
     /**

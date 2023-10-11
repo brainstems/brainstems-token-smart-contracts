@@ -148,40 +148,34 @@ contract TIExShareCollections is
     /// @notice Emitted when the share collection for the detail of model is updated.
     event TIExShareCollectionUpdated(
         uint256 indexed modelId,
-        TIExShareCollection oldShareCollection,
         TIExShareCollection newShareCollection
     );
 
     /// @notice Emitted when the payment token used in the contract is updated.
     event TIExPaymentTokenUpdated(
-        IPaymentToken oldPaymentToken,
         IPaymentToken newPaymentToken
     );
 
     /// @notice Emitted when the truth holder address is updated.
     event TIExTruthHolderUpdated(
-        address oldTruthHolder,
         address newTruthHolder
     );
 
     /// @notice Emitted when the price of a share for a specific model is updated.
     event TIExSharePriceUpdated(
         uint256 indexed modelId,
-        uint256 oldPrice,
         uint256 newPrice
     );
 
     /// @notice Emitted when the maximum supply of shares for a model is updated.
     event TIExMaxSupplyUpdated(
         uint256 indexed modelId,
-        uint256 oldMaxSupply,
         uint256 newMaxSupply
     );
 
     /// @notice Emitted when the maximum share purchase limit for a model is updated.
     event TIExMaxSharePurchaseUpdated(
         uint256 indexed modelId,
-        uint256 oldMaxSharePurchase,
         uint256 newMaxSharePurchase
     );
 
@@ -201,31 +195,26 @@ contract TIExShareCollections is
     /// e.g. U.S. investor => Non-U.S. investor or Non-U.S. investor => U.S. Investor
     event TIExShareCollectionInvestorPositionUpdated(
         uint256 indexed modelId,
-        bool oldInvestorPosition,
         bool newInvestorPosition
     );
 
     /// @notice Emitted when the investment distribution rate is updated.
     event TIExInvestmentDistributionRate(
-        InvestmentDistribution oldInvestmentDistribution,
         InvestmentDistribution newInvestmentDistribution
     );
 
     /// @notice Emitted when the marketing address is update.
     event TIExMarketingAddressUpdated(
-        address oldMarketingAddress,
         address newMarketingAddress
     );
 
     /// @notice Emitted when the presale address is updated.
     event TIExPresaleAddressUpdated(
-        address oldPresaleAddress,
         address newPresaleAddress
     );
 
     /// @notice Emitted when reserve address is updated.
     event TIExReserveAddressUpdated(
-        address oldReserveAddress,
         address newReserveAddress
     );
 
@@ -513,8 +502,10 @@ contract TIExShareCollections is
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (__truthHolder == address(0) || __truthHolder == truthHolder)
             revert ErrorInvalidParam();
-        emit TIExTruthHolderUpdated(truthHolder, __truthHolder);
         truthHolder = __truthHolder;
+
+        emit TIExTruthHolderUpdated(__truthHolder);
+
     }
 
     /**
@@ -542,8 +533,7 @@ contract TIExShareCollections is
             .add(__marketingRate)
             .add(__presaleRate)
             .add(__reserveRate);
-        InvestmentDistribution
-            memory oldInvestmentDistribution = investmentDistribution;
+
         if (_tRate != 10000 || __creatorRate < 2000) revert ErrorInvalidParam();
 
         investmentDistribution.creatorRate = __creatorRate;
@@ -552,7 +542,6 @@ contract TIExShareCollections is
         investmentDistribution.reserveRate = __reserveRate;
 
         emit TIExInvestmentDistributionRate(
-            oldInvestmentDistribution,
             investmentDistribution
         );
     }
@@ -578,11 +567,12 @@ contract TIExShareCollections is
             __marketing == investmentDistribution.marketing
         ) revert ErrorInvalidParam();
 
+
+        investmentDistribution.marketing = __marketing;
+
         emit TIExMarketingAddressUpdated(
-            investmentDistribution.marketing,
             __marketing
         );
-        investmentDistribution.marketing = __marketing;
     }
 
     /**
@@ -605,11 +595,11 @@ contract TIExShareCollections is
             __presale == investmentDistribution.presale
         ) revert ErrorInvalidParam();
 
+        investmentDistribution.presale = __presale;
+
         emit TIExPresaleAddressUpdated(
-            investmentDistribution.presale,
             __presale
         );
-        investmentDistribution.presale = __presale;
     }
 
     /**
@@ -632,11 +622,11 @@ contract TIExShareCollections is
             __reserve == investmentDistribution.reserve
         ) revert ErrorInvalidParam();
 
+        investmentDistribution.reserve = __reserve;
+
         emit TIExReserveAddressUpdated(
-            investmentDistribution.reserve,
             __reserve
         );
-        investmentDistribution.reserve = __reserve;
     }
 
     /**
@@ -658,8 +648,10 @@ contract TIExShareCollections is
             address(__paymentToken) == address(0) ||
             address(paymentToken) == address(__paymentToken)
         ) revert ErrorInvalidParam();
-        emit TIExPaymentTokenUpdated(paymentToken, __paymentToken);
+        
         paymentToken = __paymentToken;
+
+        emit TIExPaymentTokenUpdated(__paymentToken);
     }
 
     /**
@@ -786,12 +778,13 @@ contract TIExShareCollections is
     {
         if (__price == 0 || __price == _shareCollections[__modelId].price)
             revert ErrorInvalidParam();
+
+        _shareCollections[__modelId].price = __price;
+
         emit TIExSharePriceUpdated(
             __modelId,
-            _shareCollections[__modelId].price,
             __price
         );
-        _shareCollections[__modelId].price = __price;
     }
 
     /**
@@ -822,12 +815,13 @@ contract TIExShareCollections is
             __maxSupply == 0 ||
             __maxSupply == _shareCollections[__modelId].maxSupply
         ) revert ErrorInvalidParam();
+
+        _shareCollections[__modelId].maxSupply = __maxSupply;
+
         emit TIExMaxSupplyUpdated(
             __modelId,
-            _shareCollections[__modelId].maxSupply,
             __maxSupply
         );
-        _shareCollections[__modelId].maxSupply = __maxSupply;
     }
 
     /**
@@ -858,12 +852,13 @@ contract TIExShareCollections is
             __maxSharePurchase == 0 ||
             __maxSharePurchase == _shareCollections[__modelId].maxSharePurchase
         ) revert ErrorInvalidParam();
+
+        _shareCollections[__modelId].maxSharePurchase = __maxSharePurchase;
+
         emit TIExMaxSharePurchaseUpdated(
             __modelId,
-            _shareCollections[__modelId].maxSharePurchase,
             __maxSharePurchase
         );
-        _shareCollections[__modelId].maxSharePurchase = __maxSharePurchase;
     }
 
     /**
@@ -891,12 +886,13 @@ contract TIExShareCollections is
             __forOnlyUSInvestors ==
             _shareCollections[__modelId].forOnlyUSInvestors
         ) revert ErrorInvalidParam();
+
+        _shareCollections[__modelId].forOnlyUSInvestors = __forOnlyUSInvestors;
+
         emit TIExShareCollectionInvestorPositionUpdated(
             __modelId,
-            _shareCollections[__modelId].forOnlyUSInvestors,
             __forOnlyUSInvestors
         );
-        _shareCollections[__modelId].forOnlyUSInvestors = __forOnlyUSInvestors;
     }
 
     /**
