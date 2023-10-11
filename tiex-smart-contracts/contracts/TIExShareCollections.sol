@@ -31,6 +31,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
 import "./TIExBaseIPAllocationUpgradeable.sol";
 
+// Interface for payment token
 interface IPaymentToken is IERC20, IERC20Permit { }
 
 contract TIExShareCollections is
@@ -44,7 +45,6 @@ contract TIExShareCollections is
 {
     using SafeMath for uint256;
     using SafeERC20 for IPaymentToken;
-    using ECDSA for bytes32;
 
     /// @notice MAX_INT = 2**256 - 1 = uint256(-1)
     uint256 constant MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
@@ -123,15 +123,14 @@ contract TIExShareCollections is
     /// purposes is invalid or cannot be verified.
     error ErrorInvalidSignature();
 
-    /// @notice Indicates that the specified country is not valid. Identifies investors
-    /// and non-U.S. investors here
-    error ErrorInvalidCountry();
-
     /// @notice Indicates that one or more parameters provided in the request are invalid or missing.
     error ErrorInvalidParam();
 
     /// @notice Indicates that the provided nonce (a unique identifier) is invalid or has already been used.
     error ErrorInvalidNonce();
+    
+    // @notice Indicates that the deadline for a certain operation has been reached.
+    error ErrorDeadlineReached();
 
     /// @notice Emitted when a share collection is released for a specific model.
     /// It provides the model ID and the share collection object as parameters.
@@ -149,34 +148,40 @@ contract TIExShareCollections is
     /// @notice Emitted when the share collection for the detail of model is updated.
     event TIExShareCollectionUpdated(
         uint256 indexed modelId,
+        TIExShareCollection oldShareCollection,
         TIExShareCollection newShareCollection
     );
 
     /// @notice Emitted when the payment token used in the contract is updated.
     event TIExPaymentTokenUpdated(
+        IPaymentToken oldPaymentToken,
         IPaymentToken newPaymentToken
     );
 
     /// @notice Emitted when the truth holder address is updated.
     event TIExTruthHolderUpdated(
+        address oldTruthHolder,
         address newTruthHolder
     );
 
     /// @notice Emitted when the price of a share for a specific model is updated.
     event TIExSharePriceUpdated(
         uint256 indexed modelId,
+        uint256 oldPrice,
         uint256 newPrice
     );
 
     /// @notice Emitted when the maximum supply of shares for a model is updated.
     event TIExMaxSupplyUpdated(
         uint256 indexed modelId,
+        uint256 oldMaxSupply,
         uint256 newMaxSupply
     );
 
     /// @notice Emitted when the maximum share purchase limit for a model is updated.
     event TIExMaxSharePurchaseUpdated(
         uint256 indexed modelId,
+        uint256 oldMaxSharePurchase,
         uint256 newMaxSharePurchase
     );
 
@@ -196,26 +201,31 @@ contract TIExShareCollections is
     /// e.g. U.S. investor => Non-U.S. investor or Non-U.S. investor => U.S. Investor
     event TIExShareCollectionInvestorPositionUpdated(
         uint256 indexed modelId,
+        bool oldInvestorPosition,
         bool newInvestorPosition
     );
 
     /// @notice Emitted when the investment distribution rate is updated.
     event TIExInvestmentDistributionRate(
+        InvestmentDistribution oldInvestmentDistribution,
         InvestmentDistribution newInvestmentDistribution
     );
 
     /// @notice Emitted when the marketing address is update.
     event TIExMarketingAddressUpdated(
+        address oldMarketingAddress,
         address newMarketingAddress
     );
 
     /// @notice Emitted when the presale address is updated.
     event TIExPresaleAddressUpdated(
+        address oldPresaleAddress,
         address newPresaleAddress
     );
 
     /// @notice Emitted when reserve address is updated.
     event TIExReserveAddressUpdated(
+        address oldReserveAddress,
         address newReserveAddress
     );
 
@@ -229,10 +239,10 @@ contract TIExShareCollections is
     string public symbol;
 
     /// @notice Mapping of share collctions
-    mapping(uint256 => TIExShareCollection) public shareCollections;
+    mapping(uint256 => TIExShareCollection) private _shareCollections;
 
     /// @notice Mapping of share collection released
-    mapping(uint256 => bool) public shareCollectionExists;
+    mapping(uint256 => bool) private _shareCollectionExists;
 
     /// @notice Mapping the number of shares purchased per account in every share collection
     mapping(uint256 => mapping(address => uint256)) public purchasedPerAccount;
@@ -296,7 +306,7 @@ contract TIExShareCollections is
      * @param __modelId The modelId of the Share Collection to check.
      */
     modifier whenShareCollectionNotPaused(uint256 __modelId) {
-        if (shareCollections[__modelId].paused) {
+        if (_shareCollections[__modelId].paused) {
             revert ErrorShareCollectionPaused(__modelId);
         }
         _;
@@ -307,7 +317,7 @@ contract TIExShareCollections is
      * @param __modelId The modelId of the Share Collection to check.
      */
     modifier onlyExistingShareCollection(uint256 __modelId) {
-        if (!shareCollectionExists[__modelId]) {
+        if (!shareCollectionExists(__modelId)) {
             revert ErrorShareCollectionNotFound(__modelId);
         }
         _;
@@ -318,7 +328,7 @@ contract TIExShareCollections is
      * @param __modelId The modelId of the Share Collection to check.
      */
     modifier onlyNotExistingShareCollection(uint256 __modelId) {
-        if (shareCollectionExists[__modelId]) {
+        if (shareCollectionExists(__modelId)) {
             revert ErrorTIExShareCollectionReleasedAlready(__modelId);
         }
         _;
@@ -342,7 +352,7 @@ contract TIExShareCollections is
      * 3. If it is not the zero address, it proceeds with the following checks:
      * It iterates over the __modelIds array using a for loop. For each modelId, it performs the following checks:
      * - It checks if the Share Collection with the given modelId is blocked by accessing the "blocked" property of the 
-     * Share Collection in the "shareCollections" mapping. If it is blocked, it reverts the transaction with an error 
+     * Share Collection in the "_shareCollections" mapping. If it is blocked, it reverts the transaction with an error 
      * using the "ErrorShareCollectionBlocked" function, passing the modelId as an argument.
      * - It checks if the Share Collection with the given modelId exists by calling the "shareCollectionExists" 
      * function. If it doesn't exist, it reverts the transaction with an error using the "ErrorShareCollectionNotFound" 
@@ -372,9 +382,9 @@ contract TIExShareCollections is
 
         if (__to != address(0)) {
             for (uint256 i = 0; i < __modelIds.length; i++) {
-                if (shareCollections[__modelIds[i]].blocked)
+                if (_shareCollections[__modelIds[i]].blocked)
                     revert ErrorShareCollectionBlocked(__modelIds[i]);
-                if (!shareCollectionExists[__modelIds[i]])
+                if (!shareCollectionExists(__modelIds[i]))
                     revert ErrorShareCollectionNotFound(__modelIds[i]);
                 if (paused()) revert ErrorTIExPaused();
             }
@@ -390,9 +400,9 @@ contract TIExShareCollections is
     function _afterRemoveModel(
         uint256 __modelId
     ) internal virtual override(TIExBaseIPAllocationUpgradeable) {
-        if (shareCollectionExists[__modelId]) {
-            shareCollectionExists[__modelId] = false;
-            delete shareCollections[__modelId];
+        if (_shareCollectionExists[__modelId]) {
+            _shareCollectionExists[__modelId] = false;
+            delete _shareCollections[__modelId];
         }
     }
 
@@ -432,7 +442,7 @@ contract TIExShareCollections is
         onlyExistingModelId(__modelId)
     {
         if (__maxSupply > 0 && __price > 0 && __maxSharePurchase > 0) {
-            shareCollections[__modelId] = TIExShareCollection({
+            _shareCollections[__modelId] = TIExShareCollection({
                 maxSupply: __maxSupply,
                 totalInvestment: 0,
                 withdrawnAmount: 0,
@@ -444,11 +454,11 @@ contract TIExShareCollections is
                 maxSharePurchase: __maxSharePurchase
             });
 
-            shareCollectionExists[__modelId] = true;
+            _shareCollectionExists[__modelId] = true;
 
             emit TIExShareCollectionReleased(
                 __modelId,
-                shareCollections[__modelId]
+                _shareCollections[__modelId]
             );
         } else revert ErrorInvalidParam();
     }
@@ -456,8 +466,8 @@ contract TIExShareCollections is
     /**
      * @notice Distributes funds from investor
      */
-    function distribute(uint256 __modelId) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) onlyExistingShareCollection(__modelId) nonReentrant {
-        uint256 restOfAmount = shareCollections[__modelId].totalInvestment.sub(shareCollections[__modelId].withdrawnAmount);
+    function distribute(uint256 __modelId) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) onlyExistingShareCollection(__modelId) {
+        uint256 restOfAmount = _shareCollections[__modelId].totalInvestment.sub(_shareCollections[__modelId].withdrawnAmount);
 
         if(restOfAmount == 0) revert();
 
@@ -465,15 +475,16 @@ contract TIExShareCollections is
         uint256 toMarketing = restOfAmount.mul(investmentDistribution.marketingtRate);
         uint256 toReserve = restOfAmount.mul(investmentDistribution.reserveRate);
         uint256 toPresale = restOfAmount.mul(investmentDistribution.presaleRate);
+        (, , Contribution[] memory contributedModels) = getModelDetail(__modelId);
 
-        shareCollections[__modelId].withdrawnAmount = shareCollections[__modelId].withdrawnAmount.add(restOfAmount);
+        _shareCollections[__modelId].withdrawnAmount = _shareCollections[__modelId].withdrawnAmount.add(restOfAmount);
 
-        for(uint256 i = 0; i < contributedModels[__modelId].length; i++) {
-            address contributer = _creatorOf(contributedModels[__modelId][i].modelId);
+        for(uint256 i = 0; i < contributedModels.length; i++) {
+            address contributer = _creatorOf(contributedModels[i].modelId);
 
             if(contributer == address(0)) continue;
 
-            uint256 toContributer = toCreators.mul(contributedModels[__modelId][i].contributionRate);
+            uint256 toContributer = toCreators * contributedModels[i].contributionRate;
 
             paymentToken.safeTransfer(contributer, toContributer.div(10000).div(10000));
         }
@@ -502,10 +513,8 @@ contract TIExShareCollections is
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (__truthHolder == address(0) || __truthHolder == truthHolder)
             revert ErrorInvalidParam();
+        emit TIExTruthHolderUpdated(truthHolder, __truthHolder);
         truthHolder = __truthHolder;
-
-        emit TIExTruthHolderUpdated(__truthHolder);
-
     }
 
     /**
@@ -533,6 +542,8 @@ contract TIExShareCollections is
             .add(__marketingRate)
             .add(__presaleRate)
             .add(__reserveRate);
+        InvestmentDistribution
+            memory oldInvestmentDistribution = investmentDistribution;
         if (_tRate != 10000 || __creatorRate < 2000) revert ErrorInvalidParam();
 
         investmentDistribution.creatorRate = __creatorRate;
@@ -541,6 +552,7 @@ contract TIExShareCollections is
         investmentDistribution.reserveRate = __reserveRate;
 
         emit TIExInvestmentDistributionRate(
+            oldInvestmentDistribution,
             investmentDistribution
         );
     }
@@ -566,11 +578,11 @@ contract TIExShareCollections is
             __marketing == investmentDistribution.marketing
         ) revert ErrorInvalidParam();
 
-        investmentDistribution.marketing = __marketing;
-        
         emit TIExMarketingAddressUpdated(
-            investmentDistribution.marketing
+            investmentDistribution.marketing,
+            __marketing
         );
+        investmentDistribution.marketing = __marketing;
     }
 
     /**
@@ -593,11 +605,11 @@ contract TIExShareCollections is
             __presale == investmentDistribution.presale
         ) revert ErrorInvalidParam();
 
-        investmentDistribution.presale = __presale;
-
         emit TIExPresaleAddressUpdated(
-            investmentDistribution.presale
+            investmentDistribution.presale,
+            __presale
         );
+        investmentDistribution.presale = __presale;
     }
 
     /**
@@ -620,11 +632,11 @@ contract TIExShareCollections is
             __reserve == investmentDistribution.reserve
         ) revert ErrorInvalidParam();
 
-        investmentDistribution.reserve = __reserve;
-
         emit TIExReserveAddressUpdated(
+            investmentDistribution.reserve,
             __reserve
         );
+        investmentDistribution.reserve = __reserve;
     }
 
     /**
@@ -646,10 +658,8 @@ contract TIExShareCollections is
             address(__paymentToken) == address(0) ||
             address(paymentToken) == address(__paymentToken)
         ) revert ErrorInvalidParam();
+        emit TIExPaymentTokenUpdated(paymentToken, __paymentToken);
         paymentToken = __paymentToken;
-
-        emit TIExPaymentTokenUpdated(__paymentToken);
-
     }
 
     /**
@@ -672,8 +682,8 @@ contract TIExShareCollections is
         onlyRole(DEFAULT_ADMIN_ROLE)
         onlyExistingShareCollection(__modelId)
     {
-        if (shareCollections[__modelId].paused) revert ErrorInvalidParam();
-        shareCollections[__modelId].paused = true;
+        if (_shareCollections[__modelId].paused) revert ErrorInvalidParam();
+        _shareCollections[__modelId].paused = true;
         emit TIExShareCollectionPaused(__modelId);
     }
 
@@ -697,8 +707,8 @@ contract TIExShareCollections is
         onlyRole(DEFAULT_ADMIN_ROLE)
         onlyExistingShareCollection(__modelId)
     {
-        if (!shareCollections[__modelId].paused) revert ErrorInvalidParam();
-        shareCollections[__modelId].paused = false;
+        if (!_shareCollections[__modelId].paused) revert ErrorInvalidParam();
+        _shareCollections[__modelId].paused = false;
         emit TIExShareCollectionUnpaused(__modelId);
     }
 
@@ -721,8 +731,8 @@ contract TIExShareCollections is
         onlyRole(DEFAULT_ADMIN_ROLE)
         onlyExistingShareCollection(__modelId)
     {
-        if (shareCollections[__modelId].blocked) revert ErrorInvalidParam();
-        shareCollections[__modelId].blocked = true;
+        if (_shareCollections[__modelId].blocked) revert ErrorInvalidParam();
+        _shareCollections[__modelId].blocked = true;
         emit TIExShareCollectionBlocked(__modelId);
     }
 
@@ -745,8 +755,8 @@ contract TIExShareCollections is
         onlyRole(DEFAULT_ADMIN_ROLE)
         onlyExistingShareCollection(__modelId)
     {
-        if (!shareCollections[__modelId].blocked) revert ErrorInvalidParam();
-        shareCollections[__modelId].blocked = false;
+        if (!_shareCollections[__modelId].blocked) revert ErrorInvalidParam();
+        _shareCollections[__modelId].blocked = false;
         emit TIExShareCollectionUnblocked(__modelId);
     }
 
@@ -774,15 +784,14 @@ contract TIExShareCollections is
         onlyRole(DEFAULT_ADMIN_ROLE)
         onlyExistingShareCollection(__modelId)
     {
-        if (__price == 0 || __price == shareCollections[__modelId].price)
+        if (__price == 0 || __price == _shareCollections[__modelId].price)
             revert ErrorInvalidParam();
-
-        shareCollections[__modelId].price = __price;
-
         emit TIExSharePriceUpdated(
             __modelId,
+            _shareCollections[__modelId].price,
             __price
         );
+        _shareCollections[__modelId].price = __price;
     }
 
     /**
@@ -811,15 +820,14 @@ contract TIExShareCollections is
     {
         if (
             __maxSupply == 0 ||
-            __maxSupply == shareCollections[__modelId].maxSupply
+            __maxSupply == _shareCollections[__modelId].maxSupply
         ) revert ErrorInvalidParam();
-
-        shareCollections[__modelId].maxSupply = __maxSupply;
-
         emit TIExMaxSupplyUpdated(
             __modelId,
+            _shareCollections[__modelId].maxSupply,
             __maxSupply
         );
+        _shareCollections[__modelId].maxSupply = __maxSupply;
     }
 
     /**
@@ -848,15 +856,14 @@ contract TIExShareCollections is
     {
         if (
             __maxSharePurchase == 0 ||
-            __maxSharePurchase == shareCollections[__modelId].maxSharePurchase
+            __maxSharePurchase == _shareCollections[__modelId].maxSharePurchase
         ) revert ErrorInvalidParam();
-
-        shareCollections[__modelId].maxSharePurchase = __maxSharePurchase;
-
         emit TIExMaxSharePurchaseUpdated(
             __modelId,
+            _shareCollections[__modelId].maxSharePurchase,
             __maxSharePurchase
         );
+        _shareCollections[__modelId].maxSharePurchase = __maxSharePurchase;
     }
 
     /**
@@ -882,15 +889,14 @@ contract TIExShareCollections is
     {
         if (
             __forOnlyUSInvestors ==
-            shareCollections[__modelId].forOnlyUSInvestors
+            _shareCollections[__modelId].forOnlyUSInvestors
         ) revert ErrorInvalidParam();
-
-        shareCollections[__modelId].forOnlyUSInvestors = __forOnlyUSInvestors;
-
         emit TIExShareCollectionInvestorPositionUpdated(
             __modelId,
+            _shareCollections[__modelId].forOnlyUSInvestors,
             __forOnlyUSInvestors
         );
+        _shareCollections[__modelId].forOnlyUSInvestors = __forOnlyUSInvestors;
     }
 
     /**
@@ -925,7 +931,7 @@ contract TIExShareCollections is
      * @param __modelId uint256 The model id that the investor wants to invest in.
      * @param __amount uint256 The number of tokens the investor wants to buy.
      * @param __nonce uint256 A unique identifier for the transaction.
-     * @param __usInvestor boolean Indicates whether the investor is a US investor or not.
+     * @param __deadline uint256 The deadline for the transaction.
      * @param __signature bytes A signature that verifies the authenticity of the transaction
      * @param __permitMessage bytes message for `permit` of ERC20Permit without (instead of) `approve`.
      * signed by truth holder.
@@ -934,18 +940,21 @@ contract TIExShareCollections is
         uint256 __modelId,
         uint256 __amount,
         uint256 __nonce,
-        bool __usInvestor,
+        uint256 __deadline,
         bytes calldata __signature,
         bytes calldata __permitMessage
     ) external whenShareCollectionNotPaused(__modelId) nonReentrant {
-        // abi: [address, bool, address, string], [account, usInvestor, to, actionName]
+        // abi: [address, bool, address, uint256, uint256], [account, usInvestor, to, nonce, deadline]
         // Encodes a message using the provided parameters.
-        bytes memory message = abi.encode(msg.sender, __usInvestor, address(this), __nonce);
+        bytes memory message = abi.encode(msg.sender, _shareCollections[__modelId].forOnlyUSInvestors, address(this), __nonce, __deadline);
         // Calculates the amount of payment tokens required based on the price of the model and the desired amount of tokens.
-        uint256 paymentTokenAmount = shareCollections[__modelId].price.mul(__amount);
+        uint256 paymentTokenAmount = _shareCollections[__modelId].price.mul(__amount);
 
         // Checks if the nonce has already been used and reverts the transaction if it has.
         if (noncesUsed[__nonce]) revert ErrorInvalidNonce();
+
+        // Checks if the deadline has passed and reverts the transaction if it has.
+        if (__deadline > block.timestamp) revert ErrorDeadlineReached();
         
         // Checks if the amount of tokens is 0 and reverts the transaction if it is.
         if (__amount == 0) revert ErrorInvalidParam();
@@ -953,17 +962,14 @@ contract TIExShareCollections is
         // Verifies the authenticity of the message using the provided signature and reverts the transaction if it is invalid.
         if (!verifyMessage(message, __signature)) revert ErrorInvalidSignature();
         
-        // Checks if the investor's country matches the allowed country for the model and reverts the transaction if it doesn't.
-        if (__usInvestor != shareCollections[__modelId].forOnlyUSInvestors) revert ErrorInvalidCountry();
-        
         // Checks if there is enough supply of tokens for the model and reverts the transaction if there isn't.
-        if (totalSupply(__modelId).add(__amount) > shareCollections[__modelId].maxSupply) revert ErrorNotEnoughSupply();
+        if (totalSupply(__modelId).add(__amount) > _shareCollections[__modelId].maxSupply) revert ErrorNotEnoughSupply();
 
         // Checks if the investor has exceeded the maximum allowed share purchase for the model and reverts the transaction if they have.
-        if (purchasedPerAccount[__modelId][msg.sender].add(__amount) > shareCollections[__modelId].maxSharePurchase) revert ErrorExceedMaxSharePurchase();
+        if (purchasedPerAccount[__modelId][msg.sender].add(__amount) > _shareCollections[__modelId].maxSharePurchase) revert ErrorExceedMaxSharePurchase();
 
         // Checks if the allowance of payment token is insufficient.
-        if(paymentToken.allowance(msg.sender, address(this)) < paymentTokenAmount) {
+        if (paymentToken.allowance(msg.sender, address(this)) < paymentTokenAmount) {
             {
                 (uint8 v, bytes32 r, bytes32 s, uint256 deadline) = abi.decode(__permitMessage, (uint8, bytes32, bytes32, uint256));
                 paymentToken.permit(msg.sender, address(this), MAX_INT, deadline, v, r, s);
@@ -978,7 +984,7 @@ contract TIExShareCollections is
         paymentToken.safeTransferFrom(msg.sender, address(this), paymentTokenAmount);
 
         // Updates the total investment for the model.
-        shareCollections[__modelId].totalInvestment = shareCollections[__modelId].totalInvestment.add(paymentTokenAmount);
+        _shareCollections[__modelId].totalInvestment = _shareCollections[__modelId].totalInvestment.add(paymentTokenAmount);
 
         // Increases the amount of tokens purchased by the investor for the model.
         purchasedPerAccount[__modelId][msg.sender] += __amount;
@@ -990,6 +996,35 @@ contract TIExShareCollections is
     ////////////////////////////////////////////////////////////////////////////
     // READS
     ////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * @notice Returns whether or not an shareCollection exists.
+     */
+    function shareCollectionExists(
+        uint256 __modelId
+    ) public view returns (bool) {
+        if (_shareCollectionExists[__modelId]) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * @notice Returns an Share Collection Status.
+     */
+    function shareCollection(
+        uint256 __modelId
+    )
+        external
+        view
+        onlyExistingShareCollection(__modelId)
+        returns (TIExShareCollection memory, string memory)
+    {
+        return (
+            _shareCollections[__modelId],
+            string(abi.encodePacked("ipfs://", _modelURIs[__modelId]))
+        );
+    }
 
     /**
      * @notice Returns the model URI.
@@ -1004,7 +1039,7 @@ contract TIExShareCollections is
         onlyExistingModelId(__modelId)
         returns (string memory)
     {
-        return string(abi.encodePacked("ipfs://", TIExModels[__modelId].modelURI));
+        return string(abi.encodePacked("ipfs://", _modelURIs[__modelId]));
     }
 
     /**
@@ -1033,8 +1068,21 @@ contract TIExShareCollections is
         bytes memory message,
         bytes memory signature
     ) private view returns (bool) {
-        bytes32 signedMessageHash = keccak256(message).toEthSignedMessageHash();
-        return signedMessageHash.recover(signature) == truthHolder;
+        bytes32 hash = keccak256(message);
+        return recoverSigner(hash, signature) == truthHolder;
+    }
+
+    /**
+     * @notice Recovers signer
+     */
+    function recoverSigner(
+        bytes32 hash,
+        bytes memory signature
+    ) private pure returns (address) {
+        bytes32 messageDigest = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
+        );
+        return ECDSA.recover(messageDigest, signature);
     }
 
     /**
