@@ -22,13 +22,12 @@ import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
-
+import "./IUtility.sol";
 import "./TIExBaseIPAllocationUpgradeable.sol";
 
 // Interface for payment token
@@ -248,6 +247,9 @@ contract TIExShareCollections is
     /// @notice Investment distribution rates and addresses
     InvestmentDistribution public investmentDistribution;
 
+    /// @notice Utility
+    IUtility public utility;
+
     /**
      * @notice Defines the initialize function, which sets the name, symbol,
      * truth holder, payment token, and investment distribution for the token when deploying Proxy.
@@ -257,7 +259,8 @@ contract TIExShareCollections is
         address __truthHolder,
         IPaymentToken __paymentToken,
         address __admin,
-        InvestmentDistribution memory __investmentDistribution
+        InvestmentDistribution memory __investmentDistribution,
+        IUtility _utility
     ) public virtual initializer {
         uint256 _tRate = __investmentDistribution
             .creatorRate
@@ -274,6 +277,8 @@ contract TIExShareCollections is
         paymentToken = __paymentToken;
 
         investmentDistribution = __investmentDistribution;
+
+        utility = _utility;
 
         __TIExBaseIPAllocation_init();
         __Context_init_unchained();
@@ -956,7 +961,7 @@ contract TIExShareCollections is
         if (__amount == 0) revert ErrorInvalidParam();
         
         // Verifies the authenticity of the message using the provided signature and reverts the transaction if it is invalid.
-        if (!verifyMessage(message, __signature)) revert ErrorInvalidSignature();
+        if (!utility.verifyMessage(message, __signature, truthHolder)) revert ErrorInvalidSignature();
         
         // Checks if there is enough supply of tokens for the model and reverts the transaction if there isn't.
         if (totalSupply(__modelId).add(__amount) > _shareCollections[__modelId].maxSupply) revert ErrorNotEnoughSupply();
@@ -1051,34 +1056,6 @@ contract TIExShareCollections is
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    // PRIVATES
-    ////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * @notice Verifies bytes message
-     */
-    function verifyMessage(
-        bytes memory message,
-        bytes memory signature
-    ) private view returns (bool) {
-        bytes32 hash = keccak256(message);
-        return recoverSigner(hash, signature) == truthHolder;
-    }
-
-    /**
-     * @notice Recovers signer
-     */
-    function recoverSigner(
-        bytes32 hash,
-        bytes memory signature
-    ) private pure returns (address) {
-        bytes32 messageDigest = keccak256(
-            abi.encodePacked("\x19Ethereum Signed Message:\n32", hash)
-        );
-        return ECDSA.recover(messageDigest, signature);
     }
 
     /**
