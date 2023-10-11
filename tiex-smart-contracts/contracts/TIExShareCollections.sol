@@ -998,7 +998,7 @@ contract TIExShareCollections is
     function shareCollectionExists(
         uint256 __modelId
     ) public view returns (bool) {
-        return _shareCollections[__modelId].launchStartTime == 0;
+        return _shareCollections[__modelId].launchStartTime != 0;
     }
 
     /**
