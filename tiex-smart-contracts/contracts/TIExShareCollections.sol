@@ -229,9 +229,6 @@ contract TIExShareCollections is
     /// @notice Mapping of share collctions
     mapping(uint256 => TIExShareCollection) private _shareCollections;
 
-    /// @notice Mapping of share collection released
-    mapping(uint256 => bool) private _shareCollectionExists;
-
     /// @notice Mapping the number of shares purchased per account in every share collection
     mapping(uint256 => mapping(address => uint256)) public purchasedPerAccount;
 
@@ -394,8 +391,7 @@ contract TIExShareCollections is
     function _afterRemoveModel(
         uint256 __modelId
     ) internal virtual override(TIExBaseIPAllocationUpgradeable) {
-        if (_shareCollectionExists[__modelId]) {
-            _shareCollectionExists[__modelId] = false;
+        if (shareCollectionExists(__modelId)) {
             delete _shareCollections[__modelId];
         }
     }
@@ -447,8 +443,6 @@ contract TIExShareCollections is
                 forOnlyUSInvestors: __forOnlyUSInvestors,
                 maxSharePurchase: __maxSharePurchase
             });
-
-            _shareCollectionExists[__modelId] = true;
 
             emit TIExShareCollectionReleased(
                 __modelId,
@@ -1004,10 +998,7 @@ contract TIExShareCollections is
     function shareCollectionExists(
         uint256 __modelId
     ) public view returns (bool) {
-        if (_shareCollectionExists[__modelId]) {
-            return true;
-        }
-        return false;
+        return _shareCollections[__modelId].launchStartTime == 0;
     }
 
     /**
