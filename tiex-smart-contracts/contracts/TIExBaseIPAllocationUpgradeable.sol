@@ -429,14 +429,6 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @notice Returns the creator of the `__modelId`. Does NOT revert if model doesn't exist
-     *
-     */
-    function _creatorOf(uint256 __modelId) internal view returns (address) {
-        return _TIExModels[__modelId].creator;
-    }
-
-    /**
      * @notice Used to clean up data related to a model after it has been removed.
     */
     function _afterRemoveModel(
@@ -473,7 +465,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
      *
      */
     function creatorOf(uint256 __modelId) public view returns (address) {
-        address creator = _creatorOf(__modelId);
+        address creator = _TIExModels[__modelId].creator;
         if (creator == address(0)) {
             revert ErrorTIExIPModelIdNotFound(__modelId);
         }
@@ -488,7 +480,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
      *
      */
     function modelExists(uint256 __modelId) public view returns (bool) {
-        return _creatorOf(__modelId) != address(0);
+        return _TIExModels[__modelId].creator != address(0);
     }
 
     /**

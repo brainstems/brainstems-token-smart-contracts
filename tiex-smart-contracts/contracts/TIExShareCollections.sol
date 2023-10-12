@@ -454,7 +454,7 @@ contract TIExShareCollections is
     /**
      * @notice Distributes funds from investor
      */
-    function distribute(uint256 __modelId) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) onlyExistingShareCollection(__modelId) {
+    function distribute(uint256 __modelId) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) onlyExistingShareCollection(__modelId) nonReentrant {
         uint256 restOfAmount = _shareCollections[__modelId].totalInvestment.sub(_shareCollections[__modelId].withdrawnAmount);
 
         if(restOfAmount == 0) revert();
@@ -1010,11 +1010,11 @@ contract TIExShareCollections is
         external
         view
         onlyExistingShareCollection(__modelId)
-        returns (TIExShareCollection memory, string memory)
+        returns (TIExShareCollection memory, TIExModel memory)
     {
         return (
             _shareCollections[__modelId],
-            string(abi.encodePacked("ipfs://", getTIExModel(__modelId).modelURI))
+            getTIExModel(__modelId)
         );
     }
 
