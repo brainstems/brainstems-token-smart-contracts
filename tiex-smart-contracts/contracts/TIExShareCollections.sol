@@ -468,7 +468,7 @@ contract TIExShareCollections is
         _shareCollections[__modelId].withdrawnAmount = _shareCollections[__modelId].withdrawnAmount.add(restOfAmount);
 
         for(uint256 i = 0; i < contributedModels.length; i++) {
-            address contributer = _creatorOf(contributedModels[i].modelId);
+            address contributer = getTIExModel(contributedModels[i].modelId).creator;
 
             if(contributer == address(0)) continue;
 
