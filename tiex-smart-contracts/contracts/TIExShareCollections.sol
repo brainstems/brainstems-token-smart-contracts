@@ -463,7 +463,7 @@ contract TIExShareCollections is
         uint256 toMarketing = restOfAmount.mul(investmentDistribution.marketingtRate);
         uint256 toReserve = restOfAmount.mul(investmentDistribution.reserveRate);
         uint256 toPresale = restOfAmount.mul(investmentDistribution.presaleRate);
-        (, , Contribution[] memory contributedModels) = getModelDetail(__modelId);
+        Contribution[] memory contributedModels = getTIExModel(__modelId).contributedModels;
 
         _shareCollections[__modelId].withdrawnAmount = _shareCollections[__modelId].withdrawnAmount.add(restOfAmount);
 
@@ -1014,7 +1014,7 @@ contract TIExShareCollections is
     {
         return (
             _shareCollections[__modelId],
-            string(abi.encodePacked("ipfs://", _modelURIs[__modelId]))
+            string(abi.encodePacked("ipfs://", getTIExModel(__modelId).modelURI))
         );
     }
 
@@ -1031,7 +1031,7 @@ contract TIExShareCollections is
         onlyExistingModelId(__modelId)
         returns (string memory)
     {
-        return string(abi.encodePacked("ipfs://", _modelURIs[__modelId]));
+        return string(abi.encodePacked("ipfs://", getTIExModel(__modelId).modelURI));
     }
 
     /**
