@@ -257,7 +257,7 @@ contract TIExShareCollections is
         IPaymentToken __paymentToken,
         address __admin,
         InvestmentDistribution memory __investmentDistribution,
-        IUtility _utility
+        IUtility __utility
     ) public virtual initializer {
         uint256 _tRate = __investmentDistribution
             .creatorRate
