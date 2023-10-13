@@ -275,7 +275,7 @@ contract TIExShareCollections is
 
         investmentDistribution = __investmentDistribution;
 
-        utility = _utility;
+        utility = __utility;
 
         __TIExBaseIPAllocation_init();
         __Context_init_unchained();
