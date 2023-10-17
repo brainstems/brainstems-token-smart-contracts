@@ -44,12 +44,24 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         uint256 performance; // The performance of the model
     }
 
+    struct TIExModel {
+        address creator;
+        Contribution[] contributedModels;
+        ModelMetadata modelMetadata;
+        uint256 allModelsIndex;
+        uint256 ownedModelsIndex;
+        string modelURI;
+    }
+
+    /// @notice Mapping model id to TIEx Model
+    mapping(uint256 => TIExModel) private _TIExModels;
+
     // Mapping from model ID to its metadata
     mapping(uint256 => ModelMetadata) private _modelMetadata;
 
 
     // Event emitted when a new TIEx IP is allocated to a creator
-    event AllocateTIExIP(address provider, address indexed creator, uint256 indexed modelId, ModelMetadata modelMetadata, Contribution[] contribution, uint256 startTime);
+    event AllocateTIExIP(address provider, uint256 indexed modelId, TIExModel TIExModel, uint256 startTime);
     
     // Event emitted when a TIEx IP is removed
     event RemoveTIExIP(address creator, address to, uint256 indexed modelId, uint256 removedTime);
@@ -61,10 +73,10 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     event ContributationRatesUpdated(uint256 indexed modelId, Contribution[] contributionRates);
     
     // Event emitted when a model is upgraded
-    event UpgradeModel(uint256 indexed modelId, ModelMetadata oldModelMetadata, ModelMetadata newModelMetadata);
+    event UpgradeModel(uint256 indexed modelId, ModelMetadata newModelMetadata);
     
     // Event emitted when the metadata of a model is updated
-    event UpdateModelMetadata(uint256 indexed modelId, ModelMetadata oldModelMetadata, ModelMetadata newModelMetadata);
+    event UpdateModelMetadata(uint256 indexed modelId, ModelMetadata newModelMetadata);
 
     // Error thrown when an invalid creator address is provided
     error ErrorTIExIPInvalidCreator(address creator);
@@ -90,31 +102,14 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     // Error thrown when invalid metadata is provided for a model
     error ErrorTIExIPInvalidMetadata(uint256 modelId);
 
-
-
-    /// @notice Mapping from model ID to creator address
-    mapping(uint256 => address) private _creators;
-
     /// @notice Mapping from creator to list of owned model IDs
     mapping(address => mapping(uint256 => uint256)) private _ownedModels;
-
-    /// @notice Mapping from model ID to index of the creator models list
-    mapping(uint256 => uint256) private _ownedModelsIndex;
 
     /// @notice Array with all model ids, used for enumeration
     uint256[] private _allModels;
 
-    /// @notice Mapping from model id to position in the allModels array
-    mapping(uint256 => uint256) private _allModelsIndex;
-
     /// @notice Mapping creator address to model count
     mapping(address => uint256) private _modelBalances;
-
-    /// @notice Mapping modelId to metadata(IPFS)
-    mapping(uint256 => string) internal  _modelURIs;
-
-    /// @notice Mapping model id to contriuted model list
-    mapping(uint256 => Contribution[]) private _contributedModels;
 
     function __TIExBaseIPAllocation_init() internal onlyInitializing {
         __AccessControl_init_unchained();
@@ -173,9 +168,6 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         // Check if the new model fingerprint is valid, if not, revert the transaction
         if (__newModelFingerprint.length == 0) revert ErrorTIExIPInvalidMetadata(__modelId);
         
-        // Store the old model metadata before the upgrade
-        ModelMetadata memory oldModelMetadata = _modelMetadata[__modelId];
-
         // Set the model as trained
         _modelMetadata[__modelId].trained = true;
         // Set the model version to 1
@@ -184,7 +176,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         _modelMetadata[__modelId].modelFingerprint = __newModelFingerprint;
 
         // Emit an event to log the model upgrade
-        emit UpgradeModel(__modelId, oldModelMetadata, _modelMetadata[__modelId]);
+        emit UpgradeModel(__modelId, _modelMetadata[__modelId]);
     }
 
 
@@ -201,8 +193,6 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
      * - The `__newModelFingerprint` must not be empty.
      */
     function upgradeModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
-        // Store the old model metadata before the upgrade
-        ModelMetadata memory oldModelMetadata = _modelMetadata[__modelId];
         
         // Check if the new model fingerprint is valid, if not, revert the transaction
         if (__newModelFingerprint.length == 0) revert ErrorTIExIPInvalidMetadata(__modelId);
@@ -213,7 +203,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         _modelMetadata[__modelId].modelFingerprint = __newModelFingerprint;
 
         // Emit an event to log the model upgrade
-        emit UpgradeModel(__modelId, oldModelMetadata, _modelMetadata[__modelId]);
+        emit UpgradeModel(__modelId, _modelMetadata[__modelId]);
     }
 
     /**
@@ -229,8 +219,6 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
      * - The `__modelMetadata` must be valid.
      */
     function updateModelMetadata(uint256 __modelId, ModelMetadata calldata __modelMetadata) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
-        // Store the old model metadata before the update
-        ModelMetadata memory oldModelMetadata = _modelMetadata[__modelId];
         // Check if the model metadata is valid
         bool validForMetadata = bytes(__modelMetadata.name).length > 0 
             && bytes(__modelMetadata.description).length > 0 
@@ -246,7 +234,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         _modelMetadata[__modelId] = __modelMetadata;
 
         // Emit an event to log the update of model metadata
-        emit UpdateModelMetadata(__modelId, oldModelMetadata, _modelMetadata[__modelId]);
+        emit UpdateModelMetadata(__modelId, _modelMetadata[__modelId]);
     }
 
     /**
@@ -289,9 +277,9 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         }
 
         // Set the creator of the model ID
-        _creators[__modelId] = __creator;
+        _TIExModels[__modelId].creator = __creator;
         // Set the IPFS hash of the model's metadata
-        _modelURIs[__modelId] = __ipfsHash;
+        _TIExModels[__modelId].modelURI = __ipfsHash;
         
         // If there are contributors, calculate the total contribution rate and add each contributor to the list of contributors for the model ID
         if (__contributors.length > 0) {
@@ -303,7 +291,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
                 // Add the contribution rate of the current contributor to the total contribution rate
                 contributionRate = contributionRate.add(__contributors[i].contributionRate);
                 // Add the current contributor to the list of contributors for the model
-                _contributedModels[__modelId].push(__contributors[i]);
+                _TIExModels[__modelId].contributedModels.push(__contributors[i]);
             }
 
             // If the total contribution rate is not 10000 (representing 100%), revert the transaction
@@ -311,7 +299,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
 
         } else {
             // If there are no new contributors, add a default contribution of 10000 (representing 100%) for the model itself
-            _contributedModels[__modelId].push(Contribution({
+            _TIExModels[__modelId].contributedModels.push(Contribution({
                 modelId: __modelId,
                 contributionRate: 10000
             }));
@@ -333,7 +321,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         _modelMetadata[__modelId] = __modelMetadata;
 
         // Emit an event to log the allocation of the model ID
-        emit AllocateTIExIP(msg.sender, __creator, __modelId, __modelMetadata, _contributedModels[__modelId], block.timestamp);
+        emit AllocateTIExIP(msg.sender, __modelId, _TIExModels[__modelId], block.timestamp);
 
     }
 
@@ -362,7 +350,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
      */
     function updateContributionRates(uint256 __modelId, Contribution[] calldata __contributors) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         // Delete the existing contributions for the model
-        delete _contributedModels[__modelId];
+        delete _TIExModels[__modelId].contributedModels;
 
         // If there are new contributors
         if (__contributors.length > 0) {
@@ -374,21 +362,21 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
                 // Add the contribution rate of the current contributor to the total contribution rate
                 contributionRate = contributionRate.add(__contributors[i].contributionRate);
                 // Add the current contributor to the list of contributors for the model
-                _contributedModels[__modelId].push(__contributors[i]);
+                _TIExModels[__modelId].contributedModels.push(__contributors[i]);
             }
 
             // If the total contribution rate is not 10000 (representing 100%), revert the transaction
             if(contributionRate != 10000) revert ErrorTIExIPContributionRateInvalid(contributionRate);
         } else {
             // If there are no new contributors, add a default contribution of 10000 (representing 100%) for the model itself
-            _contributedModels[__modelId].push(Contribution({
+            _TIExModels[__modelId].contributedModels.push(Contribution({
                 modelId: __modelId,
                 contributionRate: 10000
             }));
         }
 
         // Emit an event to log the update of contribution rates
-        emit ContributationRatesUpdated(__modelId, _contributedModels[__modelId]);
+        emit ContributationRatesUpdated(__modelId, _TIExModels[__modelId].contributedModels);
     }
 
     /**
@@ -410,8 +398,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         // invalidate the assumption that `_modelBalances[from] >= 1`.
         _modelBalances[__creator] -= 1;
         
-        delete _contributedModels[__modelId];
-        delete _creators[__modelId];
+        delete _TIExModels[__modelId];
 
         _afterRemoveModel(__modelId);
 
@@ -432,7 +419,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         onlyRole(DEFAULT_ADMIN_ROLE)
         onlyExistingModelId(__modelId)
     {
-        _modelURIs[__modelId] = __ipfsHash;
+        _TIExModels[__modelId].modelURI = __ipfsHash;
 
         emit TIExModelURIUpdated(__modelId, __ipfsHash);
     }
@@ -440,14 +427,6 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     ////////////////////////////////////////////////////////////////////////////
     // INTERNAL
     ////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * @notice Returns the creator of the `__modelId`. Does NOT revert if model doesn't exist
-     *
-     */
-    function _creatorOf(uint256 __modelId) internal view returns (address) {
-        return _creators[__modelId];
-    }
 
     /**
      * @notice Used to clean up data related to a model after it has been removed.
@@ -465,10 +444,8 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     * @param __modelId uint256 must exist
     *
     */
-    function getModelDetail(uint256 __modelId) public view returns(address creator, string memory ipfsHash, Contribution[] memory contributors) {
-        creator = creatorOf(__modelId);
-        ipfsHash = _modelURIs[__modelId];
-        contributors = _contributedModels[__modelId];
+    function getTIExModel(uint256 __modelId) public view returns(TIExModel memory) {
+        return _TIExModels[__modelId];
     }
 
     /**
@@ -488,7 +465,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
      *
      */
     function creatorOf(uint256 __modelId) public view returns (address) {
-        address creator = _creatorOf(__modelId);
+        address creator = _TIExModels[__modelId].creator;
         if (creator == address(0)) {
             revert ErrorTIExIPModelIdNotFound(__modelId);
         }
@@ -503,7 +480,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
      *
      */
     function modelExists(uint256 __modelId) public view returns (bool) {
-        return _creatorOf(__modelId) != address(0);
+        return _TIExModels[__modelId].creator != address(0);
     }
 
     /**
@@ -571,7 +548,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
      *
      */
     function _addModelToAllModelsEnumeration(uint256 __modelId) private {
-        _allModelsIndex[__modelId] = _allModels.length;
+        _TIExModels[__modelId].allModelsIndex = _allModels.length;
         _allModels.push(__modelId);
     }
 
@@ -586,7 +563,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     {
         uint256 length = modelBalanceOf(__to);
         _ownedModels[__to][length] = __modelId;
-        _ownedModelsIndex[__modelId] = length;
+        _TIExModels[__modelId].ownedModelsIndex = length;
     }
 
     /**
@@ -600,17 +577,17 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         // then delete the last slot.
 
         uint256 lastModelIndex = _allModels.length - 1;
-        uint256 modelIndex = _allModelsIndex[__modelId];
+        uint256 modelIndex = _TIExModels[__modelId].allModelsIndex;
 
         // When the model to delete is the last model. However, since this occurs so
         // an 'if' statement (like in _removeModelFromCreatorEnumeration)
         uint256 lastModelId = _allModels[lastModelIndex];
 
         _allModels[modelIndex] = lastModelId; // Move the last model to the slot of the to-delete model
-        _allModelsIndex[lastModelId] = modelIndex; // Update the moved model's index
+        _TIExModels[lastModelId].allModelsIndex = modelIndex; // Update the moved model's index
 
         // This also deletes the contents at the last position of the array
-        delete _allModelsIndex[__modelId];
+        delete _TIExModels[__modelId].allModelsIndex;
         _allModels.pop();
     }
 
@@ -630,18 +607,18 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         // then delete the last slot
 
         uint256 lastModelIndex = modelBalanceOf(__from) - 1;
-        uint256 modelIndex = _ownedModelsIndex[__modelId];
+        uint256 modelIndex = _TIExModels[__modelId].ownedModelsIndex;
 
         // When the model to delete is the last model
         if (modelIndex != lastModelIndex) {
             uint256 lastModelId = _ownedModels[__from][lastModelIndex];
 
             _ownedModels[__from][modelIndex] = lastModelId; // Move the last model to the slot of the to-delete model
-            _ownedModelsIndex[lastModelId] = modelIndex; // Update the moved model's index
+            _TIExModels[lastModelId].ownedModelsIndex = modelIndex; // Update the moved model's index
         }
 
         // This also deletes the contents at the last position of the array
-        delete _ownedModelsIndex[__modelId];
+        delete _TIExModels[__modelId].ownedModelsIndex;
         delete _ownedModels[__from][lastModelIndex];
     }
 
