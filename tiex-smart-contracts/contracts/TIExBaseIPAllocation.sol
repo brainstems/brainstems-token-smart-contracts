@@ -39,13 +39,12 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     /// @notice Mapping model id to TIEx Model
     mapping(uint256 => TIExModel) private _TIExModels;
 
-    function __TIExBaseIPAllocation_init() internal onlyInitializing {
+    function initialize(address __admin) public virtual initializer {
         __AccessControl_init_unchained();
 		__AccessControlEnumerable_init_unchained();
-        __TIExBaseIPAllocation_init_unchained();
-    }
 
-    function __TIExBaseIPAllocation_init_unchained() internal onlyInitializing { }
+        _grantRole(DEFAULT_ADMIN_ROLE, __admin);
+    }
 
     ////////////////////////////////////////////////////////////////////////////
     // MODIFIERS
