@@ -20,6 +20,7 @@ import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155Supp
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
 
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
@@ -28,7 +29,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
 import "./IUtility.sol";
-import "./TIExBaseIPAllocationUpgradeable.sol";
+import "./ITIExBaseIPAllocation.sol";
 
 // Interface for payment token
 interface IPaymentToken is IERC20, IERC20Permit { }
@@ -40,7 +41,7 @@ contract TIExShareCollections is
     ERC1155SupplyUpgradeable,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
-    TIExBaseIPAllocationUpgradeable
+    AccessControlEnumerableUpgradeable
 {
     using SafeMath for uint256;
     using SafeERC20 for IPaymentToken;
@@ -130,6 +131,10 @@ contract TIExShareCollections is
     
     // @notice Indicates that the deadline for a certain operation has been reached.
     error ErrorDeadlineReached();
+    
+    // @notice Indicates that the msg.sender() is invalid
+    error ErrorInvalidMsgSender();
+
 
     /// @notice Emitted when a share collection is released for a specific model.
     /// It provides the model ID and the share collection object as parameters.
@@ -217,6 +222,9 @@ contract TIExShareCollections is
         address newReserveAddress
     );
 
+    /// @notice Emitted when Utility contract address is updated.
+    event TIExUtilityUpdated(IUtility utility);
+
     /// @notice Emitted when distributing funds fromm investors to creators, marketing etc.
     event Distribute(uint256 indexed modelId, uint256 amount, uint256 when);
 
@@ -247,6 +255,9 @@ contract TIExShareCollections is
     /// @notice Utility
     IUtility public utility;
 
+    /// @notice TIExBaseIPAllocation
+    ITIExBaseIPAllocation public TIExBaseIPAllocation;
+
     /**
      * @notice Defines the initialize function, which sets the name, symbol,
      * truth holder, payment token, and investment distribution for the token when deploying Proxy.
@@ -257,7 +268,8 @@ contract TIExShareCollections is
         IPaymentToken __paymentToken,
         address __admin,
         InvestmentDistribution memory __investmentDistribution,
-        IUtility __utility
+        IUtility __utility,
+        ITIExBaseIPAllocation __baseIPAllocation
     ) public virtual initializer {
         uint256 _tRate = __investmentDistribution
             .creatorRate
@@ -272,18 +284,15 @@ contract TIExShareCollections is
 
         truthHolder = __truthHolder;
         paymentToken = __paymentToken;
-
         investmentDistribution = __investmentDistribution;
-
         utility = __utility;
+        TIExBaseIPAllocation = __baseIPAllocation;
 
-        __TIExBaseIPAllocation_init();
         __Context_init_unchained();
         __ERC165_init_unchained();
         __ERC1155_init_unchained("");
         __ERC1155Burnable_init_unchained();
         __Pausable_init_unchained();
-        __TIExBaseIPAllocation_init_unchained();
 
         _grantRole(DEFAULT_ADMIN_ROLE, __admin);
     }
@@ -299,6 +308,17 @@ contract TIExShareCollections is
     modifier whenShareCollectionNotPaused(uint256 __modelId) {
         if (_shareCollections[__modelId].paused) {
             revert ErrorShareCollectionPaused(__modelId);
+        }
+        _;
+    }
+
+    /**
+     * @notice Checks if modelId allocated exists.
+     * @param __modelId must be of existing ID of model.
+     */
+    modifier onlyExistingModelId(uint256 __modelId) {
+        if (!TIExBaseIPAllocation.modelExists(__modelId)) {
+            revert ITIExBaseIPAllocation.ErrorTIExIPModelIdNotFound(__modelId);
         }
         _;
     }
@@ -383,14 +403,15 @@ contract TIExShareCollections is
     }
 
     /**
-     * @notice See { TIExBaseIPAllocationUpgradeable } 
+     * @notice See { TIExBaseIPAllocation } 
      * 
-     * Internal function that overrides the `TIExBaseIPAllocationUpgradeable` contract's `_afterRemoveModel` function.
+     * Internal function that overrides the `TIExBaseIPAllocation` contract's `_afterRemoveModel` function.
      * Used to clean up data related to a model after it has been removed.
      */
-    function _afterRemoveModel(
+    function afterRemoveModel(
         uint256 __modelId
-    ) internal virtual override(TIExBaseIPAllocationUpgradeable) {
+    ) external {
+        if (msg.sender != address(TIExBaseIPAllocation)) revert ErrorInvalidMsgSender();
         if (shareCollectionExists(__modelId)) {
             delete _shareCollections[__modelId];
         }
@@ -463,12 +484,13 @@ contract TIExShareCollections is
         uint256 toMarketing = restOfAmount.mul(investmentDistribution.marketingtRate);
         uint256 toReserve = restOfAmount.mul(investmentDistribution.reserveRate);
         uint256 toPresale = restOfAmount.mul(investmentDistribution.presaleRate);
-        Contribution[] memory contributedModels = getTIExModel(__modelId).contributedModels;
+        
+        ITIExBaseIPAllocation.Contribution[] memory contributedModels = TIExBaseIPAllocation.getTIExModel(__modelId).contributedModels;
 
         _shareCollections[__modelId].withdrawnAmount = _shareCollections[__modelId].withdrawnAmount.add(restOfAmount);
 
         for(uint256 i = 0; i < contributedModels.length; i++) {
-            address contributer = getTIExModel(contributedModels[i].modelId).creator;
+            address contributer = TIExBaseIPAllocation.getTIExModel(contributedModels[i].modelId).creator;
 
             if(contributer == address(0)) continue;
 
@@ -482,6 +504,25 @@ contract TIExShareCollections is
         paymentToken.safeTransfer(investmentDistribution.presale, toPresale.div(10000));
 
         emit Distribute(__modelId, restOfAmount, block.timestamp);
+    }
+
+    /**
+     * @notice Updates the Utiltity address.
+     * @param __utility IUtility
+     * 
+     * Emits a {TIExUtilityUpdated} event.
+     * 
+     * Requirements:
+     * 
+     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
+     * - `__utility` IUtility must not be the zero address(address(0)) 
+     */
+    function updateUtility(IUtility __utility) external onlyRole("DEFAULT_ADMIN_ROLE") {
+        if (address(__utility) == address(0)) revert ErrorInvalidParam();
+
+        utility = __utility;
+
+        emit TIExUtilityUpdated(__utility);
     }
 
     /**
@@ -583,8 +624,7 @@ contract TIExShareCollections is
      * Requirements:
      * 
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - `__presale` address must not be the zero address(address(0)) or the same as the
-     * current truth holder address.
+     * - `__presale` address must not be the zero address(address(0)) 
      */
     function updatePresaleAddress(
         address __presale
@@ -610,8 +650,7 @@ contract TIExShareCollections is
      * Requirements:
      * 
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - `__reserve` address must not be the zero address(address(0)) or the same as the
-     * current truth holder address.
+     * - `__reserve` address must not be the zero address(address(0)) 
      */
     function updateReserveAddress(
         address __reserve
@@ -637,8 +676,7 @@ contract TIExShareCollections is
      * Requirements:
      * 
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - `__paymentToken` address must not be the zero address(address(0)) or the same as the
-     * current truth holder address.
+     * - `__paymentToken` address must not be the zero address(address(0))
      */
     function updatePaymentToken(
         IPaymentToken __paymentToken
@@ -1010,11 +1048,11 @@ contract TIExShareCollections is
         external
         view
         onlyExistingShareCollection(__modelId)
-        returns (TIExShareCollection memory, TIExModel memory)
+        returns (TIExShareCollection memory, ITIExBaseIPAllocation.TIExModel memory)
     {
         return (
             _shareCollections[__modelId],
-            getTIExModel(__modelId)
+            TIExBaseIPAllocation.getTIExModel(__modelId)
         );
     }
 
@@ -1031,7 +1069,7 @@ contract TIExShareCollections is
         onlyExistingModelId(__modelId)
         returns (string memory)
     {
-        return string(abi.encodePacked("ipfs://", getTIExModel(__modelId).modelURI));
+        return string(abi.encodePacked("ipfs://", TIExBaseIPAllocation.getTIExModel(__modelId).modelURI));
     }
 
     /**

@@ -18,89 +18,14 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgrad
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "./ITIExBaseIPAllocation.sol";
 
 
-contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerableUpgradeable {
+contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeable, ITIExBaseIPAllocation {
 
     using Strings for uint256;
     using SafeMath for uint256;
-    
-    // Struct to represent a contribution to a model
-    struct Contribution {
-        uint256 modelId; // The ID of the model
-        uint256 contributionRate; // The rate of the contribution
-    }
 
-    // Struct to represent the metadata of a model
-    struct ModelMetadata {
-        string name; // The name of the model
-        bytes32 ecosystemId; // The ID of the ecosystem the model belongs to
-        uint256 version; // The version of the model
-        string description; // A description of the model
-        bytes modelFingerprint; // The fingerprint of the model
-        bool trained; // Whether the model is trained or not
-        bytes watermarkFingerprint; // The fingerprint of the watermark
-        bytes watermarkSequence; // The sequence of the watermark
-        uint256 performance; // The performance of the model
-    }
-
-    struct TIExModel {
-        address creator;
-        Contribution[] contributedModels;
-        ModelMetadata modelMetadata;
-        uint256 allModelsIndex;
-        uint256 ownedModelsIndex;
-        string modelURI;
-    }
-
-    /// @notice Mapping model id to TIEx Model
-    mapping(uint256 => TIExModel) private _TIExModels;
-
-    // Mapping from model ID to its metadata
-    mapping(uint256 => ModelMetadata) private _modelMetadata;
-
-
-    // Event emitted when a new TIEx IP is allocated to a creator
-    event AllocateTIExIP(address provider, uint256 indexed modelId, TIExModel TIExModel, uint256 startTime);
-    
-    // Event emitted when a TIEx IP is removed
-    event RemoveTIExIP(address creator, address to, uint256 indexed modelId, uint256 removedTime);
-    
-    // Event emitted when the URI of a TIEx model is updated
-    event TIExModelURIUpdated(uint256 indexed modelId, string ipfsHash);
-    
-    // Event emitted when the contribution rates of a model are updated
-    event ContributationRatesUpdated(uint256 indexed modelId, Contribution[] contributionRates);
-    
-    // Event emitted when a model is upgraded
-    event UpgradeModel(uint256 indexed modelId, ModelMetadata newModelMetadata);
-    
-    // Event emitted when the metadata of a model is updated
-    event UpdateModelMetadata(uint256 indexed modelId, ModelMetadata newModelMetadata);
-
-    // Error thrown when an invalid creator address is provided
-    error ErrorTIExIPInvalidCreator(address creator);
-    
-    // Error thrown when a model ID that is already allocated is used
-    error ErrorTIExIPAllocatedAlready(uint256 modelId);
-    
-    // Error thrown when an invalid provider address is provided
-    error ErrorTIExIPInvalidProvider(address provider);
-    
-    // Error thrown when an out of bounds index is used for a creator
-    error ErrorTIExIPOutOfBoundsIndex(address creator, uint256 index);
-    
-    // Error thrown when a non-existent model ID is used
-    error ErrorTIExIPModelIdNotFound(uint256 modelId);
-    
-    // Error thrown when an invalid contribution rate is used
-    error ErrorTIExIPContributionRateInvalid(uint256 contributionRate);
-    
-    // Error thrown when a model that is already trained is used
-    error ErrorTIExIPTrainedAlready(uint256 modelId);
-    
-    // Error thrown when invalid metadata is provided for a model
-    error ErrorTIExIPInvalidMetadata(uint256 modelId);
 
     /// @notice Mapping from creator to list of owned model IDs
     mapping(address => mapping(uint256 => uint256)) private _ownedModels;
@@ -110,6 +35,9 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
 
     /// @notice Mapping creator address to model count
     mapping(address => uint256) private _modelBalances;
+        
+    /// @notice Mapping model id to TIEx Model
+    mapping(uint256 => TIExModel) private _TIExModels;
 
     function __TIExBaseIPAllocation_init() internal onlyInitializing {
         __AccessControl_init_unchained();
@@ -150,47 +78,29 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @notice Upgrades a stubbed model to a trained model.
-     * @param __modelId uint256 must exist.
-     * @param __newModelFingerprint bytes is the new fingerprint of the model.
-     *
-     * Emits a {UpgradeModel} event.
-     *
-     * Requirements:
-     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
-     * - The model with the given `__modelId` must not be trained already.
-     * - The `__newModelFingerprint` must not be empty.
+     * @dev See {TIExBaseIPAllocation-upgradeStubbedModelToTrainedModel}.
      */
-    function upgradeStubbedModelToTrainedModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+    function upgradeStubbedModelToTrainedModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) virtual {
         // Check if the model is already trained, if so, revert the transaction
-        if(_modelMetadata[__modelId].trained) revert ErrorTIExIPTrainedAlready(__modelId);
+        if(_TIExModels[__modelId].modelMetadata.trained) revert ErrorTIExIPTrainedAlready(__modelId);
         
         // Check if the new model fingerprint is valid, if not, revert the transaction
         if (__newModelFingerprint.length == 0) revert ErrorTIExIPInvalidMetadata(__modelId);
         
         // Set the model as trained
-        _modelMetadata[__modelId].trained = true;
+        _TIExModels[__modelId].modelMetadata.trained = true;
         // Set the model version to 1
-        _modelMetadata[__modelId].version = 1;
+        _TIExModels[__modelId].modelMetadata.version = 1;
         // Update the model fingerprint with the new one
-        _modelMetadata[__modelId].modelFingerprint = __newModelFingerprint;
+        _TIExModels[__modelId].modelMetadata.modelFingerprint = __newModelFingerprint;
 
         // Emit an event to log the model upgrade
-        emit UpgradeModel(__modelId, _modelMetadata[__modelId]);
+        emit UpgradeModel(__modelId, _TIExModels[__modelId].modelMetadata);
     }
 
 
     /**
-     * @notice Upgrades a model by updating its fingerprint and incrementing its version.
-     * @param __modelId The ID of the model to be upgraded.
-     * @param __newModelFingerprint The new fingerprint of the model.
-     *
-     * Emits an {UpgradeModel} event.
-     *
-     * Requirements:
-     * - The caller must have the `DEFAULT_ADMIN_ROLE`.
-     * - The model with the given `__modelId` must exist.
-     * - The `__newModelFingerprint` must not be empty.
+     * @dev See {TIExBaseIPAllocation-upgradeModel}.
      */
     function upgradeModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         
@@ -198,25 +108,16 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         if (__newModelFingerprint.length == 0) revert ErrorTIExIPInvalidMetadata(__modelId);
 
         // Increment the version of the model
-        _modelMetadata[__modelId].version++;
+        _TIExModels[__modelId].modelMetadata.version++;
         // Update the model fingerprint with the new one
-        _modelMetadata[__modelId].modelFingerprint = __newModelFingerprint;
+        _TIExModels[__modelId].modelMetadata.modelFingerprint = __newModelFingerprint;
 
         // Emit an event to log the model upgrade
-        emit UpgradeModel(__modelId, _modelMetadata[__modelId]);
+        emit UpgradeModel(__modelId, _TIExModels[__modelId].modelMetadata);
     }
 
     /**
-     * @notice Updates the metadata of a model.
-     * @param __modelId The ID of the model to be updated.
-     * @param __modelMetadata The new metadata of the model.
-     *
-     * Emits an {UpdateModelMetadata} event.
-     *
-     * Requirements:
-     * - The caller must have the `DEFAULT_ADMIN_ROLE`.
-     * - The model with the given `__modelId` must exist.
-     * - The `__modelMetadata` must be valid.
+     * @dev See {TIExBaseIPAllocation-updateModelMetadata}.
      */
     function updateModelMetadata(uint256 __modelId, ModelMetadata calldata __modelMetadata) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         // Check if the model metadata is valid
@@ -231,24 +132,14 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
 
         if (!validForMetadata) revert ErrorTIExIPInvalidMetadata(__modelId);
         // Update the model metadata
-        _modelMetadata[__modelId] = __modelMetadata;
+        _TIExModels[__modelId].modelMetadata = __modelMetadata;
 
         // Emit an event to log the update of model metadata
-        emit UpdateModelMetadata(__modelId, _modelMetadata[__modelId]);
+        emit UpdateModelMetadata(__modelId, _TIExModels[__modelId].modelMetadata);
     }
 
     /**
-     * @notice Allocates `modelId` as TIEx IP to `creator`.
-     * @param __modelId uint256 must not exist.
-     * @param __creator address cannot be the zero address.
-     * @param __ipfsHash string is for Metadata of model
-     * @param __contributors Contribution struct is for contribution rate of each model
-     *
-     * Emits a {AllocateTIExIP} event.
-     *
-     * Requirements:
-     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
-     * - The model with the given `__modelId` must not exist.
+     * @dev See {TIExBaseIPAllocation-giveCreatorTIExIP}.
      */
     function giveCreatorTIExIP(
         uint256 __modelId,
@@ -318,7 +209,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
 
         if (!validForMetadata) revert ErrorTIExIPInvalidMetadata(__modelId);
         // Set the model metadata
-        _modelMetadata[__modelId] = __modelMetadata;
+        _TIExModels[__modelId].modelMetadata = __modelMetadata;
 
         // Emit an event to log the allocation of the model ID
         emit AllocateTIExIP(msg.sender, __modelId, _TIExModels[__modelId], block.timestamp);
@@ -326,27 +217,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     }
 
     /**
-     * @notice Retrieves the metadata of a model.
-     * @param __modelId uint256 ID of the model to retrieve metadata for. Must exist.
-     *
-     * Returns a ModelMetadata struct in memory.
-     *
-     * Requirements:
-     * - The model with the given `__modelId` must exist.
-     */
-
-    function modelMetadata(uint256 __modelId) external onlyExistingModelId(__modelId) view returns(ModelMetadata memory) {
-        return _modelMetadata[__modelId];
-    }
-
-    /**
-     * @notice Updates the contribution rates of a model.
-     *
-     * Emits a {ContributationRatesUpdated} event.
-     *
-     * Requirements:
-     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
-     * - The model with the given `__modelId` must exist.
+     * @dev See {TIExBaseIPAllocation-updateContributionRates}.
      */
     function updateContributionRates(uint256 __modelId, Contribution[] calldata __contributors) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         // Delete the existing contributions for the model
@@ -380,13 +251,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     }
 
     /**
-     * @notice Destroys `modelId`.
-     * @param __modelId must exist.
-     *
-     * Emits a {RemoveTIExIP} event.
-     * 
-     * Requirement:
-     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
+     * @dev See {TIExBaseIPAllocation-removeModel}.
      */
     function removeModel(uint256 __modelId) external onlyRole(DEFAULT_ADMIN_ROLE) {
         address __creator = creatorOf(__modelId);
@@ -400,19 +265,13 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
         
         delete _TIExModels[__modelId];
 
-        _afterRemoveModel(__modelId);
+        //=============================== // _afterRemoveModel(__modelId);  ==========================//
 
         emit RemoveTIExIP(__creator, address(0), __modelId, block.timestamp);
     }
 
     /**
-     * @notice Used to edit the model URI.
-     *
-     * Emits a {TIExModelURIUpdated} event.
-     * 
-     * Requirements:
-     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
-     * - The model with the given `__modelId` must exist.
+     * @dev See {TIExBaseIPAllocation-editURI}.
      */
     function editURI(uint256 __modelId, string calldata __ipfsHash)
         external
@@ -425,32 +284,18 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     }
 
     ////////////////////////////////////////////////////////////////////////////
-    // INTERNAL
-    ////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * @notice Used to clean up data related to a model after it has been removed.
-    */
-    function _afterRemoveModel(
-        uint256 __modelId
-    ) internal virtual {}
-
-    ////////////////////////////////////////////////////////////////////////////
     // READ
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-    * @notice Used to get the detail of model
-    * @param __modelId uint256 must exist
-    *
-    */
-    function getTIExModel(uint256 __modelId) public view returns(TIExModel memory) {
+     * @dev See {TIExBaseIPAllocation-getTIExModel}.
+     */
+    function getTIExModel(uint256 __modelId) external view virtual returns(TIExModel memory) {
         return _TIExModels[__modelId];
     }
 
     /**
-     * @notice Returns the number of models in ``creator``'s account.
-     *
+     * @dev See {TIExBaseIPAllocation-modelBalanceOf}.
      */
     function modelBalanceOf(address __creator) public view returns (uint256) {
         if (__creator == address(0)) {
@@ -460,9 +305,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     }
 
     /**
-     * @notice Returns the creator of the `modelId` model.
-     * @param __modelId uint256 ID of the model must exist.
-     *
+     * @dev See {TIExBaseIPAllocation-creatorOf}.
      */
     function creatorOf(uint256 __modelId) public view returns (address) {
         address creator = _TIExModels[__modelId].creator;
@@ -473,20 +316,14 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     }
 
     /**
-     * @notice Returns whether `__modelId` exists.
-     *
-     * Models start existing when TIEx are allocated,
-     * and stop existing when TIEx are removed (`removeModel`).
-     *
+     * @dev See {TIExBaseIPAllocation-modelExists}.
      */
     function modelExists(uint256 __modelId) public view returns (bool) {
         return _TIExModels[__modelId].creator != address(0);
     }
 
     /**
-     * @notice Returns a model ID owned by `creator` at a given `index` of its model list.
-     * Use along with {modelBalanceOf} to enumerate all of ``creator``'s models.
-     *
+     * @dev See {TIExBaseIPAllocation-modelOfCreatorByIndex}.
      */
     function modelOfCreatorByIndex(address __creator, uint256 __index)
         public
@@ -500,17 +337,14 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     }
 
     /**
-     * @notice Returns the total amount of models stored by the contract.
-     *
+     * @dev See {TIExBaseIPAllocation-totalModelSupply}.
      */
     function totalModelSupply() public view returns (uint256) {
         return _allModels.length;
     }
 
     /**
-     * @notice Returns a model ID at a given `index` of all the models stored by the contract.
-     * Use along with {totalModelSupply} to enumerate all models.
-     *
+     * @dev See {TIExBaseIPAllocation-modelByIndex}.
      */
     function modelByIndex(uint256 __index) public view returns (uint256) {
         if (__index >= totalModelSupply()) {
@@ -520,8 +354,7 @@ contract TIExBaseIPAllocationUpgradeable is Initializable, AccessControlEnumerab
     }
 
     /**
-     * @notice Returns model ids allocated from account of creator.
-     *
+     * @dev See {TIExBaseIPAllocation-modelsOfCreator}.
      */
     function modelsOfCreator(address __creator)
         public
