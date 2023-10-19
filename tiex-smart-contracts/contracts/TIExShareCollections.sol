@@ -256,7 +256,7 @@ contract TIExShareCollections is
     IUtility public utility;
 
     /// @notice TIExBaseIPAllocation
-    ITIExBaseIPAllocation public TIExBaseIPAllocation;
+    ITIExBaseIPAllocation public tiexBaseIPAllocation;
 
     /**
      * @notice Defines the initialize function, which sets the name, symbol,
@@ -269,7 +269,7 @@ contract TIExShareCollections is
         address __admin,
         InvestmentDistribution memory __investmentDistribution,
         IUtility __utility,
-        ITIExBaseIPAllocation __baseIPAllocation
+        ITIExBaseIPAllocation __tiexBaseIPAllocation
     ) public virtual initializer {
         uint256 _tRate = __investmentDistribution
             .creatorRate
@@ -286,7 +286,7 @@ contract TIExShareCollections is
         paymentToken = __paymentToken;
         investmentDistribution = __investmentDistribution;
         utility = __utility;
-        TIExBaseIPAllocation = __baseIPAllocation;
+        tiexBaseIPAllocation = __tiexBaseIPAllocation;
 
         __Context_init_unchained();
         __ERC165_init_unchained();
@@ -317,7 +317,7 @@ contract TIExShareCollections is
      * @param __modelId must be of existing ID of model.
      */
     modifier onlyExistingModelId(uint256 __modelId) {
-        if (!TIExBaseIPAllocation.modelExists(__modelId)) {
+        if (!tiexBaseIPAllocation.modelExists(__modelId)) {
             revert ITIExBaseIPAllocation.ErrorTIExIPModelIdNotFound(__modelId);
         }
         _;
@@ -411,7 +411,7 @@ contract TIExShareCollections is
     function afterRemoveModel(
         uint256 __modelId
     ) external {
-        if (msg.sender != address(TIExBaseIPAllocation)) revert ErrorInvalidMsgSender();
+        if (msg.sender != address(tiexBaseIPAllocation)) revert ErrorInvalidMsgSender();
         if (shareCollectionExists(__modelId)) {
             delete _shareCollections[__modelId];
         }
@@ -485,12 +485,12 @@ contract TIExShareCollections is
         uint256 toReserve = restOfAmount.mul(investmentDistribution.reserveRate);
         uint256 toPresale = restOfAmount.mul(investmentDistribution.presaleRate);
         
-        ITIExBaseIPAllocation.Contribution[] memory contributedModels = TIExBaseIPAllocation.getTIExModel(__modelId).contributedModels;
+        ITIExBaseIPAllocation.Contribution[] memory contributedModels = tiexBaseIPAllocation.getTIExModel(__modelId).contributedModels;
 
         _shareCollections[__modelId].withdrawnAmount = _shareCollections[__modelId].withdrawnAmount.add(restOfAmount);
 
         for(uint256 i = 0; i < contributedModels.length; i++) {
-            address contributer = TIExBaseIPAllocation.getTIExModel(contributedModels[i].modelId).creator;
+            address contributer = tiexBaseIPAllocation.getTIExModel(contributedModels[i].modelId).creator;
 
             if(contributer == address(0)) continue;
 
@@ -1052,7 +1052,7 @@ contract TIExShareCollections is
     {
         return (
             _shareCollections[__modelId],
-            TIExBaseIPAllocation.getTIExModel(__modelId)
+            tiexBaseIPAllocation.getTIExModel(__modelId)
         );
     }
 
@@ -1069,7 +1069,7 @@ contract TIExShareCollections is
         onlyExistingModelId(__modelId)
         returns (string memory)
     {
-        return string(abi.encodePacked("ipfs://", TIExBaseIPAllocation.getTIExModel(__modelId).modelURI));
+        return string(abi.encodePacked("ipfs://", tiexBaseIPAllocation.getTIExModel(__modelId).modelURI));
     }
 
     /**
