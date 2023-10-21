@@ -18,7 +18,9 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgrad
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "./ITIExBaseIPAllocation.sol";
+
+import "./lib/interface/ITIExBaseIPAllocation.sol";
+import "./lib/interface/ITIExShareCollections.sol";
 
 
 contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeable, ITIExBaseIPAllocation {
@@ -39,9 +41,14 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     /// @notice Mapping model id to TIEx Model
     mapping(uint256 => TIExModel) private _TIExModels;
 
-    function initialize(address __admin) public virtual initializer {
+    /// @notice TIExShareCollections
+    ITIExShareCollections public tiexShareCollections;
+
+    function initialize(address __admin, ITIExShareCollections __tiexShareCollections) public virtual initializer {
         __AccessControl_init_unchained();
 		__AccessControlEnumerable_init_unchained();
+
+        tiexShareCollections = __tiexShareCollections;
 
         _grantRole(DEFAULT_ADMIN_ROLE, __admin);
     }
@@ -77,7 +84,7 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @dev See {TIExBaseIPAllocation-upgradeStubbedModelToTrainedModel}.
+     * @dev See {ITIExBaseIPAllocation-upgradeStubbedModelToTrainedModel}.
      */
     function upgradeStubbedModelToTrainedModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) virtual {
         // Check if the model is already trained, if so, revert the transaction
@@ -99,9 +106,9 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
 
 
     /**
-     * @dev See {TIExBaseIPAllocation-upgradeModel}.
+     * @dev See {ITIExBaseIPAllocation-upgradeModel}.
      */
-    function upgradeModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+    function upgradeModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) virtual {
         
         // Check if the new model fingerprint is valid, if not, revert the transaction
         if (__newModelFingerprint.length == 0) revert ErrorTIExIPInvalidMetadata(__modelId);
@@ -116,9 +123,9 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     }
 
     /**
-     * @dev See {TIExBaseIPAllocation-updateModelMetadata}.
+     * @dev See {ITIExBaseIPAllocation-updateModelMetadata}.
      */
-    function updateModelMetadata(uint256 __modelId, ModelMetadata calldata __modelMetadata) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+    function updateModelMetadata(uint256 __modelId, ModelMetadata calldata __modelMetadata) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) virtual {
         // Check if the model metadata is valid
         bool validForMetadata = bytes(__modelMetadata.name).length > 0 
             && bytes(__modelMetadata.description).length > 0 
@@ -138,7 +145,7 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     }
 
     /**
-     * @dev See {TIExBaseIPAllocation-giveCreatorTIExIP}.
+     * @dev See {ITIExBaseIPAllocation-giveCreatorTIExIP}.
      */
     function giveCreatorTIExIP(
         uint256 __modelId,
@@ -146,7 +153,7 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
         string calldata __ipfsHash,
         Contribution[] calldata __contributors,
         ModelMetadata calldata __modelMetadata
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyNotExistingModelId(__modelId) {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyNotExistingModelId(__modelId) virtual {
 
         // Check if the creator address is valid
         if (__creator == address(0)) {
@@ -216,9 +223,9 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     }
 
     /**
-     * @dev See {TIExBaseIPAllocation-updateContributionRates}.
+     * @dev See {ITIExBaseIPAllocation-updateContributionRates}.
      */
-    function updateContributionRates(uint256 __modelId, Contribution[] calldata __contributors) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+    function updateContributionRates(uint256 __modelId, Contribution[] calldata __contributors) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) virtual {
         // Delete the existing contributions for the model
         delete _TIExModels[__modelId].contributedModels;
 
@@ -250,9 +257,9 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     }
 
     /**
-     * @dev See {TIExBaseIPAllocation-removeModel}.
+     * @dev See {ITIExBaseIPAllocation-removeModel}.
      */
-    function removeModel(uint256 __modelId) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function removeModel(uint256 __modelId) external onlyRole(DEFAULT_ADMIN_ROLE) virtual {
         address __creator = creatorOf(__modelId);
 
         _removeModelFromCreatorEnumeration(__creator, __modelId);
@@ -264,18 +271,19 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
         
         delete _TIExModels[__modelId];
 
-        //=============================== // _afterRemoveModel(__modelId);  ==========================//
+        tiexShareCollections.afterRemoveModel(__modelId);
 
         emit RemoveTIExIP(__creator, address(0), __modelId, block.timestamp);
     }
 
     /**
-     * @dev See {TIExBaseIPAllocation-editURI}.
+     * @dev See {ITIExBaseIPAllocation-editURI}.
      */
     function editURI(uint256 __modelId, string calldata __ipfsHash)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
         onlyExistingModelId(__modelId)
+        virtual
     {
         _TIExModels[__modelId].modelURI = __ipfsHash;
 
@@ -287,16 +295,16 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @dev See {TIExBaseIPAllocation-getTIExModel}.
+     * @dev See {ITIExBaseIPAllocation-getTIExModel}.
      */
     function getTIExModel(uint256 __modelId) external view virtual returns(TIExModel memory) {
         return _TIExModels[__modelId];
     }
 
     /**
-     * @dev See {TIExBaseIPAllocation-modelBalanceOf}.
+     * @dev See {ITIExBaseIPAllocation-modelBalanceOf}.
      */
-    function modelBalanceOf(address __creator) public view returns (uint256) {
+    function modelBalanceOf(address __creator) public view virtual returns (uint256) {
         if (__creator == address(0)) {
             revert ErrorTIExIPInvalidCreator(address(0));
         }
@@ -304,9 +312,9 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     }
 
     /**
-     * @dev See {TIExBaseIPAllocation-creatorOf}.
+     * @dev See {ITIExBaseIPAllocation-creatorOf}.
      */
-    function creatorOf(uint256 __modelId) public view returns (address) {
+    function creatorOf(uint256 __modelId) public view virtual returns (address) {
         address creator = _TIExModels[__modelId].creator;
         if (creator == address(0)) {
             revert ErrorTIExIPModelIdNotFound(__modelId);
@@ -315,18 +323,19 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     }
 
     /**
-     * @dev See {TIExBaseIPAllocation-modelExists}.
+     * @dev See {ITIExBaseIPAllocation-modelExists}.
      */
-    function modelExists(uint256 __modelId) public view returns (bool) {
+    function modelExists(uint256 __modelId) public view virtual returns (bool) {
         return _TIExModels[__modelId].creator != address(0);
     }
 
     /**
-     * @dev See {TIExBaseIPAllocation-modelOfCreatorByIndex}.
+     * @dev See {ITIExBaseIPAllocation-modelOfCreatorByIndex}.
      */
     function modelOfCreatorByIndex(address __creator, uint256 __index)
         public
         view
+        virtual
         returns (uint256)
     {
         if (__index >= modelBalanceOf(__creator)) {
@@ -336,16 +345,16 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     }
 
     /**
-     * @dev See {TIExBaseIPAllocation-totalModelSupply}.
+     * @dev See {ITIExBaseIPAllocation-totalModelSupply}.
      */
-    function totalModelSupply() public view returns (uint256) {
+    function totalModelSupply() public view virtual returns (uint256) {
         return _allModels.length;
     }
 
     /**
-     * @dev See {TIExBaseIPAllocation-modelByIndex}.
+     * @dev See {ITIExBaseIPAllocation-modelByIndex}.
      */
-    function modelByIndex(uint256 __index) public view returns (uint256) {
+    function modelByIndex(uint256 __index) public view virtual returns (uint256) {
         if (__index >= totalModelSupply()) {
             revert ErrorTIExIPOutOfBoundsIndex(address(0), __index);
         }
@@ -353,11 +362,12 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     }
 
     /**
-     * @dev See {TIExBaseIPAllocation-modelsOfCreator}.
+     * @dev See {ITIExBaseIPAllocation-modelsOfCreator}.
      */
     function modelsOfCreator(address __creator)
         public
         view
+        virtual
         returns (uint256[] memory)
     {
         uint256 modelCount = modelBalanceOf(__creator);
