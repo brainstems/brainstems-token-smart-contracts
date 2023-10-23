@@ -87,7 +87,7 @@ contract TIExShareCollections is
         InvestmentDistribution memory __investmentDistribution,
         IUtility __utility,
         ITIExBaseIPAllocation __tiexBaseIPAllocation
-    ) public virtual initializer {
+    ) public initializer {
         uint256 _tRate = __investmentDistribution
             .creatorRate
             .add(__investmentDistribution.marketingtRate)
@@ -198,7 +198,7 @@ contract TIExShareCollections is
         uint256[] memory __modelIds,
         uint256[] memory __amounts,
         bytes memory __data
-    ) internal virtual override(ERC1155Upgradeable, ERC1155SupplyUpgradeable) {
+    ) internal override(ERC1155Upgradeable, ERC1155SupplyUpgradeable) {
         super._beforeTokenTransfer(
             __operator,
             __from,

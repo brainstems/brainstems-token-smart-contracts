@@ -44,7 +44,7 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     /// @notice TIExShareCollections
     ITIExShareCollections public tiexShareCollections;
 
-    function initialize(address __admin, ITIExShareCollections __tiexShareCollections) public virtual initializer {
+    function initialize(address __admin, ITIExShareCollections __tiexShareCollections) public initializer {
         __AccessControl_init_unchained();
 		__AccessControlEnumerable_init_unchained();
 
