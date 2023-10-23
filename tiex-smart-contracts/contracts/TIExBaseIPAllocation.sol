@@ -128,7 +128,7 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     function updateModelMetadata(uint256 __modelId, ModelMetadata calldata __modelMetadata) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) virtual {
         // Check if the model metadata is valid
         bool validForMetadata = bytes(__modelMetadata.name).length > 0 
-            && __modelMetadata.description.length > 0 
+            && bytes(__modelMetadata.description).length > 0 
             && __modelMetadata.ecosystemId.length > 0 
             && __modelMetadata.version > 0
             && __modelMetadata.modelFingerprint.length > 0
@@ -205,7 +205,7 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
 
         // Check if the model metadata is valid
         bool validForMetadata = bytes(__modelMetadata.name).length > 0 
-            && __modelMetadata.description.length > 0 
+            && bytes(__modelMetadata.description).length > 0 
             && __modelMetadata.ecosystemId.length > 0 
             && __modelMetadata.version == 1
             && __modelMetadata.modelFingerprint.length > 0
