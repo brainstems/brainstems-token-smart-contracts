@@ -1,5 +1,4 @@
 const { ethers } = require("hardhat");
-const { BigNumber } = require("ethers");
 const { config } = require("hardhat");
 
 const DECIMALS = 18;
@@ -62,8 +61,5 @@ module.exports = {
   h2d,
   DECIMALS,
   hexToDecimal,
-  bigNumberToDecimal,
   getHardhatPrivateKey,
-  encoder,
-  create2Address
 };

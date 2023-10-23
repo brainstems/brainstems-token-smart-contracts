@@ -24,8 +24,8 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgrad
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./lib/interface/ITIExBaseIPAllocation.sol";
-import "./lib/interface/ITIExShareCollections.sol";
+import "./interface/ITIExBaseIPAllocation.sol";
+import "./interface/ITIExShareCollections.sol";
 import "hardhat/console.sol";
 
 
@@ -226,7 +226,7 @@ contract TIExShareCollections is
      */
     function afterRemoveModel(
         uint256 __modelId
-    ) external virtual {
+    ) external {
         if (msg.sender != address(tiexBaseIPAllocation)) revert ErrorInvalidMsgSender();
         if (shareCollectionExists(__modelId)) {
             delete _shareCollections[__modelId];
@@ -251,7 +251,6 @@ contract TIExShareCollections is
         onlyRole(DEFAULT_ADMIN_ROLE)
         onlyNotExistingShareCollection(__modelId)
         onlyExistingModelId(__modelId)
-        virtual
     {
         if (__maxSupply > 0 && __price > 0 && __maxSharePurchase > 0) {
             _shareCollections[__modelId] = TIExShareCollection({
@@ -276,7 +275,7 @@ contract TIExShareCollections is
     /**
      * @dev See {ITIExShareCollections-distribute}.
      */
-    function distribute(uint256 __modelId) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) onlyExistingShareCollection(__modelId) nonReentrant virtual {
+    function distribute(uint256 __modelId) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) onlyExistingShareCollection(__modelId) nonReentrant {
         uint256 restOfAmount = _shareCollections[__modelId].totalInvestment.sub(_shareCollections[__modelId].withdrawnAmount);
 
         if(restOfAmount == 0) revert();
@@ -310,7 +309,7 @@ contract TIExShareCollections is
     /**
      * @dev See {ITIExShareCollections-updateUtility}.
      */
-    function updateUtility(IUtility __utility) external onlyRole("DEFAULT_ADMIN_ROLE") virtual {
+    function updateUtility(IUtility __utility) external onlyRole("DEFAULT_ADMIN_ROLE") {
         if (address(__utility) == address(0)) revert ErrorInvalidParam();
 
         utility = __utility;
@@ -323,7 +322,7 @@ contract TIExShareCollections is
      */
     function updateTruthHolder(
         address __truthHolder
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) virtual {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (__truthHolder == address(0) || __truthHolder == truthHolder)
             revert ErrorInvalidParam();
         truthHolder = __truthHolder;
@@ -340,7 +339,7 @@ contract TIExShareCollections is
         uint256 __marketingRate,
         uint256 __presaleRate,
         uint256 __reserveRate
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) virtual {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 _tRate = __creatorRate
             .add(__marketingRate)
             .add(__presaleRate)
@@ -364,7 +363,7 @@ contract TIExShareCollections is
      */
     function updateMarketingAddress(
         address __marketing
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) virtual {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (
             __marketing == address(0) ||
             __marketing == investmentDistribution.marketing
@@ -383,7 +382,7 @@ contract TIExShareCollections is
      */
     function updatePresaleAddress(
         address __presale
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) virtual {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (
             __presale == address(0) ||
             __presale == investmentDistribution.presale
@@ -401,7 +400,7 @@ contract TIExShareCollections is
      */
     function updateReserveAddress(
         address __reserve
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) virtual {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (
             __reserve == address(0) ||
             __reserve == investmentDistribution.reserve
@@ -419,7 +418,7 @@ contract TIExShareCollections is
      */
     function updatePaymentToken(
         IPaymentToken __paymentToken
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) virtual {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (
             address(__paymentToken) == address(0) ||
             address(paymentToken) == address(__paymentToken)
@@ -439,7 +438,6 @@ contract TIExShareCollections is
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
         onlyExistingShareCollection(__modelId)
-        virtual
     {
         if (_shareCollections[__modelId].paused) revert ErrorInvalidParam();
         _shareCollections[__modelId].paused = true;
@@ -455,7 +453,6 @@ contract TIExShareCollections is
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
         onlyExistingShareCollection(__modelId)
-        virtual
     {
         if (!_shareCollections[__modelId].paused) revert ErrorInvalidParam();
         _shareCollections[__modelId].paused = false;
@@ -471,7 +468,6 @@ contract TIExShareCollections is
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
         onlyExistingShareCollection(__modelId)
-        virtual
     {
         if (_shareCollections[__modelId].blocked) revert ErrorInvalidParam();
         _shareCollections[__modelId].blocked = true;
@@ -487,7 +483,6 @@ contract TIExShareCollections is
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
         onlyExistingShareCollection(__modelId)
-        virtual
     {
         if (!_shareCollections[__modelId].blocked) revert ErrorInvalidParam();
         _shareCollections[__modelId].blocked = false;
@@ -504,7 +499,6 @@ contract TIExShareCollections is
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
         onlyExistingShareCollection(__modelId)
-        virtual
     {
         if (__price == 0 || __price == _shareCollections[__modelId].price)
             revert ErrorInvalidParam();
@@ -527,7 +521,6 @@ contract TIExShareCollections is
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
         onlyExistingShareCollection(__modelId)
-        virtual
     {
         if (
             __maxSupply == 0 ||
@@ -552,7 +545,6 @@ contract TIExShareCollections is
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
         onlyExistingShareCollection(__modelId)
-        virtual
     {
         if (
             __maxSharePurchase == 0 ||
@@ -577,7 +569,6 @@ contract TIExShareCollections is
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
         onlyExistingShareCollection(__modelId)
-        virtual
     {
         if (
             __forOnlyUSInvestors ==
@@ -595,14 +586,14 @@ contract TIExShareCollections is
     /**
      * @dev See {ITIExShareCollections-resume}.
      */
-    function resume() external onlyRole(DEFAULT_ADMIN_ROLE) virtual {
+    function resume() external onlyRole(DEFAULT_ADMIN_ROLE)  {
         _unpause();
     }
 
     /**
      * @dev See {ITIExShareCollections-emergency}.
      */
-    function emergency() external onlyRole(DEFAULT_ADMIN_ROLE) virtual {
+    function emergency() external onlyRole(DEFAULT_ADMIN_ROLE)  {
         _pause();
     }
 
@@ -620,7 +611,7 @@ contract TIExShareCollections is
         uint256 __deadline,
         bytes calldata __signature,
         bytes calldata __permitMessage
-    ) external whenShareCollectionNotPaused(__modelId) nonReentrant virtual {
+    ) external whenShareCollectionNotPaused(__modelId) nonReentrant {
         // abi: [address, bool, address, uint256, uint256], [account, usInvestor, to, nonce, deadline]
         // Encodes a message using the provided parameters.
         bytes memory message = abi.encode(msg.sender, _shareCollections[__modelId].forOnlyUSInvestors, address(this), __nonce, __deadline);
@@ -680,7 +671,7 @@ contract TIExShareCollections is
      */
     function shareCollectionExists(
         uint256 __modelId
-    ) public view virtual returns (bool) {
+    ) public view  returns (bool) {
         return _shareCollections[__modelId].launchStartTime != 0;
     }
 
@@ -693,7 +684,6 @@ contract TIExShareCollections is
         external
         view
         onlyExistingShareCollection(__modelId)
-        virtual 
         returns (TIExShareCollection memory, ITIExBaseIPAllocation.TIExModel memory)
     {
         return (

@@ -96,16 +96,6 @@ describe("TIExShareCollections", () => {
     tiexBaseIPAllocation = await ethers.deployContract("TIExBaseIPAllocation")
     tiexShareCollections = await ethers.deployContract("TIExShareCollections");
 
-    // string name; // The name of the model
-    // bytes32 ecosystemId; // The ID of the ecosystem the model belongs to
-    // uint256 version; // The version of the model
-    // string description; // A description of the model
-    // bytes modelFingerprint; // The fingerprint of the model
-    // bool trained; // Whether the model is trained or not
-    // bytes watermarkFingerprint; // The fingerprint of the watermark
-    // bytes watermarkSequence; // The sequence of the watermark
-    // uint256 performance; // The performance of the model
-
     models = [
       {
         modelId: 1,
@@ -117,10 +107,10 @@ describe("TIExShareCollections", () => {
         maxSharePurchase: i2b(1000),
         forOnlyUSInvestors: true,
         metadata: [
-          "Car Prediction",
+          "Predictive Maintenance of Kitchen Equipment",
           ethers.utils.id("the-intelligence-exchange"),
           1,
-          ethers.utils.defaultAbiCoder.encode(["string"], ["it's the same thing. the difference is that you're using assembly code in solidit"]),
+          ethers.utils.defaultAbiCoder.encode(["string"], ["An AI model can be trained to predict when kitchen equipment is likely to break or underperform, allowing for timely maintenance and reduced downtime."]),
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           false,
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
@@ -138,10 +128,10 @@ describe("TIExShareCollections", () => {
         maxSharePurchase: i2b(1000),
         forOnlyUSInvestors: true,
         metadata: [
-          "Car Prediction",
+          "Food Safety Monitoring",
           ethers.utils.id("the-intelligence-exchange"),
           1,
-          ethers.utils.defaultAbiCoder.encode(["string"], ["it's the same thing. the difference is that you're using assembly code in solidit"]),
+          ethers.utils.defaultAbiCoder.encode(["string"], ["AI algorithms can be used to monitor various food safety parameters, such as temperature, humidity, and food handling practices, in real-time. This can help prevent foodborne illnesses and maintain overall food safety."]),
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           false,
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
@@ -159,10 +149,10 @@ describe("TIExShareCollections", () => {
         maxSharePurchase: i2b(1000),
         forOnlyUSInvestors: true,
         metadata: [
-          "Car Prediction",
+          "Recipe Optimization",
           ethers.utils.id("the-intelligence-exchange"),
           1,
-          ethers.utils.defaultAbiCoder.encode(["string"], ["it's the same thing. the difference is that you're using assembly code in solidit"]),
+          ethers.utils.defaultAbiCoder.encode(["string"], ["An AI algorithm can be trained to optimize recipes based on customer preferences, health considerations, and other factors. This can help restaurants and food producers create more successful and profitable products."]),
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           false,
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
@@ -180,10 +170,10 @@ describe("TIExShareCollections", () => {
         maxSharePurchase: i2b(1000),
         forOnlyUSInvestors: true,
         metadata: [
-          "Car Prediction",
+          "Personalized Menu Recommendations",
           ethers.utils.id("the-intelligence-exchange"),
           1,
-          ethers.utils.defaultAbiCoder.encode(["string"], ["it's the same thing. the difference is that you're using assembly code in solidit"]),
+          ethers.utils.defaultAbiCoder.encode(["string"], ["An AI system can analyze a customer's order history and other personal data to provide personalized menu recommendations. This can improve customer satisfaction and drive menu innovation."]),
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           false,
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
@@ -201,10 +191,10 @@ describe("TIExShareCollections", () => {
         maxSharePurchase: i2b(1000),
         forOnlyUSInvestors: true,
         metadata: [
-          "Car Prediction",
+          "Waste Reduction",
           ethers.utils.id("the-intelligence-exchange"),
           1,
-          ethers.utils.defaultAbiCoder.encode(["string"], ["it's the same thing. the difference is that you're using assembly code in solidit"]),
+          ethers.utils.defaultAbiCoder.encode(["string"], ["An AI model can be trained to predict food waste based on various factors, such as customer demand and inventory levels. This can help restaurants and food retailers reduce waste and minimize losses due to expiration."]),
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           false,
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",

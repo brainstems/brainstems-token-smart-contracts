@@ -19,8 +19,8 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
-import "./lib/interface/ITIExBaseIPAllocation.sol";
-import "./lib/interface/ITIExShareCollections.sol";
+import "./interface/ITIExBaseIPAllocation.sol";
+import "./interface/ITIExShareCollections.sol";
 
 
 contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeable, ITIExBaseIPAllocation {

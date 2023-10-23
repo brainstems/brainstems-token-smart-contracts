@@ -3,7 +3,7 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "./interface/IUtility.sol";
+import "../interface/IUtility.sol";
 
 contract Utility is IUtility {
     /**
