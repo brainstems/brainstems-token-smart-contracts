@@ -26,6 +26,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./lib/interface/ITIExBaseIPAllocation.sol";
 import "./lib/interface/ITIExShareCollections.sol";
+import "hardhat/console.sol";
 
 
 contract TIExShareCollections is
@@ -630,7 +631,8 @@ contract TIExShareCollections is
         if (noncesUsed[__nonce]) revert ErrorInvalidNonce();
 
         // Checks if the deadline has passed and reverts the transaction if it has.
-        if (__deadline > block.timestamp) revert ErrorDeadlineReached();
+        if (__deadline < block.timestamp) revert ErrorDeadlineReached();
+
         
         // Checks if the amount of tokens is 0 and reverts the transaction if it is.
         if (__amount == 0) revert ErrorInvalidParam();

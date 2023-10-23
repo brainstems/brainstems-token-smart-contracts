@@ -19,77 +19,93 @@ describe("TIExShareCollections", () => {
   let marketing;
   let models;
   let tiexShareCollections;
+  let tiexBaseIPAllocation;
   let intellToken;
+  let utility;
 
   const i2b = i => ethers.BigNumber.from(i);
   const generateSignatureForPermit = async (_owner, _other, _required) => {
-    const allowance  = await intellToken.allowance(_owner.address, _other.address);
-      if(_required <= allowance) return "0x";
-      const nonce = await intellToken.nonces(_owner.address);
-      const amount = ethers.constants.MaxUint256;
-      const SECOND = 1000;
-      const deadline = Math.trunc((Date.now() + 1200 * SECOND) / SECOND);
-      const domain = {
-        name: "Intelligence Investment Token",
-        version: "1",
-        chainId: 1337,
-        verifyingContract: intellToken.address
-      };
+    const allowance = await intellToken.allowance(_owner.address, _other.address);
+    if (_required <= allowance) return "0x";
+    const nonce = await intellToken.nonces(_owner.address);
+    const amount = ethers.constants.MaxUint256;
+    const SECOND = 1000;
+    const deadline = Math.trunc((Date.now() + 1200 * SECOND) / SECOND);
+    const domain = {
+      name: "Intelligence Investment Token",
+      version: "1",
+      chainId: 1337,
+      verifyingContract: intellToken.address
+    };
 
-      // The named list of all type definitions
-      const types = {
-        Permit: [
-          {
-            name: "owner",
-            type: "address",
-          },
-          {
-            name: "spender",
-            type: "address",
-          },
-          {
-            name: "value",
-            type: "uint256",
-          },
-          {
-            name: "nonce",
-            type: "uint256",
-          },
-          {
-            name: "deadline",
-            type: "uint256",
-          },
-        ],
-      };
+    // The named list of all type definitions
+    const types = {
+      Permit: [
+        {
+          name: "owner",
+          type: "address",
+        },
+        {
+          name: "spender",
+          type: "address",
+        },
+        {
+          name: "value",
+          type: "uint256",
+        },
+        {
+          name: "nonce",
+          type: "uint256",
+        },
+        {
+          name: "deadline",
+          type: "uint256",
+        },
+      ],
+    };
 
 
-      // The data to sign
-      const value = {
-        owner: _owner.address,
-        spender: _other.address,
-        value: amount,
-        nonce,
-        deadline,
-      };
+    // The data to sign
+    const value = {
+      owner: _owner.address,
+      spender: _other.address,
+      value: amount,
+      nonce,
+      deadline,
+    };
 
-      const signature = await _owner._signTypedData(domain, types, value);
-      let sig = ethers.utils.splitSignature(signature);
+    const signature = await _owner._signTypedData(domain, types, value);
+    let sig = ethers.utils.splitSignature(signature);
 
-      const verifiedAddress = ethers.utils.verifyTypedData(domain, {
-        Permit: types.Permit
-      }, value, signature);
+    const verifiedAddress = ethers.utils.verifyTypedData(domain, {
+      Permit: types.Permit
+    }, value, signature);
 
-      expect(verifiedAddress).to.eq(_owner.address);
+    expect(verifiedAddress).to.eq(_owner.address);
 
-      const permitMessage = ethers.utils.defaultAbiCoder.encode(["uint8", "bytes32", "bytes32", "uint256"], [sig.v, sig.r, sig.s, deadline]);
-      return permitMessage;
+    const permitMessage = ethers.utils.defaultAbiCoder.encode(["uint8", "bytes32", "bytes32", "uint256"], [sig.v, sig.r, sig.s, deadline]);
+    return permitMessage;
 
   };
 
   before(async () => {
     [deployer, admin, truthHolder, recipient, signer0, signer1, signer2, reserve, presale, marketing] = await ethers.getSigners();
+
+    utility = await ethers.deployContract("Utility");
     intellToken = await ethers.deployContract("IntelligenceInvestmentToken", [recipient.address]);
+    tiexBaseIPAllocation = await ethers.deployContract("TIExBaseIPAllocation")
     tiexShareCollections = await ethers.deployContract("TIExShareCollections");
+
+    // string name; // The name of the model
+    // bytes32 ecosystemId; // The ID of the ecosystem the model belongs to
+    // uint256 version; // The version of the model
+    // string description; // A description of the model
+    // bytes modelFingerprint; // The fingerprint of the model
+    // bool trained; // Whether the model is trained or not
+    // bytes watermarkFingerprint; // The fingerprint of the watermark
+    // bytes watermarkSequence; // The sequence of the watermark
+    // uint256 performance; // The performance of the model
+
     models = [
       {
         modelId: 1,
@@ -99,7 +115,18 @@ describe("TIExShareCollections", () => {
         maxSupply: i2b(100000),
         price: ethers.utils.parseEther("1000"),
         maxSharePurchase: i2b(1000),
-        forOnlyUSInvestors: true
+        forOnlyUSInvestors: true,
+        metadata: [
+          "Car Prediction",
+          ethers.utils.id("the-intelligence-exchange"),
+          1,
+          ethers.utils.defaultAbiCoder.encode(["string"], ["it's the same thing. the difference is that you're using assembly code in solidit"]),
+          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          false,
+          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          98
+        ]
       },
       {
         modelId: 2,
@@ -109,7 +136,18 @@ describe("TIExShareCollections", () => {
         maxSupply: i2b(100000),
         price: ethers.utils.parseEther("1000"),
         maxSharePurchase: i2b(1000),
-        forOnlyUSInvestors: true
+        forOnlyUSInvestors: true,
+        metadata: [
+          "Car Prediction",
+          ethers.utils.id("the-intelligence-exchange"),
+          1,
+          ethers.utils.defaultAbiCoder.encode(["string"], ["it's the same thing. the difference is that you're using assembly code in solidit"]),
+          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          false,
+          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          98
+        ]
       },
       {
         modelId: 3,
@@ -119,7 +157,18 @@ describe("TIExShareCollections", () => {
         maxSupply: i2b(100000),
         price: ethers.utils.parseEther("1000"),
         maxSharePurchase: i2b(1000),
-        forOnlyUSInvestors: true
+        forOnlyUSInvestors: true,
+        metadata: [
+          "Car Prediction",
+          ethers.utils.id("the-intelligence-exchange"),
+          1,
+          ethers.utils.defaultAbiCoder.encode(["string"], ["it's the same thing. the difference is that you're using assembly code in solidit"]),
+          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          false,
+          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          98
+        ]
       },
       {
         modelId: 4,
@@ -129,7 +178,18 @@ describe("TIExShareCollections", () => {
         maxSupply: i2b(100000),
         price: ethers.utils.parseEther("1000"),
         maxSharePurchase: i2b(1000),
-        forOnlyUSInvestors: true
+        forOnlyUSInvestors: true,
+        metadata: [
+          "Car Prediction",
+          ethers.utils.id("the-intelligence-exchange"),
+          1,
+          ethers.utils.defaultAbiCoder.encode(["string"], ["it's the same thing. the difference is that you're using assembly code in solidit"]),
+          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          false,
+          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          98
+        ]
       },
       {
         modelId: 5,
@@ -139,11 +199,29 @@ describe("TIExShareCollections", () => {
         maxSupply: i2b(100000),
         price: ethers.utils.parseEther("1000"),
         maxSharePurchase: i2b(1000),
-        forOnlyUSInvestors: true
+        forOnlyUSInvestors: true,
+        metadata: [
+          "Car Prediction",
+          ethers.utils.id("the-intelligence-exchange"),
+          1,
+          ethers.utils.defaultAbiCoder.encode(["string"], ["it's the same thing. the difference is that you're using assembly code in solidit"]),
+          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          false,
+          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          98
+        ]
       },
     ]
 
-    await tiexShareCollections.initialize(truthHolder.address, intellToken.address, admin.address, [creator_rate, marketing_rate, reserve_rate, presale_rate, marketing.address, reserve.address, presale.address]);
+    await tiexBaseIPAllocation.initialize(admin.address, tiexShareCollections.address);
+    await tiexShareCollections.initialize(
+      truthHolder.address,
+      intellToken.address, 
+      admin.address, 
+      [creator_rate, marketing_rate, reserve_rate, presale_rate, marketing.address, reserve.address, presale.address], 
+      utility.address, 
+      tiexBaseIPAllocation.address);
 
     const toSend = ethers.utils.parseEther("100000000");
     await intellToken.connect(recipient).transfer(signer0.address, toSend);
@@ -157,7 +235,15 @@ describe("TIExShareCollections", () => {
       expect(tiexShareCollections.address).to.exist;
     })
 
-    it("Should set right symbol and name, payment token, truth holder, admin role.", async function () {
+    it("Should deploy TIExBaseIPAllocatioin", async () => {
+      expect(tiexBaseIPAllocation.address).to.exist;
+    })
+
+    it("Should deploy Utility", async () => {
+      expect(utility.address).to.exist;
+    })
+
+    it("Should set right symbol and name, payment token, truth holder, admin role, tiexBaseIPAllocation in TIExShareCollections", async function () {
       const default_amdin_role = await tiexShareCollections.DEFAULT_ADMIN_ROLE();
       const investmentDistribution = await tiexShareCollections.investmentDistribution();
 
@@ -173,34 +259,47 @@ describe("TIExShareCollections", () => {
       expect(await tiexShareCollections.symbol()).to.eq(tiex_share_collection_symbol);
       expect(await tiexShareCollections.paymentToken()).to.eq(intellToken.address);
       expect(await tiexShareCollections.truthHolder()).to.eq(truthHolder.address);
+      expect(await tiexShareCollections.tiexBaseIPAllocation()).to.eq(tiexBaseIPAllocation.address);
       expect(await tiexShareCollections.hasRole(default_amdin_role, admin.address)).to.eq(true);
 
+    });
+
+    it("Should set right tiexShareCollection, admin role in TIExBaseIPAllocation", async function () {
+      const default_amdin_role = await tiexBaseIPAllocation.DEFAULT_ADMIN_ROLE();
+
+      expect(await tiexBaseIPAllocation.tiexShareCollections()).to.eq(tiexShareCollections.address);
+      expect(await tiexBaseIPAllocation.hasRole(default_amdin_role, admin.address)).to.eq(true);
     });
   })
 
   describe("TIExBaseIPAllocation", async () => {
     before(async () => {
       for (var i = 0; i < models.length; i++) {
-        await tiexShareCollections.connect(admin).giveCreatorTIExIP(
+        await tiexBaseIPAllocation.connect(admin).giveCreatorTIExIP(
           models[i].modelId,
           models[i].creator,
           models[i].ipfsHash,
-          models[i].contributors
+          models[i].contributors,
+          models[i].metadata
         );
       }
     })
 
     it("should give a creator TIExIP", async () => {
       for (var i = 0; i < models.length; i++) {
-        const model_detail = await tiexShareCollections.getModelDetail(models[i].modelId);
+        const model_detail = await tiexBaseIPAllocation.getTIExModel(models[i].modelId);
 
-        expect(await tiexShareCollections.creatorOf(models[i].modelId)).to.eq(models[i].creator);
+        expect(await tiexBaseIPAllocation.creatorOf(models[i].modelId)).to.eq(models[i].creator);
         expect(await model_detail[0]).to.eq(models[i].creator);
-        expect(await model_detail[1]).to.eq(models[i].ipfsHash);
+        expect(await model_detail[5]).to.eq(models[i].ipfsHash);
 
         for (var j = 0; j < models[i].contributors.length; j++) {
-          expect(await model_detail[2][j][0]).to.eq(ethers.BigNumber.from(models[i].contributors[j][0]));
-          expect(await model_detail[2][j][1]).to.eq(ethers.BigNumber.from(models[i].contributors[j][1]));
+          expect(await model_detail[1][j][0]).to.eq(ethers.BigNumber.from(models[i].contributors[j][0]));
+          expect(await model_detail[1][j][1]).to.eq(ethers.BigNumber.from(models[i].contributors[j][1]));
+        }
+
+        for(var ii = 0; ii < 9; ii++) {
+          expect(model_detail[2][ii]).to.eq(models[i].metadata[ii])
         }
       }
     })
@@ -238,13 +337,15 @@ describe("TIExShareCollections", () => {
     it("should buy shares with INTELL tokens", async () => {
       for (var i = 0; i < models.length; i++) {
         const nonce = h2d(crypto.randomBytes(8).toString("hex"));
+        const deadline = Math.round(Date.now() / 1000) + 600;
 
         const payload = ethers.utils.defaultAbiCoder.encode(
-          ["address", "bool", "address", "uint256"],
+          ["address", "bool", "address", "uint256", "uint256"],
           [signer0.address,
             true,
           tiexShareCollections.address,
-            nonce
+            nonce,
+            deadline
           ]);
         const payloadHash = ethers.utils.keccak256(payload);
         const signature = await truthHolder.signMessage(ethers.utils.arrayify(payloadHash));
@@ -261,29 +362,29 @@ describe("TIExShareCollections", () => {
         const shareCollectionBefore = await tiexShareCollections.shareCollection(models[i].modelId);
 
         await tiexShareCollections.connect(admin).emergency();
-        let permitMessage =  await generateSignatureForPermit(signer0, tiexShareCollections, paymentAmount);
-        
+        let permitMessage = await generateSignatureForPermit(signer0, tiexShareCollections, paymentAmount);
 
-        await expect(tiexShareCollections.connect(signer0).buyShares(models[i].modelId, shares, nonce, true, signature, permitMessage)).to.be.reverted;
+
+        await expect(tiexShareCollections.connect(signer0).buyShares(models[i].modelId, shares, nonce, deadline, signature, permitMessage)).to.be.reverted;
         await tiexShareCollections.connect(admin).resume();
 
 
         await tiexShareCollections.connect(admin).setBlock(models[i].modelId);
-        permitMessage =  await generateSignatureForPermit(signer0, tiexShareCollections, paymentAmount);
-        
+        permitMessage = await generateSignatureForPermit(signer0, tiexShareCollections, paymentAmount);
 
-        await expect(tiexShareCollections.connect(signer0).buyShares(models[i].modelId, shares, nonce, true, signature, permitMessage)).to.be.reverted;
+
+        await expect(tiexShareCollections.connect(signer0).buyShares(models[i].modelId, shares, nonce, deadline, signature, permitMessage)).to.be.reverted;
         await tiexShareCollections.connect(admin).setUnblock(models[i].modelId);
 
         await tiexShareCollections.connect(admin).setPause(models[i].modelId);
-        permitMessage =  await generateSignatureForPermit(signer0, tiexShareCollections, paymentAmount);
-        
-        await expect(tiexShareCollections.connect(signer0).buyShares(models[i].modelId, shares, nonce, true, signature, permitMessage)).to.be.reverted;
+        permitMessage = await generateSignatureForPermit(signer0, tiexShareCollections, paymentAmount);
+
+        await expect(tiexShareCollections.connect(signer0).buyShares(models[i].modelId, shares, nonce, deadline, signature, permitMessage)).to.be.reverted;
         await tiexShareCollections.connect(admin).setUnpause(models[i].modelId);
 
-        permitMessage =  await generateSignatureForPermit(signer0, tiexShareCollections, paymentAmount);
-        
-        await tiexShareCollections.connect(signer0).buyShares(models[i].modelId, shares, nonce, true, signature, permitMessage);
+        permitMessage = await generateSignatureForPermit(signer0, tiexShareCollections, paymentAmount);
+
+        await tiexShareCollections.connect(signer0).buyShares(models[i].modelId, shares, nonce, deadline, signature, permitMessage);
 
         const intellBalanceOfSigner0After = await intellToken.balanceOf(signer0.address);
         const shareBalanceOfSigner0After = await tiexShareCollections.balanceOf(signer0.address, models[i].modelId);
@@ -295,9 +396,9 @@ describe("TIExShareCollections", () => {
         expect(intellBalanceOfTiexShareContractBefore.add(paymentAmount)).to.eq(intellBalanceOfTiexShareContractAfter);
         expect(shareCollectionBefore[0][1].add(paymentAmount)).to.eq(shareCollectionAfter[0][1]);
 
-        permitMessage =  await generateSignatureForPermit(signer0, tiexShareCollections, paymentAmount);
-        
-        await expect(tiexShareCollections.connect(signer0).buyShares(models[i].modelId, shares, nonce, true, signature, permitMessage)).to.be.reverted;
+        permitMessage = await generateSignatureForPermit(signer0, tiexShareCollections, paymentAmount);
+
+        await expect(tiexShareCollections.connect(signer0).buyShares(models[i].modelId, shares, nonce, deadline, signature, permitMessage)).to.be.reverted;
       }
     })
 
@@ -346,7 +447,7 @@ describe("TIExShareCollections", () => {
 
         for (var j = 0; j < models[i].contributors.length; j++) {
           const contributor = models[i].contributors[j];
-          const creator = await tiexShareCollections.creatorOf(contributor[0]);
+          const creator = await tiexBaseIPAllocation.creatorOf(contributor[0]);
           const balanceOfCreatorBefore = await intellToken.balanceOf(creator);
           if (toEachCreator[creator] == undefined) toEachCreator[creator] = i2b(0);
           toEachCreator[creator] = toEachCreator[creator].add(toCreators.mul(contributor[1]).div(10000_0000));

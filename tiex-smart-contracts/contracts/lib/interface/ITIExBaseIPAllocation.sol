@@ -27,7 +27,7 @@ interface ITIExBaseIPAllocation {
         string name; // The name of the model
         bytes32 ecosystemId; // The ID of the ecosystem the model belongs to
         uint256 version; // The version of the model
-        string description; // A description of the model
+        bytes description; // A description of the model
         bytes modelFingerprint; // The fingerprint of the model
         bool trained; // Whether the model is trained or not
         bytes watermarkFingerprint; // The fingerprint of the watermark
