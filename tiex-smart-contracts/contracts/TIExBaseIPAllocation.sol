@@ -86,7 +86,7 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     /**
      * @dev See {ITIExBaseIPAllocation-upgradeStubbedModelToTrainedModel}.
      */
-    function upgradeStubbedModelToTrainedModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) virtual {
+    function upgradeStubbedModelToTrainedModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         // Check if the model is already trained, if so, revert the transaction
         if(_TIExModels[__modelId].modelMetadata.trained) revert ErrorTIExIPTrainedAlready(__modelId);
         
@@ -108,7 +108,7 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     /**
      * @dev See {ITIExBaseIPAllocation-upgradeModel}.
      */
-    function upgradeModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) virtual {
+    function upgradeModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         
         // Check if the new model fingerprint is valid, if not, revert the transaction
         if (__newModelFingerprint.length == 0) revert ErrorTIExIPInvalidMetadata(__modelId);
@@ -125,7 +125,7 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     /**
      * @dev See {ITIExBaseIPAllocation-updateModelMetadata}.
      */
-    function updateModelMetadata(uint256 __modelId, ModelMetadata calldata __modelMetadata) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) virtual {
+    function updateModelMetadata(uint256 __modelId, ModelMetadata calldata __modelMetadata) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         // Check if the model metadata is valid
         bool validForMetadata = bytes(__modelMetadata.name).length > 0 
             && bytes(__modelMetadata.description).length > 0 
@@ -153,7 +153,7 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
         string calldata __ipfsHash,
         Contribution[] calldata __contributors,
         ModelMetadata calldata __modelMetadata
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyNotExistingModelId(__modelId) virtual {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyNotExistingModelId(__modelId) {
 
         // Check if the creator address is valid
         if (__creator == address(0)) {
@@ -225,7 +225,7 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     /**
      * @dev See {ITIExBaseIPAllocation-updateContributionRates}.
      */
-    function updateContributionRates(uint256 __modelId, Contribution[] calldata __contributors) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) virtual {
+    function updateContributionRates(uint256 __modelId, Contribution[] calldata __contributors) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         // Delete the existing contributions for the model
         delete _TIExModels[__modelId].contributedModels;
 
@@ -259,7 +259,7 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     /**
      * @dev See {ITIExBaseIPAllocation-removeModel}.
      */
-    function removeModel(uint256 __modelId) external onlyRole(DEFAULT_ADMIN_ROLE) virtual {
+    function removeModel(uint256 __modelId) external onlyRole(DEFAULT_ADMIN_ROLE) {
         address __creator = creatorOf(__modelId);
 
         _removeModelFromCreatorEnumeration(__creator, __modelId);
@@ -283,7 +283,6 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
         onlyExistingModelId(__modelId)
-        virtual
     {
         _TIExModels[__modelId].modelURI = __ipfsHash;
 
@@ -297,14 +296,14 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     /**
      * @dev See {ITIExBaseIPAllocation-getTIExModel}.
      */
-    function getTIExModel(uint256 __modelId) external view virtual returns(TIExModel memory) {
+    function getTIExModel(uint256 __modelId) external view returns(TIExModel memory) {
         return _TIExModels[__modelId];
     }
 
     /**
      * @dev See {ITIExBaseIPAllocation-modelBalanceOf}.
      */
-    function modelBalanceOf(address __creator) public view virtual returns (uint256) {
+    function modelBalanceOf(address __creator) public view returns (uint256) {
         if (__creator == address(0)) {
             revert ErrorTIExIPInvalidCreator(address(0));
         }
@@ -314,7 +313,7 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     /**
      * @dev See {ITIExBaseIPAllocation-creatorOf}.
      */
-    function creatorOf(uint256 __modelId) public view virtual returns (address) {
+    function creatorOf(uint256 __modelId) public view returns (address) {
         address creator = _TIExModels[__modelId].creator;
         if (creator == address(0)) {
             revert ErrorTIExIPModelIdNotFound(__modelId);
@@ -325,7 +324,7 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     /**
      * @dev See {ITIExBaseIPAllocation-modelExists}.
      */
-    function modelExists(uint256 __modelId) public view virtual returns (bool) {
+    function modelExists(uint256 __modelId) public view returns (bool) {
         return _TIExModels[__modelId].creator != address(0);
     }
 
@@ -335,7 +334,6 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     function modelOfCreatorByIndex(address __creator, uint256 __index)
         public
         view
-        virtual
         returns (uint256)
     {
         if (__index >= modelBalanceOf(__creator)) {
@@ -347,14 +345,14 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     /**
      * @dev See {ITIExBaseIPAllocation-totalModelSupply}.
      */
-    function totalModelSupply() public view virtual returns (uint256) {
+    function totalModelSupply() public view returns (uint256) {
         return _allModels.length;
     }
 
     /**
      * @dev See {ITIExBaseIPAllocation-modelByIndex}.
      */
-    function modelByIndex(uint256 __index) public view virtual returns (uint256) {
+    function modelByIndex(uint256 __index) public view returns (uint256) {
         if (__index >= totalModelSupply()) {
             revert ErrorTIExIPOutOfBoundsIndex(address(0), __index);
         }
@@ -367,7 +365,6 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     function modelsOfCreator(address __creator)
         public
         view
-        virtual
         returns (uint256[] memory)
     {
         uint256 modelCount = modelBalanceOf(__creator);

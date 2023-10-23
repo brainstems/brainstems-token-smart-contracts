@@ -1,8 +1,7 @@
-const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const crypto = require('crypto');
-const { getHardhatPrivateKey, h2d } = require("./helper");
+const { h2d } = require("./helper");
 const { creator_rate, tiex_share_collection_name, tiex_share_collection_symbol, marketing_rate, reserve_rate, presale_rate } = require("../scripts/deploy_config");
 
 describe("TIExShareCollections", () => {

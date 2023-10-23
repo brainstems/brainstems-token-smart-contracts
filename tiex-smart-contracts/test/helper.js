@@ -1,23 +1,10 @@
 const { ethers } = require("hardhat");
-const { config } = require("hardhat");
 
 const DECIMALS = 18;
 const parseUnits = (__num) =>
   ethers.utils.parseUnits(__num.toString(), DECIMALS);
 
 const hexToDecimal = (hex) => parseInt(hex, 16);
-
-const bigNumberToDecimal = (bigNumber) => hexToDecimal(bigNumber._hex, 16);
-
-const getHardhatPrivateKey = (index) => {
-  const accounts = config.networks.hardhat.accounts;
-  const wallet = ethers.Wallet.fromMnemonic(
-    accounts.mnemonic,
-    accounts.path + `/${index}`
-  );
-
-  return wallet.privateKey;
-};
 
 const h2d = s => {
 
@@ -45,21 +32,9 @@ const h2d = s => {
   return dec;
 }
 
-const encoder = (types, values) => {
-  const abiCoder = ethers.utils.defaultAbiCoder;
-  const encodedParams = abiCoder.encode(types, values);
-  return encodedParams.slice(2);
-};
-
-const create2Address = (factoryAddress, saltHex, initCode) => {
-  const create2Addr = ethers.utils.getCreate2Address(factoryAddress, saltHex, ethers.utils.keccak256(initCode));
-  return create2Addr;
-}
-
 module.exports = {
   parseUnits,
   h2d,
   DECIMALS,
   hexToDecimal,
-  getHardhatPrivateKey,
 };
