@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-        /*.----------------.  .----------------.  .----------------.  .----------------. 
+/*.----------------.  .----------------.  .----------------.  .----------------. 
         | .--------------. || .--------------. || .--------------. || .--------------. |
         | |  _________   | || |     _____    | || |  _________   | || |  ____  ____  | |
         | | |  _   _  |  | || |    |_   _|   | || | |_   ___  |  | || | |_  _||_  _| | |
@@ -14,9 +14,6 @@
 
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155BurnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC1155/extensions/ERC1155SupplyUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
@@ -28,12 +25,8 @@ import "./interface/ITIExBaseIPAllocation.sol";
 import "./interface/ITIExShareCollections.sol";
 import "hardhat/console.sol";
 
-
 contract TIExShareCollections is
     Initializable,
-    ERC1155Upgradeable,
-    ERC1155BurnableUpgradeable,
-    ERC1155SupplyUpgradeable,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
     AccessControlEnumerableUpgradeable,
@@ -43,7 +36,8 @@ contract TIExShareCollections is
     using SafeERC20 for IPaymentToken;
 
     /// @notice MAX_INT = 2**256 - 1 = uint256(-1)
-    uint256 constant MAX_INT = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+    uint256 constant MAX_INT =
+        0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
 
     /// @notice See {ITIExShareCollections-name}.
     string public override name;
@@ -106,9 +100,6 @@ contract TIExShareCollections is
         tiexBaseIPAllocation = __tiexBaseIPAllocation;
 
         __Context_init_unchained();
-        __ERC165_init_unchained();
-        __ERC1155_init_unchained("");
-        __ERC1155Burnable_init_unchained();
         __Pausable_init_unchained();
 
         _grantRole(DEFAULT_ADMIN_ROLE, __admin);
@@ -167,67 +158,11 @@ contract TIExShareCollections is
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @notice Internal function that overrides two functions, "ERC1155Upgradeable._beforeTokenTransfer" and 
-     * "ERC1155SupplyUpgradeable._beforeTokenTransfer".
-     * 
-     * NOTE: The purpose of this function is to perform some checks before transferring tokens from one address to 
-     * another. 
-     *
-     * Here's a breakdown of what the function does:
-     * 1. It calls the "_beforeTokenTransfer" function from the parent contracts, "ERC1155Upgradeable" and 
-     * "ERC1155SupplyUpgradeable", passing the provided arguments.
-     * 2. It checks if the recipient address (__to) is not the zero address (address(0)). 
-     * 3. If it is not the zero address, it proceeds with the following checks:
-     * It iterates over the __modelIds array using a for loop. For each modelId, it performs the following checks:
-     * - It checks if the Share Collection with the given modelId is blocked by accessing the "blocked" property of the 
-     * Share Collection in the "_shareCollections" mapping. If it is blocked, it reverts the transaction with an error 
-     * using the "ErrorShareCollectionBlocked" function, passing the modelId as an argument.
-     * - It checks if the Share Collection with the given modelId exists by calling the "shareCollectionExists" 
-     * function. If it doesn't exist, it reverts the transaction with an error using the "ErrorShareCollectionNotFound" 
-     * function, passing the modelId as an argument.
-     * - It checks if the contract is paused by calling the "paused" function. If it is paused, it reverts the 
-     * transaction with an error using the "ErrorTIExPaused" function.
-
-     * Overall, this function ensures that certain conditions are met before transferring tokens, such as checking if 
-     * the Share Collection is blocked, if it exists, and if the contract is paused.
-     */
-    function _beforeTokenTransfer(
-        address __operator,
-        address __from,
-        address __to,
-        uint256[] memory __modelIds,
-        uint256[] memory __amounts,
-        bytes memory __data
-    ) internal override(ERC1155Upgradeable, ERC1155SupplyUpgradeable) {
-        super._beforeTokenTransfer(
-            __operator,
-            __from,
-            __to,
-            __modelIds,
-            __amounts,
-            __data
-        );
-
-        if (__to != address(0)) {
-            for (uint256 i = 0; i < __modelIds.length; i++) {
-                if (_shareCollections[__modelIds[i]].blocked)
-                    revert ErrorShareCollectionBlocked(__modelIds[i]);
-                if (!shareCollectionExists(__modelIds[i]))
-                    revert ErrorShareCollectionNotFound(__modelIds[i]);
-                if (paused()) revert ErrorTIExPaused();
-            }
-        }
-    }
-
-
-
-    /**
      * @dev See {ITIExShareCollections-afterRemoveModel}.
      */
-    function afterRemoveModel(
-        uint256 __modelId
-    ) external {
-        if (msg.sender != address(tiexBaseIPAllocation)) revert ErrorInvalidMsgSender();
+    function afterRemoveModel(uint256 __modelId) external {
+        if (msg.sender != address(tiexBaseIPAllocation))
+            revert ErrorInvalidMsgSender();
         if (shareCollectionExists(__modelId)) {
             delete _shareCollections[__modelId];
         }
@@ -275,33 +210,72 @@ contract TIExShareCollections is
     /**
      * @dev See {ITIExShareCollections-distribute}.
      */
-    function distribute(uint256 __modelId) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) onlyExistingShareCollection(__modelId) nonReentrant {
-        uint256 restOfAmount = _shareCollections[__modelId].totalInvestment.sub(_shareCollections[__modelId].withdrawnAmount);
+    function distribute(
+        uint256 __modelId
+    )
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        onlyExistingModelId(__modelId)
+        onlyExistingShareCollection(__modelId)
+        nonReentrant
+    {
+        uint256 restOfAmount = _shareCollections[__modelId].totalInvestment.sub(
+            _shareCollections[__modelId].withdrawnAmount
+        );
 
-        if(restOfAmount == 0) revert();
+        // TODO: replace with funds added by TIEX instead of shares investments, which are no longer present
+        // if (restOfAmount == 0) revert();
 
-        uint256 toCreators = restOfAmount.mul(investmentDistribution.creatorRate);
-        uint256 toMarketing = restOfAmount.mul(investmentDistribution.marketingtRate);
-        uint256 toReserve = restOfAmount.mul(investmentDistribution.reserveRate);
-        uint256 toPresale = restOfAmount.mul(investmentDistribution.presaleRate);
-        
-        ITIExBaseIPAllocation.Contribution[] memory contributedModels = tiexBaseIPAllocation.getTIExModel(__modelId).contributedModels;
+        uint256 toCreators = restOfAmount.mul(
+            investmentDistribution.creatorRate
+        );
+        uint256 toMarketing = restOfAmount.mul(
+            investmentDistribution.marketingtRate
+        );
+        uint256 toReserve = restOfAmount.mul(
+            investmentDistribution.reserveRate
+        );
+        uint256 toPresale = restOfAmount.mul(
+            investmentDistribution.presaleRate
+        );
 
-        _shareCollections[__modelId].withdrawnAmount = _shareCollections[__modelId].withdrawnAmount.add(restOfAmount);
+        ITIExBaseIPAllocation.Contribution[]
+            memory contributedModels = tiexBaseIPAllocation
+                .getTIExModel(__modelId)
+                .contributedModels;
 
-        for(uint256 i = 0; i < contributedModels.length; i++) {
-            address contributer = tiexBaseIPAllocation.getTIExModel(contributedModels[i].modelId).creator;
+        _shareCollections[__modelId].withdrawnAmount = _shareCollections[
+            __modelId
+        ].withdrawnAmount.add(restOfAmount);
 
-            if(contributer == address(0)) continue;
+        for (uint256 i = 0; i < contributedModels.length; i++) {
+            address contributer = tiexBaseIPAllocation
+                .getTIExModel(contributedModels[i].modelId)
+                .creator;
 
-            uint256 toContributer = toCreators * contributedModels[i].contributionRate;
+            if (contributer == address(0)) continue;
 
-            paymentToken.safeTransfer(contributer, toContributer.div(10000).div(10000));
+            uint256 toContributer = toCreators *
+                contributedModels[i].contributionRate;
+
+            paymentToken.safeTransfer(
+                contributer,
+                toContributer.div(10000).div(10000)
+            );
         }
 
-        paymentToken.safeTransfer(investmentDistribution.marketing, toMarketing.div(10000));
-        paymentToken.safeTransfer(investmentDistribution.reserve, toReserve.div(10000));
-        paymentToken.safeTransfer(investmentDistribution.presale, toPresale.div(10000));
+        paymentToken.safeTransfer(
+            investmentDistribution.marketing,
+            toMarketing.div(10000)
+        );
+        paymentToken.safeTransfer(
+            investmentDistribution.reserve,
+            toReserve.div(10000)
+        );
+        paymentToken.safeTransfer(
+            investmentDistribution.presale,
+            toPresale.div(10000)
+        );
 
         emit Distribute(__modelId, restOfAmount, block.timestamp);
     }
@@ -309,7 +283,9 @@ contract TIExShareCollections is
     /**
      * @dev See {ITIExShareCollections-updateUtility}.
      */
-    function updateUtility(IUtility __utility) external onlyRole("DEFAULT_ADMIN_ROLE") {
+    function updateUtility(
+        IUtility __utility
+    ) external onlyRole("DEFAULT_ADMIN_ROLE") {
         if (address(__utility) == address(0)) revert ErrorInvalidParam();
 
         utility = __utility;
@@ -328,7 +304,6 @@ contract TIExShareCollections is
         truthHolder = __truthHolder;
 
         emit TIExTruthHolderUpdated(__truthHolder);
-
     }
 
     /**
@@ -352,11 +327,8 @@ contract TIExShareCollections is
         investmentDistribution.presaleRate = __presaleRate;
         investmentDistribution.reserveRate = __reserveRate;
 
-        emit TIExInvestmentDistributionRate(
-            investmentDistribution
-        );
+        emit TIExInvestmentDistributionRate(investmentDistribution);
     }
-
 
     /**
      * @dev See {ITIExShareCollections-updateMarketingAddress}.
@@ -369,12 +341,9 @@ contract TIExShareCollections is
             __marketing == investmentDistribution.marketing
         ) revert ErrorInvalidParam();
 
-
         investmentDistribution.marketing = __marketing;
 
-        emit TIExMarketingAddressUpdated(
-            __marketing
-        );
+        emit TIExMarketingAddressUpdated(__marketing);
     }
 
     /**
@@ -390,9 +359,7 @@ contract TIExShareCollections is
 
         investmentDistribution.presale = __presale;
 
-        emit TIExPresaleAddressUpdated(
-            __presale
-        );
+        emit TIExPresaleAddressUpdated(__presale);
     }
 
     /**
@@ -408,9 +375,7 @@ contract TIExShareCollections is
 
         investmentDistribution.reserve = __reserve;
 
-        emit TIExReserveAddressUpdated(
-            __reserve
-        );
+        emit TIExReserveAddressUpdated(__reserve);
     }
 
     /**
@@ -423,7 +388,7 @@ contract TIExShareCollections is
             address(__paymentToken) == address(0) ||
             address(paymentToken) == address(__paymentToken)
         ) revert ErrorInvalidParam();
-        
+
         paymentToken = __paymentToken;
 
         emit TIExPaymentTokenUpdated(__paymentToken);
@@ -505,10 +470,7 @@ contract TIExShareCollections is
 
         _shareCollections[__modelId].price = __price;
 
-        emit TIExSharePriceUpdated(
-            __modelId,
-            __price
-        );
+        emit TIExSharePriceUpdated(__modelId, __price);
     }
 
     /**
@@ -529,10 +491,7 @@ contract TIExShareCollections is
 
         _shareCollections[__modelId].maxSupply = __maxSupply;
 
-        emit TIExMaxSupplyUpdated(
-            __modelId,
-            __maxSupply
-        );
+        emit TIExMaxSupplyUpdated(__modelId, __maxSupply);
     }
 
     /**
@@ -553,10 +512,7 @@ contract TIExShareCollections is
 
         _shareCollections[__modelId].maxSharePurchase = __maxSharePurchase;
 
-        emit TIExMaxSharePurchaseUpdated(
-            __modelId,
-            __maxSharePurchase
-        );
+        emit TIExMaxSharePurchaseUpdated(__modelId, __maxSharePurchase);
     }
 
     /**
@@ -586,80 +542,15 @@ contract TIExShareCollections is
     /**
      * @dev See {ITIExShareCollections-resume}.
      */
-    function resume() external onlyRole(DEFAULT_ADMIN_ROLE)  {
+    function resume() external onlyRole(DEFAULT_ADMIN_ROLE) {
         _unpause();
     }
 
     /**
      * @dev See {ITIExShareCollections-emergency}.
      */
-    function emergency() external onlyRole(DEFAULT_ADMIN_ROLE)  {
+    function emergency() external onlyRole(DEFAULT_ADMIN_ROLE) {
         _pause();
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    // INVESTOR (OR MINTER)
-    ////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * @dev See {ITIExShareCollections-buyShares}.
-     */
-    function buyShares(
-        uint256 __modelId,
-        uint256 __amount,
-        uint256 __nonce,
-        uint256 __deadline,
-        bytes calldata __signature,
-        bytes calldata __permitMessage
-    ) external whenShareCollectionNotPaused(__modelId) nonReentrant {
-        // abi: [address, bool, address, uint256, uint256], [account, usInvestor, to, nonce, deadline]
-        // Encodes a message using the provided parameters.
-        bytes memory message = abi.encode(msg.sender, _shareCollections[__modelId].forOnlyUSInvestors, address(this), __nonce, __deadline);
-        // Calculates the amount of payment tokens required based on the price of the model and the desired amount of tokens.
-        uint256 paymentTokenAmount = _shareCollections[__modelId].price.mul(__amount);
-
-        // Checks if the nonce has already been used and reverts the transaction if it has.
-        if (noncesUsed[__nonce]) revert ErrorInvalidNonce();
-
-        // Checks if the deadline has passed and reverts the transaction if it has.
-        if (__deadline < block.timestamp) revert ErrorDeadlineReached();
-
-        
-        // Checks if the amount of tokens is 0 and reverts the transaction if it is.
-        if (__amount == 0) revert ErrorInvalidParam();
-        
-        // Verifies the authenticity of the message using the provided signature and reverts the transaction if it is invalid.
-        if (!utility.verifyMessage(message, __signature, truthHolder)) revert ErrorInvalidSignature();
-        
-        // Checks if there is enough supply of tokens for the model and reverts the transaction if there isn't.
-        if (totalSupply(__modelId).add(__amount) > _shareCollections[__modelId].maxSupply) revert ErrorNotEnoughSupply();
-
-        // Checks if the investor has exceeded the maximum allowed share purchase for the model and reverts the transaction if they have.
-        if (purchasedPerAccount[__modelId][msg.sender].add(__amount) > _shareCollections[__modelId].maxSharePurchase) revert ErrorExceedMaxSharePurchase();
-
-        // Checks if the allowance of payment token is insufficient.
-        if (paymentToken.allowance(msg.sender, address(this)) < paymentTokenAmount) {
-            {
-                (uint8 v, bytes32 r, bytes32 s, uint256 deadline) = abi.decode(__permitMessage, (uint8, bytes32, bytes32, uint256));
-                paymentToken.permit(msg.sender, address(this), MAX_INT, deadline, v, r, s);
-            }
-        }
-
-
-        // Marks the nonce as used.
-        noncesUsed[__nonce] = true;
-
-        // Transfers the required amount of payment tokens from the investor to the contract.
-        paymentToken.safeTransferFrom(msg.sender, address(this), paymentTokenAmount);
-
-        // Updates the total investment for the model.
-        _shareCollections[__modelId].totalInvestment = _shareCollections[__modelId].totalInvestment.add(paymentTokenAmount);
-
-        // Increases the amount of tokens purchased by the investor for the model.
-        purchasedPerAccount[__modelId][msg.sender] += __amount;
-
-        // Mints the tokens and assigns them to the investor's account.
-        _mint(msg.sender, __modelId, __amount, "");
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -671,7 +562,7 @@ contract TIExShareCollections is
      */
     function shareCollectionExists(
         uint256 __modelId
-    ) public view  returns (bool) {
+    ) public view returns (bool) {
         return _shareCollections[__modelId].launchStartTime != 0;
     }
 
@@ -684,7 +575,10 @@ contract TIExShareCollections is
         external
         view
         onlyExistingShareCollection(__modelId)
-        returns (TIExShareCollection memory, ITIExBaseIPAllocation.TIExModel memory)
+        returns (
+            TIExShareCollection memory,
+            ITIExBaseIPAllocation.TIExModel memory
+        )
     {
         return (
             _shareCollections[__modelId],
@@ -698,18 +592,18 @@ contract TIExShareCollections is
      */
     function uri(
         uint256 __modelId
-    )
-        public
-        view
-        override
-        onlyExistingModelId(__modelId)
-        returns (string memory)
-    {
-        return string(abi.encodePacked("ipfs://", tiexBaseIPAllocation.getTIExModel(__modelId).modelURI));
+    ) public view onlyExistingModelId(__modelId) returns (string memory) {
+        return
+            string(
+                abi.encodePacked(
+                    "ipfs://",
+                    tiexBaseIPAllocation.getTIExModel(__modelId).modelURI
+                )
+            );
     }
 
     /**
-     * @notice See {ERC1155-supportsInterface} and {AccessControl-supportsInterface}.
+     * @notice See {AccessControl-supportsInterface}.
      */
     function supportsInterface(
         bytes4 interfaceId
@@ -717,7 +611,7 @@ contract TIExShareCollections is
         public
         view
         virtual
-        override(ERC1155Upgradeable, AccessControlEnumerableUpgradeable)
+        override(AccessControlEnumerableUpgradeable)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
@@ -733,5 +627,4 @@ contract TIExShareCollections is
      * identifier or no data was provided with the function call.
      */
     fallback() external payable {}
-
 }

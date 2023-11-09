@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-        /*.----------------.  .----------------.  .----------------.  .----------------. 
+/*.----------------.  .----------------.  .----------------.  .----------------. 
         | .--------------. || .--------------. || .--------------. || .--------------. |
         | |  _________   | || |     _____    | || |  _________   | || |  ____  ____  | |
         | | |  _   _  |  | || |    |_   _|   | || | |_   ___  |  | || | |_  _||_  _| | |
@@ -20,14 +20,12 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import "./ITIExBaseIPAllocation.sol";
 import "./IUtility.sol";
 
-
-
 // Interface for payment token
-interface IPaymentToken is IERC20, IERC20Permit { }
+interface IPaymentToken is IERC20, IERC20Permit {
 
-interface ITIExShareCollections
-{
+}
 
+interface ITIExShareCollections {
     /**
      * @notice Defines details of each share collection for investors.
      */
@@ -107,13 +105,12 @@ interface ITIExShareCollections
 
     /// @notice Indicates that the provided nonce (a unique identifier) is invalid or has already been used.
     error ErrorInvalidNonce();
-    
+
     // @notice Indicates that the deadline for a certain operation has been reached.
     error ErrorDeadlineReached();
-    
+
     // @notice Indicates that the msg.sender() is invalid
     error ErrorInvalidMsgSender();
-
 
     /// @notice Emitted when a share collection is released for a specific model.
     /// It provides the model ID and the share collection object as parameters.
@@ -123,10 +120,7 @@ interface ITIExShareCollections
     );
 
     /// @notice Emitted when the URI associated with a model is updated.
-    event TIExCollectionURIUpdated(
-        uint256 indexed modelId,
-        string uri
-    );
+    event TIExCollectionURIUpdated(uint256 indexed modelId, string uri);
 
     /// @notice Emitted when the share collection for the detail of model is updated.
     event TIExShareCollectionUpdated(
@@ -135,26 +129,16 @@ interface ITIExShareCollections
     );
 
     /// @notice Emitted when the payment token used in the contract is updated.
-    event TIExPaymentTokenUpdated(
-        IPaymentToken newPaymentToken
-    );
+    event TIExPaymentTokenUpdated(IPaymentToken newPaymentToken);
 
     /// @notice Emitted when the truth holder address is updated.
-    event TIExTruthHolderUpdated(
-        address newTruthHolder
-    );
+    event TIExTruthHolderUpdated(address newTruthHolder);
 
     /// @notice Emitted when the price of a share for a specific model is updated.
-    event TIExSharePriceUpdated(
-        uint256 indexed modelId,
-        uint256 newPrice
-    );
+    event TIExSharePriceUpdated(uint256 indexed modelId, uint256 newPrice);
 
     /// @notice Emitted when the maximum supply of shares for a model is updated.
-    event TIExMaxSupplyUpdated(
-        uint256 indexed modelId,
-        uint256 newMaxSupply
-    );
+    event TIExMaxSupplyUpdated(uint256 indexed modelId, uint256 newMaxSupply);
 
     /// @notice Emitted when the maximum share purchase limit for a model is updated.
     event TIExMaxSharePurchaseUpdated(
@@ -187,19 +171,13 @@ interface ITIExShareCollections
     );
 
     /// @notice Emitted when the marketing address is update.
-    event TIExMarketingAddressUpdated(
-        address newMarketingAddress
-    );
+    event TIExMarketingAddressUpdated(address newMarketingAddress);
 
     /// @notice Emitted when the presale address is updated.
-    event TIExPresaleAddressUpdated(
-        address newPresaleAddress
-    );
+    event TIExPresaleAddressUpdated(address newPresaleAddress);
 
     /// @notice Emitted when reserve address is updated.
-    event TIExReserveAddressUpdated(
-        address newReserveAddress
-    );
+    event TIExReserveAddressUpdated(address newReserveAddress);
 
     /// @notice Emitted when Utility contract address is updated.
     event TIExUtilityUpdated(IUtility utility);
@@ -208,30 +186,44 @@ interface ITIExShareCollections
     event Distribute(uint256 indexed modelId, uint256 amount, uint256 when);
 
     /// @notice The token name
-    function name() external view returns(string memory);
+    function name() external view returns (string memory);
 
     /// @notice The token symbol
-    function symbol() external view returns(string memory);
+    function symbol() external view returns (string memory);
 
     /// @notice The truth holder (TIEx Signer for generating ECDSA Signature)
-    function truthHolder() external view returns(address);
+    function truthHolder() external view returns (address);
 
     /// @notice The payment token (ERC20: INTELL token)
-    function paymentToken() external view returns(IPaymentToken);
+    function paymentToken() external view returns (IPaymentToken);
 
     /// @notice Investment distribution rates and addresses
-    function investmentDistribution() external view returns(uint256 creatorRate, uint256 marketingtRate, uint256 reserveRate, uint256 presaleRate, address marketing, address reserve, address presale);
+    function investmentDistribution()
+        external
+        view
+        returns (
+            uint256 creatorRate,
+            uint256 marketingtRate,
+            uint256 reserveRate,
+            uint256 presaleRate,
+            address marketing,
+            address reserve,
+            address presale
+        );
 
     /// @notice Utility
-    function utility() external view returns(IUtility);
+    function utility() external view returns (IUtility);
 
     /// @notice TIExBaseIPAllocation
-    function tiexBaseIPAllocation() external view returns(ITIExBaseIPAllocation);
+    function tiexBaseIPAllocation()
+        external
+        view
+        returns (ITIExBaseIPAllocation);
 
     /**
      * @notice Used to clean up data related to a model after it has been removed.
      * @param __modelId uint256 The ID of the model associated with the Share Collection.
-     * 
+     *
      * Requirements:
      * - Must be called by TIExBaseIPAllocation contract.
      */
@@ -272,24 +264,24 @@ interface ITIExShareCollections
     /**
      * @notice Updates the Utiltity address.
      * @param __utility IUtility
-     * 
+     *
      * Emits a {TIExUtilityUpdated} event.
-     * 
+     *
      * Requirements:
-     * 
+     *
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - `__utility` IUtility must not be the zero address(address(0)) 
+     * - `__utility` IUtility must not be the zero address(address(0))
      */
     function updateUtility(IUtility __utility) external;
 
     /**
      * @notice Updates the address of truth holder, which is responsible for generating and
      * signing ECDSA singatures for rquested messages from investors.
-     * 
+     *
      * Emits a {TIExTruthHolderUpdated} event.
-     * 
+     *
      * Requirements:
-     * 
+     *
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
      * - `__truthHolder` address must not be the zero address(address(0)) or the same as the
      * current truth holder address.
@@ -302,7 +294,7 @@ interface ITIExShareCollections
      * @param __marketingRate uint256 The rate for theh marketing.
      * @param __presaleRate uint256 The rate for the presale.
      * @param __reserveRate uint256 The rate for the reserve.
-     * 
+     *
      * Emits a {TIExInvestmentDistributionRate} event.
      *
      * Requirements:
@@ -318,15 +310,14 @@ interface ITIExShareCollections
         uint256 __reserveRate
     ) external;
 
-
     /**
      * @notice Updates the marketing address.
      * @param __marketing address The address where the marketing funds will be distributed.
-     * 
+     *
      * Emits a {TIExMarketingAddressUpdated} event.
-     * 
+     *
      * Requirements:
-     * 
+     *
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
      * - `__marketing` address must not be the zero address(address(0)) or the same as the
      * current truth holder address.
@@ -336,26 +327,26 @@ interface ITIExShareCollections
     /**
      * @notice Updates the presale address.
      * @param __presale address The address where the presale funds will be distributed.
-     * 
+     *
      * Emits a {TIExPresaleAddressUpdated} event.
-     * 
+     *
      * Requirements:
-     * 
+     *
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - `__presale` address must not be the zero address(address(0)) 
+     * - `__presale` address must not be the zero address(address(0))
      */
     function updatePresaleAddress(address __presale) external;
 
     /**
      * @notice Updates the reserve address.
      * @param __reserve address The address where the reserve funds will be distributed.
-     * 
+     *
      * Emits a {TIExReserveAddressUpdated} event.
-     * 
+     *
      * Requirements:
-     * 
+     *
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - `__reserve` address must not be the zero address(address(0)) 
+     * - `__reserve` address must not be the zero address(address(0))
      */
     function updateReserveAddress(address __reserve) external;
 
@@ -364,9 +355,9 @@ interface ITIExShareCollections
      * @param __paymentToken address The address for ERC20 token used as utility token on TIEx.
      *
      * Emits a {TIExPaymentTokenUpdated} event.
-     * 
+     *
      * Requirements:
-     * 
+     *
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
      * - `__paymentToken` address must not be the zero address(address(0))
      */
@@ -379,7 +370,7 @@ interface ITIExShareCollections
      * Emits a {TIExShareCollectionPaused} event.
      *
      * Requirements:
-     * 
+     *
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
      * - The share collection with the given `__modelId` must exist.
      *
@@ -394,7 +385,7 @@ interface ITIExShareCollections
      * Emits a {TIExShareCollectionUnpaused} event.
      *
      * Requirements:
-     * 
+     *
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
      * - The share collection with the given `__modelId` must exist.
      *
@@ -409,7 +400,7 @@ interface ITIExShareCollections
      * Emits a {TIExShareCollectionBlocked} event.
      *
      * Requirements:
-     * 
+     *
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
      * - The share collection with the given `__modelId` must exist.
      * WARNING: If the share collection is already blocked, the function will throw an error.
@@ -423,7 +414,7 @@ interface ITIExShareCollections
      * Emits a {TIExShareCollectionUnblocked} event.
      *
      * Requirements:
-     * 
+     *
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
      * - The share collection with the given `__modelId` must exist.
      * WARNING: If the share collection is already unblocked, the function will throw an error.
@@ -442,8 +433,8 @@ interface ITIExShareCollections
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
      * - The share collection with the given `__modelId` must exist.
      * - `__price` must not be zero.
-     * 
-     * WARNING: If `__price` is equal to the current price, it reverts with 
+     *
+     * WARNING: If `__price` is equal to the current price, it reverts with
      * an `ErrorInvalidParam` error.
      */
     function updateSharePrice(uint256 __modelId, uint256 __price) external;
@@ -460,8 +451,8 @@ interface ITIExShareCollections
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
      * - The share collection with the given `__modelId` must exist.
      * - `__maxSupply` must not be zero.
-     * 
-     * WARNING: If `__maxSupply` is equal to the current maximum supply, it reverts with 
+     *
+     * WARNING: If `__maxSupply` is equal to the current maximum supply, it reverts with
      * an `ErrorInvalidParam` error.
      */
     function updateMaxSupply(uint256 __modelId, uint256 __maxSupply) external;
@@ -478,11 +469,14 @@ interface ITIExShareCollections
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
      * - The share collection with the given `__modelId` must exist.
      * - `__maxSharePurchase` must not be zero.
-     * 
-     * WARNING: If `__maxSharePurchase` is equal to the current maximum share purchase, it reverts with 
+     *
+     * WARNING: If `__maxSharePurchase` is equal to the current maximum share purchase, it reverts with
      * an `ErrorInvalidParam` error.
      */
-    function updateMaxSharePurchase(uint256 __modelId, uint256 __maxSharePurchase) external;
+    function updateMaxSharePurchase(
+        uint256 __modelId,
+        uint256 __maxSharePurchase
+    ) external;
 
     /**
      * @notice Updates the available position for investors
@@ -492,59 +486,51 @@ interface ITIExShareCollections
      * Emits a {TIExShareCollectionInvestorPositionUpdated} event.
      *
      * Requirements:
-     * 
+     *
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
      * - The share collection with the given `__modelId` must exist.
      * - the `__forOnlyUSInvestors` parameter must not be the same as the current value of `forOnlyUSInvestors` in the share collection
      */
-    function updateInvestorPosition(uint256 __modelId, bool __forOnlyUSInvestors) external;
+    function updateInvestorPosition(
+        uint256 __modelId,
+        bool __forOnlyUSInvestors
+    ) external;
 
     /**
      * @notice Resumes operating the platform
-     * 
+     *
      * Requirements:
-     * 
+     *
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
      */
     function resume() external;
 
     /**
      * @notice Pauses operating the platform
-     * 
+     *
      * Requirements:
-     * 
+     *
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
      */
     function emergency() external;
 
     /**
-     * @notice Used to mint tokens and assigns them to the investor's account 
-     * when they want to invest in a model with a specific model ID.
-     * @param __modelId uint256 The model id that the investor wants to invest in.
-     * @param __amount uint256 The number of tokens the investor wants to buy.
-     * @param __nonce uint256 A unique identifier for the transaction.
-     * @param __deadline uint256 The deadline for the transaction.
-     * @param __signature bytes A signature that verifies the authenticity of the transaction
-     * @param __permitMessage bytes message for `permit` of ERC20Permit without (instead of) `approve`.
-     * signed by truth holder.
-     */
-    function buyShares(
-        uint256 __modelId,
-        uint256 __amount,
-        uint256 __nonce,
-        uint256 __deadline,
-        bytes calldata __signature,
-        bytes calldata __permitMessage
-    ) external;
-
-    /**
      * @notice Returns whether or not an shareCollection exists.
      */
-    function shareCollectionExists(uint256 __modelId) external view returns (bool);
+    function shareCollectionExists(
+        uint256 __modelId
+    ) external view returns (bool);
 
     /**
      * @notice Returns an Share Collection Status.
      */
-    function shareCollection(uint256 __modelId) external view returns (TIExShareCollection memory, ITIExBaseIPAllocation.TIExModel memory);
-
+    function shareCollection(
+        uint256 __modelId
+    )
+        external
+        view
+        returns (
+            TIExShareCollection memory,
+            ITIExBaseIPAllocation.TIExModel memory
+        );
 }

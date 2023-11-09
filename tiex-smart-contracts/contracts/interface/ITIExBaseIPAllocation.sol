@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-        /*.----------------.  .----------------.  .----------------.  .----------------. 
+/*.----------------.  .----------------.  .----------------.  .----------------. 
         | .--------------. || .--------------. || .--------------. || .--------------. |
         | |  _________   | || |     _____    | || |  _________   | || |  ____  ____  | |
         | | |  _   _  |  | || |    |_   _|   | || | |_   ___  |  | || | |_  _||_  _| | |
@@ -15,7 +15,6 @@
 pragma solidity ^0.8.19;
 
 interface ITIExBaseIPAllocation {
-
     // Struct to represent a contribution to a model
     struct Contribution {
         uint256 modelId; // The ID of the model
@@ -45,44 +44,60 @@ interface ITIExBaseIPAllocation {
     }
 
     // Event emitted when a new TIEx IP is allocated to a creator
-    event AllocateTIExIP(address provider, uint256 indexed modelId, TIExModel TIExModel, uint256 startTime);
-    
+    event AllocateTIExIP(
+        address provider,
+        uint256 indexed modelId,
+        TIExModel TIExModel,
+        uint256 startTime
+    );
+
     // Event emitted when a TIEx IP is removed
-    event RemoveTIExIP(address creator, address to, uint256 indexed modelId, uint256 removedTime);
-    
+    event RemoveTIExIP(
+        address creator,
+        address to,
+        uint256 indexed modelId,
+        uint256 removedTime
+    );
+
     // Event emitted when the URI of a TIEx model is updated
     event TIExModelURIUpdated(uint256 indexed modelId, string ipfsHash);
-    
+
     // Event emitted when the contribution rates of a model are updated
-    event ContributationRatesUpdated(uint256 indexed modelId, Contribution[] contributionRates);
-    
+    event ContributationRatesUpdated(
+        uint256 indexed modelId,
+        Contribution[] contributionRates
+    );
+
     // Event emitted when a model is upgraded
     event UpgradeModel(uint256 indexed modelId, ModelMetadata newModelMetadata);
-    
+
     // Event emitted when the metadata of a model is updated
-    event UpdateModelMetadata(uint256 indexed modelId, ModelMetadata newModelMetadata);
+    event UpdateModelMetadata(
+        uint256 indexed modelId,
+        ModelMetadata newModelMetadata
+    );
 
     // Error thrown when an invalid creator address is provided
     error ErrorTIExIPInvalidCreator(address creator);
-    
+
     // Error thrown when a model ID that is already allocated is used
     error ErrorTIExIPAllocatedAlready(uint256 modelId);
-    
+
     // Error thrown when an invalid provider address is provided
     error ErrorTIExIPInvalidProvider(address provider);
-    
+
     // Error thrown when an out of bounds index is used for a creator
     error ErrorTIExIPOutOfBoundsIndex(address creator, uint256 index);
-    
+
     // Error thrown when a non-existent model ID is used
     error ErrorTIExIPModelIdNotFound(uint256 modelId);
-    
+
     // Error thrown when an invalid contribution rate is used
     error ErrorTIExIPContributionRateInvalid(uint256 contributionRate);
-    
+
     // Error thrown when a model that is already trained is used
     error ErrorTIExIPTrainedAlready(uint256 modelId);
-    
+
     // Error thrown when invalid metadata is provided for a model
     error ErrorTIExIPInvalidMetadata(uint256 modelId);
 
@@ -98,8 +113,10 @@ interface ITIExBaseIPAllocation {
      * - The model with the given `__modelId` must not be trained already.
      * - The `__newModelFingerprint` must not be empty.
      */
-    function upgradeStubbedModelToTrainedModel(uint256 __modelId, bytes memory __newModelFingerprint) external;
-
+    function upgradeStubbedModelToTrainedModel(
+        uint256 __modelId,
+        bytes memory __newModelFingerprint
+    ) external;
 
     /**
      * @notice Upgrades a model by updating its fingerprint and incrementing its version.
@@ -113,7 +130,10 @@ interface ITIExBaseIPAllocation {
      * - The model with the given `__modelId` must exist.
      * - The `__newModelFingerprint` must not be empty.
      */
-    function upgradeModel(uint256 __modelId, bytes memory __newModelFingerprint) external;
+    function upgradeModel(
+        uint256 __modelId,
+        bytes memory __newModelFingerprint
+    ) external;
 
     /**
      * @notice Updates the metadata of a model.
@@ -127,7 +147,10 @@ interface ITIExBaseIPAllocation {
      * - The model with the given `__modelId` must exist.
      * - The `__modelMetadata` must be valid.
      */
-    function updateModelMetadata(uint256 __modelId, ModelMetadata calldata __modelMetadata) external;
+    function updateModelMetadata(
+        uint256 __modelId,
+        ModelMetadata calldata __modelMetadata
+    ) external;
 
     /**
      * @notice Allocates `modelId` as TIEx IP to `creator`.
@@ -159,14 +182,17 @@ interface ITIExBaseIPAllocation {
      * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
      * - The model with the given `__modelId` must exist.
      */
-    function updateContributionRates(uint256 __modelId, Contribution[] calldata __contributors) external;
+    function updateContributionRates(
+        uint256 __modelId,
+        Contribution[] calldata __contributors
+    ) external;
 
     /**
      * @notice Destroys `modelId`.
      * @param __modelId must exist.
      *
      * Emits a {RemoveTIExIP} event.
-     * 
+     *
      * Requirement:
      * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
      */
@@ -176,7 +202,7 @@ interface ITIExBaseIPAllocation {
      * @notice Used to edit the model URI.
      *
      * Emits a {TIExModelURIUpdated} event.
-     * 
+     *
      * Requirements:
      * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
      * - The model with the given `__modelId` must exist.
@@ -184,10 +210,12 @@ interface ITIExBaseIPAllocation {
     function editURI(uint256 __modelId, string calldata __ipfsHash) external;
 
     /**
-    * @notice Used to get the detail of model
-    * @param __modelId uint256 must exist
-    */
-    function getTIExModel(uint256 __modelId) external view returns(TIExModel memory);
+     * @notice Used to get the detail of model
+     * @param __modelId uint256 must exist
+     */
+    function getTIExModel(
+        uint256 __modelId
+    ) external view returns (TIExModel memory);
 
     /**
      * @notice Returns the number of models in ``creator``'s account.
@@ -212,7 +240,10 @@ interface ITIExBaseIPAllocation {
      * @notice Returns a model ID owned by `creator` at a given `index` of its model list.
      * Use along with {modelBalanceOf} to enumerate all of ``creator``'s models.
      */
-    function modelOfCreatorByIndex(address __creator, uint256 __index) external view returns (uint256);
+    function modelOfCreatorByIndex(
+        address __creator,
+        uint256 __index
+    ) external view returns (uint256);
 
     /**
      * @notice Returns the total amount of models stored by the contract.
@@ -228,5 +259,7 @@ interface ITIExBaseIPAllocation {
     /**
      * @notice Returns model ids allocated from account of creator.
      */
-    function modelsOfCreator(address __creator) external view returns (uint256[] memory);
+    function modelsOfCreator(
+        address __creator
+    ) external view returns (uint256[] memory);
 }

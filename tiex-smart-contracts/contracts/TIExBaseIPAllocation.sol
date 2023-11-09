@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-        /*.----------------.  .----------------.  .----------------.  .----------------. 
+/*.----------------.  .----------------.  .----------------.  .----------------. 
         | .--------------. || .--------------. || .--------------. || .--------------. |
         | |  _________   | || |     _____    | || |  _________   | || |  ____  ____  | |
         | | |  _   _  |  | || |    |_   _|   | || | |_   ___  |  | || | |_  _||_  _| | |
@@ -22,12 +22,13 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "./interface/ITIExBaseIPAllocation.sol";
 import "./interface/ITIExShareCollections.sol";
 
-
-contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeable, ITIExBaseIPAllocation {
-
+contract TIExBaseIPAllocation is
+    Initializable,
+    AccessControlEnumerableUpgradeable,
+    ITIExBaseIPAllocation
+{
     using Strings for uint256;
     using SafeMath for uint256;
-
 
     /// @notice Mapping from creator to list of owned model IDs
     mapping(address => mapping(uint256 => uint256)) private _ownedModels;
@@ -37,16 +38,19 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
 
     /// @notice Mapping creator address to model count
     mapping(address => uint256) private _modelBalances;
-        
+
     /// @notice Mapping model id to TIEx Model
     mapping(uint256 => TIExModel) private _TIExModels;
 
     /// @notice TIExShareCollections
     ITIExShareCollections public tiexShareCollections;
 
-    function initialize(address __admin, ITIExShareCollections __tiexShareCollections) public initializer {
+    function initialize(
+        address __admin,
+        ITIExShareCollections __tiexShareCollections
+    ) public initializer {
         __AccessControl_init_unchained();
-		__AccessControlEnumerable_init_unchained();
+        __AccessControlEnumerable_init_unchained();
 
         tiexShareCollections = __tiexShareCollections;
 
@@ -86,37 +90,48 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     /**
      * @dev See {ITIExBaseIPAllocation-upgradeStubbedModelToTrainedModel}.
      */
-    function upgradeStubbedModelToTrainedModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+    function upgradeStubbedModelToTrainedModel(
+        uint256 __modelId,
+        bytes memory __newModelFingerprint
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         // Check if the model is already trained, if so, revert the transaction
-        if(_TIExModels[__modelId].modelMetadata.trained) revert ErrorTIExIPTrainedAlready(__modelId);
-        
+        if (_TIExModels[__modelId].modelMetadata.trained)
+            revert ErrorTIExIPTrainedAlready(__modelId);
+
         // Check if the new model fingerprint is valid, if not, revert the transaction
-        if (__newModelFingerprint.length == 0) revert ErrorTIExIPInvalidMetadata(__modelId);
-        
+        if (__newModelFingerprint.length == 0)
+            revert ErrorTIExIPInvalidMetadata(__modelId);
+
         // Set the model as trained
         _TIExModels[__modelId].modelMetadata.trained = true;
         // Set the model version to 1
         _TIExModels[__modelId].modelMetadata.version = 1;
         // Update the model fingerprint with the new one
-        _TIExModels[__modelId].modelMetadata.modelFingerprint = __newModelFingerprint;
+        _TIExModels[__modelId]
+            .modelMetadata
+            .modelFingerprint = __newModelFingerprint;
 
         // Emit an event to log the model upgrade
         emit UpgradeModel(__modelId, _TIExModels[__modelId].modelMetadata);
     }
 
-
     /**
      * @dev See {ITIExBaseIPAllocation-upgradeModel}.
      */
-    function upgradeModel(uint256 __modelId, bytes memory __newModelFingerprint) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
-        
+    function upgradeModel(
+        uint256 __modelId,
+        bytes memory __newModelFingerprint
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         // Check if the new model fingerprint is valid, if not, revert the transaction
-        if (__newModelFingerprint.length == 0) revert ErrorTIExIPInvalidMetadata(__modelId);
+        if (__newModelFingerprint.length == 0)
+            revert ErrorTIExIPInvalidMetadata(__modelId);
 
         // Increment the version of the model
         _TIExModels[__modelId].modelMetadata.version++;
         // Update the model fingerprint with the new one
-        _TIExModels[__modelId].modelMetadata.modelFingerprint = __newModelFingerprint;
+        _TIExModels[__modelId]
+            .modelMetadata
+            .modelFingerprint = __newModelFingerprint;
 
         // Emit an event to log the model upgrade
         emit UpgradeModel(__modelId, _TIExModels[__modelId].modelMetadata);
@@ -125,23 +140,29 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     /**
      * @dev See {ITIExBaseIPAllocation-updateModelMetadata}.
      */
-    function updateModelMetadata(uint256 __modelId, ModelMetadata calldata __modelMetadata) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+    function updateModelMetadata(
+        uint256 __modelId,
+        ModelMetadata calldata __modelMetadata
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         // Check if the model metadata is valid
-        bool validForMetadata = bytes(__modelMetadata.name).length > 0 
-            && bytes(__modelMetadata.description).length > 0 
-            && __modelMetadata.ecosystemId.length > 0 
-            && __modelMetadata.version > 0
-            && __modelMetadata.modelFingerprint.length > 0
-            && __modelMetadata.watermarkFingerprint.length > 0
-            && __modelMetadata.watermarkSequence.length > 0
-            && __modelMetadata.performance > 0;
+        bool validForMetadata = bytes(__modelMetadata.name).length > 0 &&
+            bytes(__modelMetadata.description).length > 0 &&
+            __modelMetadata.ecosystemId.length > 0 &&
+            __modelMetadata.version > 0 &&
+            __modelMetadata.modelFingerprint.length > 0 &&
+            __modelMetadata.watermarkFingerprint.length > 0 &&
+            __modelMetadata.watermarkSequence.length > 0 &&
+            __modelMetadata.performance > 0;
 
         if (!validForMetadata) revert ErrorTIExIPInvalidMetadata(__modelId);
         // Update the model metadata
         _TIExModels[__modelId].modelMetadata = __modelMetadata;
 
         // Emit an event to log the update of model metadata
-        emit UpdateModelMetadata(__modelId, _TIExModels[__modelId].modelMetadata);
+        emit UpdateModelMetadata(
+            __modelId,
+            _TIExModels[__modelId].modelMetadata
+        );
     }
 
     /**
@@ -154,7 +175,6 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
         Contribution[] calldata __contributors,
         ModelMetadata calldata __modelMetadata
     ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyNotExistingModelId(__modelId) {
-
         // Check if the creator address is valid
         if (__creator == address(0)) {
             revert ErrorTIExIPInvalidCreator(address(0));
@@ -177,55 +197,67 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
         _TIExModels[__modelId].creator = __creator;
         // Set the IPFS hash of the model's metadata
         _TIExModels[__modelId].modelURI = __ipfsHash;
-        
+
         // If there are contributors, calculate the total contribution rate and add each contributor to the list of contributors for the model ID
         if (__contributors.length > 0) {
             uint256 contributionRate = 0;
             // Iterate over each contributor
-            for(uint256 i; i < __contributors.length; i++) {
+            for (uint256 i; i < __contributors.length; i++) {
                 // If the model does not exist, revert the transaction
-                if(!modelExists(__contributors[i].modelId)) revert ErrorTIExIPModelIdNotFound(__contributors[i].modelId);
+                if (!modelExists(__contributors[i].modelId))
+                    revert ErrorTIExIPModelIdNotFound(
+                        __contributors[i].modelId
+                    );
                 // Add the contribution rate of the current contributor to the total contribution rate
-                contributionRate = contributionRate.add(__contributors[i].contributionRate);
+                contributionRate = contributionRate.add(
+                    __contributors[i].contributionRate
+                );
                 // Add the current contributor to the list of contributors for the model
-                _TIExModels[__modelId].contributedModels.push(__contributors[i]);
+                _TIExModels[__modelId].contributedModels.push(
+                    __contributors[i]
+                );
             }
 
             // If the total contribution rate is not 10000 (representing 100%), revert the transaction
-            if(contributionRate != 10000) revert ErrorTIExIPContributionRateInvalid(contributionRate);
-
+            if (contributionRate != 10000)
+                revert ErrorTIExIPContributionRateInvalid(contributionRate);
         } else {
             // If there are no new contributors, add a default contribution of 10000 (representing 100%) for the model itself
-            _TIExModels[__modelId].contributedModels.push(Contribution({
-                modelId: __modelId,
-                contributionRate: 10000
-            }));
-
+            _TIExModels[__modelId].contributedModels.push(
+                Contribution({modelId: __modelId, contributionRate: 10000})
+            );
         }
 
         // Check if the model metadata is valid
-        bool validForMetadata = bytes(__modelMetadata.name).length > 0 
-            && bytes(__modelMetadata.description).length > 0 
-            && __modelMetadata.ecosystemId.length > 0 
-            && __modelMetadata.version == 1
-            && __modelMetadata.modelFingerprint.length > 0
-            && __modelMetadata.watermarkFingerprint.length > 0
-            && __modelMetadata.watermarkSequence.length > 0
-            && __modelMetadata.performance > 0;
+        bool validForMetadata = bytes(__modelMetadata.name).length > 0 &&
+            bytes(__modelMetadata.description).length > 0 &&
+            __modelMetadata.ecosystemId.length > 0 &&
+            __modelMetadata.version == 1 &&
+            __modelMetadata.modelFingerprint.length > 0 &&
+            __modelMetadata.watermarkFingerprint.length > 0 &&
+            __modelMetadata.watermarkSequence.length > 0 &&
+            __modelMetadata.performance > 0;
 
         if (!validForMetadata) revert ErrorTIExIPInvalidMetadata(__modelId);
         // Set the model metadata
         _TIExModels[__modelId].modelMetadata = __modelMetadata;
 
         // Emit an event to log the allocation of the model ID
-        emit AllocateTIExIP(msg.sender, __modelId, _TIExModels[__modelId], block.timestamp);
-
+        emit AllocateTIExIP(
+            msg.sender,
+            __modelId,
+            _TIExModels[__modelId],
+            block.timestamp
+        );
     }
 
     /**
      * @dev See {ITIExBaseIPAllocation-updateContributionRates}.
      */
-    function updateContributionRates(uint256 __modelId, Contribution[] calldata __contributors) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+    function updateContributionRates(
+        uint256 __modelId,
+        Contribution[] calldata __contributors
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         // Delete the existing contributions for the model
         delete _TIExModels[__modelId].contributedModels;
 
@@ -233,33 +265,45 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
         if (__contributors.length > 0) {
             uint256 contributionRate = 0;
             // Iterate over each contributor
-            for(uint256 i; i < __contributors.length; i++) {
+            for (uint256 i; i < __contributors.length; i++) {
                 // If the model does not exist, revert the transaction
-                if(!modelExists(__contributors[i].modelId)) revert ErrorTIExIPModelIdNotFound(__contributors[i].modelId);
+                if (!modelExists(__contributors[i].modelId))
+                    revert ErrorTIExIPModelIdNotFound(
+                        __contributors[i].modelId
+                    );
                 // Add the contribution rate of the current contributor to the total contribution rate
-                contributionRate = contributionRate.add(__contributors[i].contributionRate);
+                contributionRate = contributionRate.add(
+                    __contributors[i].contributionRate
+                );
                 // Add the current contributor to the list of contributors for the model
-                _TIExModels[__modelId].contributedModels.push(__contributors[i]);
+                _TIExModels[__modelId].contributedModels.push(
+                    __contributors[i]
+                );
             }
 
             // If the total contribution rate is not 10000 (representing 100%), revert the transaction
-            if(contributionRate != 10000) revert ErrorTIExIPContributionRateInvalid(contributionRate);
+            if (contributionRate != 10000)
+                revert ErrorTIExIPContributionRateInvalid(contributionRate);
         } else {
             // If there are no new contributors, add a default contribution of 10000 (representing 100%) for the model itself
-            _TIExModels[__modelId].contributedModels.push(Contribution({
-                modelId: __modelId,
-                contributionRate: 10000
-            }));
+            _TIExModels[__modelId].contributedModels.push(
+                Contribution({modelId: __modelId, contributionRate: 10000})
+            );
         }
 
         // Emit an event to log the update of contribution rates
-        emit ContributationRatesUpdated(__modelId, _TIExModels[__modelId].contributedModels);
+        emit ContributationRatesUpdated(
+            __modelId,
+            _TIExModels[__modelId].contributedModels
+        );
     }
 
     /**
      * @dev See {ITIExBaseIPAllocation-removeModel}.
      */
-    function removeModel(uint256 __modelId) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function removeModel(
+        uint256 __modelId
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         address __creator = creatorOf(__modelId);
 
         _removeModelFromCreatorEnumeration(__creator, __modelId);
@@ -268,7 +312,7 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
         // Decrease balance with checked arithmetic, because an `creatorOf` override may
         // invalidate the assumption that `_modelBalances[from] >= 1`.
         _modelBalances[__creator] -= 1;
-        
+
         delete _TIExModels[__modelId];
 
         tiexShareCollections.afterRemoveModel(__modelId);
@@ -279,11 +323,10 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     /**
      * @dev See {ITIExBaseIPAllocation-editURI}.
      */
-    function editURI(uint256 __modelId, string calldata __ipfsHash)
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyExistingModelId(__modelId)
-    {
+    function editURI(
+        uint256 __modelId,
+        string calldata __ipfsHash
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         _TIExModels[__modelId].modelURI = __ipfsHash;
 
         emit TIExModelURIUpdated(__modelId, __ipfsHash);
@@ -296,7 +339,9 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     /**
      * @dev See {ITIExBaseIPAllocation-getTIExModel}.
      */
-    function getTIExModel(uint256 __modelId) external view returns(TIExModel memory) {
+    function getTIExModel(
+        uint256 __modelId
+    ) external view returns (TIExModel memory) {
         return _TIExModels[__modelId];
     }
 
@@ -331,11 +376,10 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     /**
      * @dev See {ITIExBaseIPAllocation-modelOfCreatorByIndex}.
      */
-    function modelOfCreatorByIndex(address __creator, uint256 __index)
-        public
-        view
-        returns (uint256)
-    {
+    function modelOfCreatorByIndex(
+        address __creator,
+        uint256 __index
+    ) public view returns (uint256) {
         if (__index >= modelBalanceOf(__creator)) {
             revert ErrorTIExIPOutOfBoundsIndex(__creator, __index);
         }
@@ -362,11 +406,9 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
     /**
      * @dev See {ITIExBaseIPAllocation-modelsOfCreator}.
      */
-    function modelsOfCreator(address __creator)
-        public
-        view
-        returns (uint256[] memory)
-    {
+    function modelsOfCreator(
+        address __creator
+    ) public view returns (uint256[] memory) {
         uint256 modelCount = modelBalanceOf(__creator);
 
         uint256[] memory modelsId = new uint256[](modelCount);
@@ -375,7 +417,6 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
         }
         return modelsId;
     }
-
 
     ////////////////////////////////////////////////////////////////////////////
     // PRIVATE
@@ -397,9 +438,10 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
      * @param __modelId uint256 ID of the model to be added to the models list of the given address
      *
      */
-    function _addModelToCreatorEnumeration(address __to, uint256 __modelId)
-        private
-    {
+    function _addModelToCreatorEnumeration(
+        address __to,
+        uint256 __modelId
+    ) private {
         uint256 length = modelBalanceOf(__to);
         _ownedModels[__to][length] = __modelId;
         _TIExModels[__modelId].ownedModelsIndex = length;
@@ -439,9 +481,10 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
      * @param __modelId uint256 ID of the model to be removed from the models list of the given address
      *
      */
-    function _removeModelFromCreatorEnumeration(address __from, uint256 __modelId)
-        private
-    {
+    function _removeModelFromCreatorEnumeration(
+        address __from,
+        uint256 __modelId
+    ) private {
         // To prevent a gap in from's models array, we store the last model in the index of the model to delete, and
         // then delete the last slot
 
@@ -460,5 +503,4 @@ contract TIExBaseIPAllocation is Initializable, AccessControlEnumerableUpgradeab
         delete _TIExModels[__modelId].ownedModelsIndex;
         delete _ownedModels[__from][lastModelIndex];
     }
-
 }

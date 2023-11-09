@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-        /*.----------------.  .----------------.  .----------------.  .----------------. 
+/*.----------------.  .----------------.  .----------------.  .----------------. 
         | .--------------. || .--------------. || .--------------. || .--------------. |
         | |  _________   | || |     _____    | || |  _________   | || |  ____  ____  | |
         | | |  _   _  |  | || |    |_   _|   | || | |_   ___  |  | || | |_  _||_  _| | |
@@ -19,7 +19,12 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 contract IntelligenceInvestmentToken is ERC20, ERC20Permit, ERC20Burnable {
-    constructor(address __recipient) ERC20("Intelligence Investment Token", "INTELL") ERC20Permit("Intelligence Investment Token") {
+    constructor(
+        address __recipient
+    )
+        ERC20("Intelligence Investment Token", "INTELL")
+        ERC20Permit("Intelligence Investment Token")
+    {
         _mint(__recipient, 1000_000_000 * 10 ** decimals());
     }
 }
