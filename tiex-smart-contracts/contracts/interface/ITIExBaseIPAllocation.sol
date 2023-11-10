@@ -22,23 +22,22 @@ interface ITIExBaseIPAllocation {
         uint256 contributionRate; // The rate of the contribution
     }
 
-    // Struct to represent the metadata of a model
-    struct ModelMetadata {
-        string name; // The name of the model
-        bytes32 ecosystemId; // The ID of the ecosystem the model belongs to
-        uint256 version; // The version of the model
-        string description; // A description of the model
-        bytes modelFingerprint; // The fingerprint of the model
+    // Struct to represent the metadata of an asset
+    struct Metadata {
+        string name;
+        uint256 version;
+        string description;
+        bytes fingerprint; 
         bool trained; // Whether the model is trained or not
-        bytes watermarkFingerprint; // The fingerprint of the watermark
-        bytes watermarkSequence; // The sequence of the watermark
-        uint256 performance; // The performance of the model
+        bytes watermark; // The fingerprint of the watermark
+        // TODO: revise
+        uint256 performance; // The performance of the model 
     }
 
     struct Asset {
         address creator;
         Contribution[] contributedModels;
-        ModelMetadata modelMetadata;
+        Metadata modelMetadata;
         uint256 allModelsIndex;
         uint256 ownedModelsIndex;
         string modelURI;
@@ -70,12 +69,12 @@ interface ITIExBaseIPAllocation {
     );
 
     // Event emitted when a model is upgraded
-    event UpgradeModel(uint256 indexed modelId, ModelMetadata newModelMetadata);
+    event UpgradeModel(uint256 indexed modelId, Metadata newModelMetadata);
 
     // Event emitted when the metadata of a model is updated
     event UpdateModelMetadata(
         uint256 indexed modelId,
-        ModelMetadata newModelMetadata
+        Metadata newModelMetadata
     );
 
     // Error thrown when an invalid creator address is provided
@@ -150,7 +149,7 @@ interface ITIExBaseIPAllocation {
      */
     function updateModelMetadata(
         uint256 __modelId,
-        ModelMetadata calldata __modelMetadata
+        Metadata calldata __modelMetadata
     ) external;
 
     /**
@@ -171,7 +170,7 @@ interface ITIExBaseIPAllocation {
         address __creator,
         string calldata __ipfsHash,
         Contribution[] calldata __contributors,
-        ModelMetadata calldata __modelMetadata
+        Metadata calldata __modelMetadata
     ) external;
 
     /**

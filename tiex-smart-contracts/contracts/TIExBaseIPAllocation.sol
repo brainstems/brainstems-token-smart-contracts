@@ -109,7 +109,7 @@ contract TIExBaseIPAllocation is
         // Update the model fingerprint with the new one
         assets[__modelId]
             .modelMetadata
-            .modelFingerprint = __newModelFingerprint;
+            .fingerprint = __newModelFingerprint;
 
         // Emit an event to log the model upgrade
         emit UpgradeModel(__modelId, assets[__modelId].modelMetadata);
@@ -131,7 +131,7 @@ contract TIExBaseIPAllocation is
         // Update the model fingerprint with the new one
         assets[__modelId]
             .modelMetadata
-            .modelFingerprint = __newModelFingerprint;
+            .fingerprint = __newModelFingerprint;
 
         // Emit an event to log the model upgrade
         emit UpgradeModel(__modelId, assets[__modelId].modelMetadata);
@@ -142,16 +142,14 @@ contract TIExBaseIPAllocation is
      */
     function updateModelMetadata(
         uint256 __modelId,
-        ModelMetadata calldata __modelMetadata
+        Metadata calldata __modelMetadata
     ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         // Check if the model metadata is valid
         bool validForMetadata = bytes(__modelMetadata.name).length > 0 &&
             bytes(__modelMetadata.description).length > 0 &&
-            __modelMetadata.ecosystemId.length > 0 &&
             __modelMetadata.version > 0 &&
-            __modelMetadata.modelFingerprint.length > 0 &&
-            __modelMetadata.watermarkFingerprint.length > 0 &&
-            __modelMetadata.watermarkSequence.length > 0 &&
+            __modelMetadata.fingerprint.length > 0 &&
+            __modelMetadata.watermark.length > 0 &&
             __modelMetadata.performance > 0;
 
         if (!validForMetadata) revert ErrorTIExIPInvalidMetadata(__modelId);
@@ -173,7 +171,7 @@ contract TIExBaseIPAllocation is
         address __creator,
         string calldata __ipfsHash,
         Contribution[] calldata __contributors,
-        ModelMetadata calldata __modelMetadata
+        Metadata calldata __modelMetadata
     ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyNotExistingModelId(__modelId) {
         // Check if the creator address is valid
         if (__creator == address(0)) {
@@ -231,11 +229,9 @@ contract TIExBaseIPAllocation is
         // Check if the model metadata is valid
         bool validForMetadata = bytes(__modelMetadata.name).length > 0 &&
             bytes(__modelMetadata.description).length > 0 &&
-            __modelMetadata.ecosystemId.length > 0 &&
             __modelMetadata.version == 1 &&
-            __modelMetadata.modelFingerprint.length > 0 &&
-            __modelMetadata.watermarkFingerprint.length > 0 &&
-            __modelMetadata.watermarkSequence.length > 0 &&
+            __modelMetadata.fingerprint.length > 0 &&
+            __modelMetadata.watermark.length > 0 &&
             __modelMetadata.performance > 0;
 
         if (!validForMetadata) revert ErrorTIExIPInvalidMetadata(__modelId);

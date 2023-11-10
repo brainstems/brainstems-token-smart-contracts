@@ -1,7 +1,5 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const crypto = require("crypto");
-const { h2d } = require("./helper");
 const {
   creator_rate,
   tiex_share_collection_name,
@@ -135,12 +133,10 @@ describe("TIExShareCollections", () => {
         forOnlyUSInvestors: true,
         metadata: [
           "Predictive Maintenance of Kitchen Equipment",
-          ethers.utils.id("the-intelligence-exchange"),
           1,
           "An AI model can be trained to predict when kitchen equipment is likely to break or underperform, allowing for timely maintenance and reduced downtime.",
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           false,
-          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           98,
         ],
@@ -159,12 +155,10 @@ describe("TIExShareCollections", () => {
         forOnlyUSInvestors: true,
         metadata: [
           "Food Safety Monitoring",
-          ethers.utils.id("the-intelligence-exchange"),
           1,
           "AI algorithms can be used to monitor various food safety parameters, such as temperature, humidity, and food handling practices, in real-time. This can help prevent foodborne illnesses and maintain overall food safety.",
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           false,
-          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           98,
         ],
@@ -184,12 +178,10 @@ describe("TIExShareCollections", () => {
         forOnlyUSInvestors: true,
         metadata: [
           "Recipe Optimization",
-          ethers.utils.id("the-intelligence-exchange"),
           1,
           "An AI algorithm can be trained to optimize recipes based on customer preferences, health considerations, and other factors. This can help restaurants and food producers create more successful and profitable products.",
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           false,
-          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           98,
         ],
@@ -209,12 +201,10 @@ describe("TIExShareCollections", () => {
         forOnlyUSInvestors: true,
         metadata: [
           "Personalized Menu Recommendations",
-          ethers.utils.id("the-intelligence-exchange"),
           1,
           "An AI system can analyze a customer's order history and other personal data to provide personalized menu recommendations. This can improve customer satisfaction and drive menu innovation.",
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           false,
-          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           98,
         ],
@@ -235,12 +225,10 @@ describe("TIExShareCollections", () => {
         forOnlyUSInvestors: true,
         metadata: [
           "Waste Reduction",
-          ethers.utils.id("the-intelligence-exchange"),
           1,
           "An AI model can be trained to predict food waste based on various factors, such as customer demand and inventory levels. This can help restaurants and food retailers reduce waste and minimize losses due to expiration.",
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           false,
-          "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
           98,
         ],
