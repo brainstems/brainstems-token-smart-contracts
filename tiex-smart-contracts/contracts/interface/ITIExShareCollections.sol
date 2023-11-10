@@ -17,7 +17,7 @@ pragma solidity ^0.8.19;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
-import "./ITIExBaseIPAllocation.sol";
+import "./IBaseIPAllocation.sol";
 import "./IUtility.sol";
 
 // Interface for payment token
@@ -218,7 +218,7 @@ interface ITIExShareCollections {
     function tiexBaseIPAllocation()
         external
         view
-        returns (ITIExBaseIPAllocation);
+        returns (IBaseIPAllocation);
 
     /**
      * @notice Used to clean up data related to a model after it has been removed.
@@ -531,6 +531,6 @@ interface ITIExShareCollections {
         view
         returns (
             TIExShareCollection memory,
-            ITIExBaseIPAllocation.Asset memory
+            IBaseIPAllocation.Asset memory
         );
 }

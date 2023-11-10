@@ -21,7 +21,7 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgrad
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "./interface/ITIExBaseIPAllocation.sol";
+import "./interface/IBaseIPAllocation.sol";
 import "./interface/ITIExShareCollections.sol";
 import "hardhat/console.sol";
 
@@ -67,7 +67,7 @@ contract TIExShareCollections is
     IUtility public override utility;
 
     /// @notice See {ITIExShareCollections-tiexBaseIPAllocation}.
-    ITIExBaseIPAllocation public override tiexBaseIPAllocation;
+    IBaseIPAllocation public override tiexBaseIPAllocation;
 
     /**
      * @notice Defines the initialize function, which sets the name, symbol,
@@ -80,7 +80,7 @@ contract TIExShareCollections is
         address __admin,
         InvestmentDistribution memory __investmentDistribution,
         IUtility __utility,
-        ITIExBaseIPAllocation __tiexBaseIPAllocation
+        IBaseIPAllocation __tiexBaseIPAllocation
     ) public initializer {
         uint256 _tRate = __investmentDistribution
             .creatorRate
@@ -126,7 +126,7 @@ contract TIExShareCollections is
      */
     modifier onlyExistingModelId(uint256 __modelId) {
         if (!tiexBaseIPAllocation.modelExists(__modelId)) {
-            revert ITIExBaseIPAllocation.ErrorTIExIPModelIdNotFound(__modelId);
+            revert IBaseIPAllocation.ErrorIPModelNotFound(__modelId);
         }
         _;
     }
@@ -239,7 +239,7 @@ contract TIExShareCollections is
             investmentDistribution.presaleRate
         );
 
-        ITIExBaseIPAllocation.Contribution[]
+        IBaseIPAllocation.Contribution[]
             memory contributedModels = tiexBaseIPAllocation
                 .getAsset(__modelId)
                 .contributedModels;
@@ -577,7 +577,7 @@ contract TIExShareCollections is
         onlyExistingShareCollection(__modelId)
         returns (
             TIExShareCollection memory,
-            ITIExBaseIPAllocation.Asset memory
+            IBaseIPAllocation.Asset memory
         )
     {
         return (
