@@ -40,7 +40,7 @@ contract TIExBaseIPAllocation is
     mapping(address => uint256) private _modelBalances;
 
     /// @notice Mapping model id to TIEx Model
-    mapping(uint256 => TIExModel) private _TIExModels;
+    mapping(uint256 => Asset) private assets;
 
     /// @notice TIExShareCollections
     ITIExShareCollections public tiexShareCollections;
@@ -95,7 +95,7 @@ contract TIExBaseIPAllocation is
         bytes memory __newModelFingerprint
     ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         // Check if the model is already trained, if so, revert the transaction
-        if (_TIExModels[__modelId].modelMetadata.trained)
+        if (assets[__modelId].modelMetadata.trained)
             revert ErrorTIExIPTrainedAlready(__modelId);
 
         // Check if the new model fingerprint is valid, if not, revert the transaction
@@ -103,16 +103,16 @@ contract TIExBaseIPAllocation is
             revert ErrorTIExIPInvalidMetadata(__modelId);
 
         // Set the model as trained
-        _TIExModels[__modelId].modelMetadata.trained = true;
+        assets[__modelId].modelMetadata.trained = true;
         // Set the model version to 1
-        _TIExModels[__modelId].modelMetadata.version = 1;
+        assets[__modelId].modelMetadata.version = 1;
         // Update the model fingerprint with the new one
-        _TIExModels[__modelId]
+        assets[__modelId]
             .modelMetadata
             .modelFingerprint = __newModelFingerprint;
 
         // Emit an event to log the model upgrade
-        emit UpgradeModel(__modelId, _TIExModels[__modelId].modelMetadata);
+        emit UpgradeModel(__modelId, assets[__modelId].modelMetadata);
     }
 
     /**
@@ -127,14 +127,14 @@ contract TIExBaseIPAllocation is
             revert ErrorTIExIPInvalidMetadata(__modelId);
 
         // Increment the version of the model
-        _TIExModels[__modelId].modelMetadata.version++;
+        assets[__modelId].modelMetadata.version++;
         // Update the model fingerprint with the new one
-        _TIExModels[__modelId]
+        assets[__modelId]
             .modelMetadata
             .modelFingerprint = __newModelFingerprint;
 
         // Emit an event to log the model upgrade
-        emit UpgradeModel(__modelId, _TIExModels[__modelId].modelMetadata);
+        emit UpgradeModel(__modelId, assets[__modelId].modelMetadata);
     }
 
     /**
@@ -156,12 +156,12 @@ contract TIExBaseIPAllocation is
 
         if (!validForMetadata) revert ErrorTIExIPInvalidMetadata(__modelId);
         // Update the model metadata
-        _TIExModels[__modelId].modelMetadata = __modelMetadata;
+        assets[__modelId].modelMetadata = __modelMetadata;
 
         // Emit an event to log the update of model metadata
         emit UpdateModelMetadata(
             __modelId,
-            _TIExModels[__modelId].modelMetadata
+            assets[__modelId].modelMetadata
         );
     }
 
@@ -194,9 +194,9 @@ contract TIExBaseIPAllocation is
         }
 
         // Set the creator of the model ID
-        _TIExModels[__modelId].creator = __creator;
+        assets[__modelId].creator = __creator;
         // Set the IPFS hash of the model's metadata
-        _TIExModels[__modelId].modelURI = __ipfsHash;
+        assets[__modelId].modelURI = __ipfsHash;
 
         // If there are contributors, calculate the total contribution rate and add each contributor to the list of contributors for the model ID
         if (__contributors.length > 0) {
@@ -213,7 +213,7 @@ contract TIExBaseIPAllocation is
                     __contributors[i].contributionRate
                 );
                 // Add the current contributor to the list of contributors for the model
-                _TIExModels[__modelId].contributedModels.push(
+                assets[__modelId].contributedModels.push(
                     __contributors[i]
                 );
             }
@@ -223,7 +223,7 @@ contract TIExBaseIPAllocation is
                 revert ErrorTIExIPContributionRateInvalid(contributionRate);
         } else {
             // If there are no new contributors, add a default contribution of 10000 (representing 100%) for the model itself
-            _TIExModels[__modelId].contributedModels.push(
+            assets[__modelId].contributedModels.push(
                 Contribution({modelId: __modelId, contributionRate: 10000})
             );
         }
@@ -240,13 +240,13 @@ contract TIExBaseIPAllocation is
 
         if (!validForMetadata) revert ErrorTIExIPInvalidMetadata(__modelId);
         // Set the model metadata
-        _TIExModels[__modelId].modelMetadata = __modelMetadata;
+        assets[__modelId].modelMetadata = __modelMetadata;
 
         // Emit an event to log the allocation of the model ID
         emit AllocateTIExIP(
             msg.sender,
             __modelId,
-            _TIExModels[__modelId],
+            assets[__modelId],
             block.timestamp
         );
     }
@@ -259,7 +259,7 @@ contract TIExBaseIPAllocation is
         Contribution[] calldata __contributors
     ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         // Delete the existing contributions for the model
-        delete _TIExModels[__modelId].contributedModels;
+        delete assets[__modelId].contributedModels;
 
         // If there are new contributors
         if (__contributors.length > 0) {
@@ -276,7 +276,7 @@ contract TIExBaseIPAllocation is
                     __contributors[i].contributionRate
                 );
                 // Add the current contributor to the list of contributors for the model
-                _TIExModels[__modelId].contributedModels.push(
+                assets[__modelId].contributedModels.push(
                     __contributors[i]
                 );
             }
@@ -286,7 +286,7 @@ contract TIExBaseIPAllocation is
                 revert ErrorTIExIPContributionRateInvalid(contributionRate);
         } else {
             // If there are no new contributors, add a default contribution of 10000 (representing 100%) for the model itself
-            _TIExModels[__modelId].contributedModels.push(
+            assets[__modelId].contributedModels.push(
                 Contribution({modelId: __modelId, contributionRate: 10000})
             );
         }
@@ -294,7 +294,7 @@ contract TIExBaseIPAllocation is
         // Emit an event to log the update of contribution rates
         emit ContributationRatesUpdated(
             __modelId,
-            _TIExModels[__modelId].contributedModels
+            assets[__modelId].contributedModels
         );
     }
 
@@ -313,7 +313,7 @@ contract TIExBaseIPAllocation is
         // invalidate the assumption that `_modelBalances[from] >= 1`.
         _modelBalances[__creator] -= 1;
 
-        delete _TIExModels[__modelId];
+        delete assets[__modelId];
 
         tiexShareCollections.afterRemoveModel(__modelId);
 
@@ -327,7 +327,7 @@ contract TIExBaseIPAllocation is
         uint256 __modelId,
         string calldata __ipfsHash
     ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
-        _TIExModels[__modelId].modelURI = __ipfsHash;
+        assets[__modelId].modelURI = __ipfsHash;
 
         emit TIExModelURIUpdated(__modelId, __ipfsHash);
     }
@@ -339,16 +339,16 @@ contract TIExBaseIPAllocation is
     /**
      * @dev See {ITIExBaseIPAllocation-getTIExModel}.
      */
-    function getTIExModel(
+    function getAsset(
         uint256 __modelId
-    ) external view returns (TIExModel memory) {
-        return _TIExModels[__modelId];
+    ) external view returns (Asset memory) {
+        return assets[__modelId];
     }
 
     /**
      * @dev See {ITIExBaseIPAllocation-modelBalanceOf}.
      */
-    function modelBalanceOf(address __creator) public view returns (uint256) {
+    function assetBalanceOf(address __creator) public view returns (uint256) {
         if (__creator == address(0)) {
             revert ErrorTIExIPInvalidCreator(address(0));
         }
@@ -359,7 +359,7 @@ contract TIExBaseIPAllocation is
      * @dev See {ITIExBaseIPAllocation-creatorOf}.
      */
     function creatorOf(uint256 __modelId) public view returns (address) {
-        address creator = _TIExModels[__modelId].creator;
+        address creator = assets[__modelId].creator;
         if (creator == address(0)) {
             revert ErrorTIExIPModelIdNotFound(__modelId);
         }
@@ -370,7 +370,7 @@ contract TIExBaseIPAllocation is
      * @dev See {ITIExBaseIPAllocation-modelExists}.
      */
     function modelExists(uint256 __modelId) public view returns (bool) {
-        return _TIExModels[__modelId].creator != address(0);
+        return assets[__modelId].creator != address(0);
     }
 
     /**
@@ -380,7 +380,7 @@ contract TIExBaseIPAllocation is
         address __creator,
         uint256 __index
     ) public view returns (uint256) {
-        if (__index >= modelBalanceOf(__creator)) {
+        if (__index >= assetBalanceOf(__creator)) {
             revert ErrorTIExIPOutOfBoundsIndex(__creator, __index);
         }
         return _ownedModels[__creator][__index];
@@ -409,7 +409,7 @@ contract TIExBaseIPAllocation is
     function modelsOfCreator(
         address __creator
     ) public view returns (uint256[] memory) {
-        uint256 modelCount = modelBalanceOf(__creator);
+        uint256 modelCount = assetBalanceOf(__creator);
 
         uint256[] memory modelsId = new uint256[](modelCount);
         for (uint256 i; i < modelCount; i++) {
@@ -428,7 +428,7 @@ contract TIExBaseIPAllocation is
      *
      */
     function _addModelToAllModelsEnumeration(uint256 __modelId) private {
-        _TIExModels[__modelId].allModelsIndex = _allModels.length;
+        assets[__modelId].allModelsIndex = _allModels.length;
         _allModels.push(__modelId);
     }
 
@@ -442,9 +442,9 @@ contract TIExBaseIPAllocation is
         address __to,
         uint256 __modelId
     ) private {
-        uint256 length = modelBalanceOf(__to);
+        uint256 length = assetBalanceOf(__to);
         _ownedModels[__to][length] = __modelId;
-        _TIExModels[__modelId].ownedModelsIndex = length;
+        assets[__modelId].ownedModelsIndex = length;
     }
 
     /**
@@ -458,17 +458,17 @@ contract TIExBaseIPAllocation is
         // then delete the last slot.
 
         uint256 lastModelIndex = _allModels.length - 1;
-        uint256 modelIndex = _TIExModels[__modelId].allModelsIndex;
+        uint256 modelIndex = assets[__modelId].allModelsIndex;
 
         // When the model to delete is the last model. However, since this occurs so
         // an 'if' statement (like in _removeModelFromCreatorEnumeration)
         uint256 lastModelId = _allModels[lastModelIndex];
 
         _allModels[modelIndex] = lastModelId; // Move the last model to the slot of the to-delete model
-        _TIExModels[lastModelId].allModelsIndex = modelIndex; // Update the moved model's index
+        assets[lastModelId].allModelsIndex = modelIndex; // Update the moved model's index
 
         // This also deletes the contents at the last position of the array
-        delete _TIExModels[__modelId].allModelsIndex;
+        delete assets[__modelId].allModelsIndex;
         _allModels.pop();
     }
 
@@ -488,19 +488,19 @@ contract TIExBaseIPAllocation is
         // To prevent a gap in from's models array, we store the last model in the index of the model to delete, and
         // then delete the last slot
 
-        uint256 lastModelIndex = modelBalanceOf(__from) - 1;
-        uint256 modelIndex = _TIExModels[__modelId].ownedModelsIndex;
+        uint256 lastModelIndex = assetBalanceOf(__from) - 1;
+        uint256 modelIndex = assets[__modelId].ownedModelsIndex;
 
         // When the model to delete is the last model
         if (modelIndex != lastModelIndex) {
             uint256 lastModelId = _ownedModels[__from][lastModelIndex];
 
             _ownedModels[__from][modelIndex] = lastModelId; // Move the last model to the slot of the to-delete model
-            _TIExModels[lastModelId].ownedModelsIndex = modelIndex; // Update the moved model's index
+            assets[lastModelId].ownedModelsIndex = modelIndex; // Update the moved model's index
         }
 
         // This also deletes the contents at the last position of the array
-        delete _TIExModels[__modelId].ownedModelsIndex;
+        delete assets[__modelId].ownedModelsIndex;
         delete _ownedModels[__from][lastModelIndex];
     }
 }

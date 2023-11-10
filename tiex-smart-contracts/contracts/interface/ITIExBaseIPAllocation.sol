@@ -16,6 +16,7 @@ pragma solidity ^0.8.19;
 
 interface ITIExBaseIPAllocation {
     // Struct to represent a contribution to a model
+    // TODO: revise this
     struct Contribution {
         uint256 modelId; // The ID of the model
         uint256 contributionRate; // The rate of the contribution
@@ -34,7 +35,7 @@ interface ITIExBaseIPAllocation {
         uint256 performance; // The performance of the model
     }
 
-    struct TIExModel {
+    struct Asset {
         address creator;
         Contribution[] contributedModels;
         ModelMetadata modelMetadata;
@@ -47,7 +48,7 @@ interface ITIExBaseIPAllocation {
     event AllocateTIExIP(
         address provider,
         uint256 indexed modelId,
-        TIExModel TIExModel,
+        Asset TIExModel,
         uint256 startTime
     );
 
@@ -213,14 +214,14 @@ interface ITIExBaseIPAllocation {
      * @notice Used to get the detail of model
      * @param __modelId uint256 must exist
      */
-    function getTIExModel(
+    function getAsset(
         uint256 __modelId
-    ) external view returns (TIExModel memory);
+    ) external view returns (Asset memory);
 
     /**
      * @notice Returns the number of models in ``creator``'s account.
      */
-    function modelBalanceOf(address __creator) external view returns (uint256);
+    function assetBalanceOf(address __creator) external view returns (uint256);
 
     /**
      * @notice Returns the creator of the `modelId` model.

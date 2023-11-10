@@ -241,7 +241,7 @@ contract TIExShareCollections is
 
         ITIExBaseIPAllocation.Contribution[]
             memory contributedModels = tiexBaseIPAllocation
-                .getTIExModel(__modelId)
+                .getAsset(__modelId)
                 .contributedModels;
 
         _shareCollections[__modelId].withdrawnAmount = _shareCollections[
@@ -250,7 +250,7 @@ contract TIExShareCollections is
 
         for (uint256 i = 0; i < contributedModels.length; i++) {
             address contributer = tiexBaseIPAllocation
-                .getTIExModel(contributedModels[i].modelId)
+                .getAsset(contributedModels[i].modelId)
                 .creator;
 
             if (contributer == address(0)) continue;
@@ -577,12 +577,12 @@ contract TIExShareCollections is
         onlyExistingShareCollection(__modelId)
         returns (
             TIExShareCollection memory,
-            ITIExBaseIPAllocation.TIExModel memory
+            ITIExBaseIPAllocation.Asset memory
         )
     {
         return (
             _shareCollections[__modelId],
-            tiexBaseIPAllocation.getTIExModel(__modelId)
+            tiexBaseIPAllocation.getAsset(__modelId)
         );
     }
 
@@ -597,7 +597,7 @@ contract TIExShareCollections is
             string(
                 abi.encodePacked(
                     "ipfs://",
-                    tiexBaseIPAllocation.getTIExModel(__modelId).modelURI
+                    tiexBaseIPAllocation.getAsset(__modelId).modelURI
                 )
             );
     }

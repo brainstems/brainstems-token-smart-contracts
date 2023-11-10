@@ -531,6 +531,6 @@ interface ITIExShareCollections {
         view
         returns (
             TIExShareCollection memory,
-            ITIExBaseIPAllocation.TIExModel memory
+            ITIExBaseIPAllocation.Asset memory
         );
 }

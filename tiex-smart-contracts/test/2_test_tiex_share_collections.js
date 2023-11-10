@@ -351,7 +351,7 @@ describe("TIExShareCollections", () => {
 
     it("should give a creator TIExIP", async () => {
       for (var i = 0; i < models.length; i++) {
-        const model_detail = await tiexBaseIPAllocation.getTIExModel(
+        const model_detail = await tiexBaseIPAllocation.getAsset(
           models[i].modelId
         );
 
