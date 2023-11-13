@@ -21,9 +21,13 @@ import "./ITIExBaseIPAllocation.sol";
 import "./IUtility.sol";
 
 
+interface IERC20Burnable {
+    function burn(uint256 value) external;
+    function burnFrom(address account, uint256 value) external;
+}
 
 // Interface for payment token
-interface IPaymentToken is IERC20, IERC20Permit { }
+interface IPaymentToken is IERC20, IERC20Permit, IERC20Burnable { }
 
 interface ITIExShareCollections
 {
@@ -228,8 +232,11 @@ interface ITIExShareCollections
     /// @notice The payment token (ERC20: INTELL token)
     function paymentToken() external view returns(IPaymentToken);
 
-    /// @notice Investment distribution rates and addresses
+    /// @notice Investment distribution rates
     function investmentDistribution() external view returns(uint256 creatorRate, uint256 marketingtRate, uint256 reserveRate, uint256 presaleRate);
+
+    /// @notice revenue distribution rates
+    function revenueDistribution() external view returns(uint256 creatorRate, uint256 marketingtRate, uint256 reserveRate, uint256 investorRate);
 
     /// @notice Utility
     function utility() external view returns(IUtility);

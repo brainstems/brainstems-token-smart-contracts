@@ -69,6 +69,9 @@ contract TIExShareCollections is
     /// @notice See {ITIExShareCollections-investmentDistribution}.
     InvestmentDistribution public override investmentDistribution;
 
+/// @notice See {ITIExShareCollections-revenueDistribution}.
+    RevenueDistribution public override revenueDistribution;
+
     /// @notice See {ITIExShareCollections-utility}.
     IUtility public override utility;
 
@@ -89,6 +92,7 @@ contract TIExShareCollections is
         IPaymentToken __paymentToken,
         address __admin,
         InvestmentDistribution memory __investmentDistribution,
+        RevenueDistribution memory __revenueDistribution,
         IUtility __utility,
         ITIExBaseIPAllocation __tiexBaseIPAllocation
     ) public initializer {
@@ -106,6 +110,7 @@ contract TIExShareCollections is
         truthHolder = __truthHolder;
         paymentToken = __paymentToken;
         investmentDistribution = __investmentDistribution;
+        revenueDistribution = __revenueDistribution;
         utility = __utility;
         tiexBaseIPAllocation = __tiexBaseIPAllocation;
 
@@ -308,6 +313,13 @@ contract TIExShareCollections is
         paymentToken.safeTransfer(presale, toPresale.div(10000));
 
         emit Distribute(__modelId, restOfAmount, block.timestamp);
+    }
+
+    function distributeRevenue(uint256 __modelId, uint256 __revenue) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) onlyExistingShareCollection(__modelId) nonReentrant {
+       if(__revenue == 0) revert ErrorInvalidParam();
+       paymentToken.safeTransferFrom(msg.sender, address(this), __revenue);
+       paymentToken.burn(__revenue.mul(1500).div(10000));
+    //    paymentToken.safeTransfer()
     }
 
     /**
