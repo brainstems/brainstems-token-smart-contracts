@@ -126,7 +126,7 @@ contract TIExShareCollections is
      */
     modifier onlyExistingModelId(uint256 __modelId) {
         if (!tiexBaseIPAllocation.modelExists(__modelId)) {
-            revert IBaseIPAllocation.ErrorIPModelNotFound(__modelId);
+            revert IBaseIPAllocation.ErrorAssetNotFound(__modelId);
         }
         _;
     }
@@ -597,7 +597,7 @@ contract TIExShareCollections is
             string(
                 abi.encodePacked(
                     "ipfs://",
-                    tiexBaseIPAllocation.getAsset(__modelId).modelURI
+                    tiexBaseIPAllocation.getAsset(__modelId).uri
                 )
             );
     }
