@@ -10,7 +10,7 @@ const { proxy } = require("./deploy_config");
 
 async function main() {
 
-  const TIExShareCollections = await hre.ethers.getContractFactory("TIExShareCollections");
+  const TIExShareCollections = await hre.ethers.getContractFactory("AssetsRevenue");
   console.log(green("Upgrading TIExShareCollections ...."));
 
   await hre.upgrades.upgradeProxy(proxy, TIExShareCollections);

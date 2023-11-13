@@ -115,11 +115,11 @@ describe("TIExShareCollections", () => {
     ] = await ethers.getSigners();
 
     utility = await ethers.deployContract("Utility");
-    intellToken = await ethers.deployContract("IntelligenceInvestmentToken", [
+    intellToken = await ethers.deployContract("IntelligenceToken", [
       recipient.address,
     ]);
-    tiexBaseIPAllocation = await ethers.deployContract("BaseIPAllocation");
-    tiexShareCollections = await ethers.deployContract("TIExShareCollections");
+    tiexBaseIPAllocation = await ethers.deployContract("Assets");
+    tiexShareCollections = await ethers.deployContract("AssetsRevenue");
 
     models = [
       {

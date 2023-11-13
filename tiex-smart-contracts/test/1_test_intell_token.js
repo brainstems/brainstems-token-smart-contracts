@@ -6,14 +6,14 @@ const { parseUnits, DECIMALS } = require("./helper");
 describe("IntelligenceInvestmentToken", function () {
   async function deployIntelligenceExchangeProtocolFixture() {
     const TOTAL_SUPPLY = 1_000_000_000;
-    const TOKEN_NAME = "Intelligence Investment Token";
+    const TOKEN_NAME = "Intelligence Token";
     const TOKEN_SYMBOL = "INTELL";
 
     // Contracts are deployed using the first signer/account by default
     const [owner, otherAccount] = await ethers.getSigners();
 
     const IntelligenceInvestmentToken = await ethers.getContractFactory(
-      "IntelligenceInvestmentToken"
+      "IntelligenceToken"
     );
     const intelligenceInvestmentToken =
       await IntelligenceInvestmentToken.deploy(owner.address);
@@ -124,16 +124,17 @@ describe("IntelligenceInvestmentToken", function () {
     });
 
     it("Should update allowance based on `permit`", async () => {
-      const { intelligenceInvestmentToken, otherAccount, owner } = await loadFixture(deployIntelligenceExchangeProtocolFixture);
+      const { intelligenceInvestmentToken, otherAccount, owner } =
+        await loadFixture(deployIntelligenceExchangeProtocolFixture);
       const nonce = await intelligenceInvestmentToken.nonces(owner.address);
       const amount = ethers.constants.MaxUint256;
       const SECOND = 1000;
       const deadline = Math.trunc((Date.now() + 1200 * SECOND) / SECOND);
       const domain = {
-        name: "Intelligence Investment Token",
+        name: "Intelligence Token",
         version: "1",
         chainId: 1337,
-        verifyingContract: intelligenceInvestmentToken.address
+        verifyingContract: intelligenceInvestmentToken.address,
       };
 
       // The named list of all type definitions
@@ -162,7 +163,6 @@ describe("IntelligenceInvestmentToken", function () {
         ],
       };
 
-
       // The data to sign
       const value = {
         owner: owner.address,
@@ -175,9 +175,14 @@ describe("IntelligenceInvestmentToken", function () {
       const signature = await owner._signTypedData(domain, types, value);
       let sig = ethers.utils.splitSignature(signature);
 
-      const verifiedAddress = ethers.utils.verifyTypedData(domain, {
-        Permit: types.Permit
-      }, value, signature);
+      const verifiedAddress = ethers.utils.verifyTypedData(
+        domain,
+        {
+          Permit: types.Permit,
+        },
+        value,
+        signature
+      );
 
       expect(verifiedAddress).to.eq(owner.address);
 
@@ -191,9 +196,13 @@ describe("IntelligenceInvestmentToken", function () {
         sig.s
       );
 
-      expect(await intelligenceInvestmentToken.allowance(owner.address, otherAccount.address)).to.eq(ethers.constants.MaxUint256);
-
-    })
+      expect(
+        await intelligenceInvestmentToken.allowance(
+          owner.address,
+          otherAccount.address
+        )
+      ).to.eq(ethers.constants.MaxUint256);
+    });
 
     it("Should transfer tokens from one account to another with allowance", async function () {
       const { intelligenceInvestmentToken, owner, otherAccount, DECIMALS } =
@@ -261,5 +270,4 @@ describe("IntelligenceInvestmentToken", function () {
       );
     });
   });
-
 });

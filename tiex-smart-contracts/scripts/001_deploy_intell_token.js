@@ -12,7 +12,7 @@ async function main() {
   console.log(green("Deploying IntellTokenContract...."));
 
   const IntelligenceInvestmentToken = await hre.ethers.getContractFactory(
-    "IntelligenceInvestmentToken"
+    "IntelligenceToken"
   );
   const intelligenceInvestmentToken = await IntelligenceInvestmentToken.deploy(
     recipient
