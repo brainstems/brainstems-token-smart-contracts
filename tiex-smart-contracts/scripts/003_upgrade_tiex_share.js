@@ -9,13 +9,13 @@ const { green } = require("console-log-colors");
 const { proxy } = require("./deploy_config");
 
 async function main() {
-
-  const TIExShareCollections = await hre.ethers.getContractFactory("AssetsRevenue");
+  const TIExShareCollections = await hre.ethers.getContractFactory(
+    "AssetsRevenue"
+  );
   console.log(green("Upgrading TIExShareCollections ...."));
 
   await hre.upgrades.upgradeProxy(proxy, TIExShareCollections);
   console.log("TIExShareCollections upgraded");
-  
 }
 
 // We recommend this pattern to be able to use async/await everywhere

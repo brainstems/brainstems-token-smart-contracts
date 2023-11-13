@@ -18,6 +18,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
+// TODO: implement stages
 contract IntelligenceToken is ERC20, ERC20Permit, ERC20Burnable {
     constructor(
         address __recipient

@@ -20,7 +20,6 @@ async function main() {
 
   await intelligenceInvestmentToken.deployed();
   console.log(green(`Deployed to ${intelligenceInvestmentToken.address}`));
-
 }
 
 // We recommend this pattern to be able to use async/await everywhere
