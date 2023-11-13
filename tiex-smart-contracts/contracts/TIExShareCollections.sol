@@ -523,8 +523,7 @@ contract TIExShareCollections is
         onlyExistingShareCollection(__modelId)
     {
         if (
-            __maxSupply == 0 ||
-            __maxSupply == _shareCollections[__modelId].maxSupply
+           __maxSupply <= totalSupply(__modelId) || __maxSupply >= _shareCollections[__modelId].maxSupply
         ) revert ErrorInvalidParam();
 
         _shareCollections[__modelId].maxSupply = __maxSupply;
