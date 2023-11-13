@@ -55,7 +55,7 @@ interface ITIExShareCollections
     }
 
     /**
-     * @notice Defines the distribution rates and addresses for different aspects
+     * @notice Defines the distribution rates for different aspects
      * of an investment.
      */
     struct InvestmentDistribution {
@@ -67,12 +67,21 @@ interface ITIExShareCollections
         uint256 reserveRate;
         /// @notice Indicates the rate of investment distribution for presale.
         uint256 presaleRate;
-        /// @notice Indicates the address where the marketing funds will be distributed.
-        address marketing;
-        /// @notice Indicates the address where the reserve funds will be distributed.
-        address reserve;
-        /// @notice Indicates the address where the presale funds will be distributed.
-        address presale;
+    }
+
+    /**
+     * @notice Defines the distribution rates for different aspects
+     * of an revenue.
+     */
+    struct RevenueDistribution {
+        /// @notice Indicates the rate of revenue distribution for the creators.
+        uint256 creatorRate;
+        /// @notice Indicates the rate of revenue distribution for marketing.
+        uint256 marketingtRate;
+        /// @notice Indicates the rate of revenue distribution for reserves.
+        uint256 reserveRate;
+        /// @notice Indicates the rate of revenue distribution for the investors.
+        uint256 investorRate;
     }
 
     /// @notice Indicates that a share collection cannot be found
@@ -220,7 +229,7 @@ interface ITIExShareCollections
     function paymentToken() external view returns(IPaymentToken);
 
     /// @notice Investment distribution rates and addresses
-    function investmentDistribution() external view returns(uint256 creatorRate, uint256 marketingtRate, uint256 reserveRate, uint256 presaleRate, address marketing, address reserve, address presale);
+    function investmentDistribution() external view returns(uint256 creatorRate, uint256 marketingtRate, uint256 reserveRate, uint256 presaleRate);
 
     /// @notice Utility
     function utility() external view returns(IUtility);

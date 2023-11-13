@@ -75,6 +75,10 @@ contract TIExShareCollections is
     /// @notice See {ITIExShareCollections-tiexBaseIPAllocation}.
     ITIExBaseIPAllocation public override tiexBaseIPAllocation;
 
+    address public marketing;
+    address public reserve;
+    address public presale;
+
     /**
      * @notice Defines the initialize function, which sets the name, symbol,
      * truth holder, payment token, and investment distribution for the token when deploying Proxy.
@@ -299,9 +303,9 @@ contract TIExShareCollections is
             paymentToken.safeTransfer(contributer, toContributer.div(10000).div(10000));
         }
 
-        paymentToken.safeTransfer(investmentDistribution.marketing, toMarketing.div(10000));
-        paymentToken.safeTransfer(investmentDistribution.reserve, toReserve.div(10000));
-        paymentToken.safeTransfer(investmentDistribution.presale, toPresale.div(10000));
+        paymentToken.safeTransfer(marketing, toMarketing.div(10000));
+        paymentToken.safeTransfer(reserve, toReserve.div(10000));
+        paymentToken.safeTransfer(presale, toPresale.div(10000));
 
         emit Distribute(__modelId, restOfAmount, block.timestamp);
     }
@@ -366,11 +370,11 @@ contract TIExShareCollections is
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (
             __marketing == address(0) ||
-            __marketing == investmentDistribution.marketing
+            __marketing == marketing
         ) revert ErrorInvalidParam();
 
 
-        investmentDistribution.marketing = __marketing;
+        marketing = __marketing;
 
         emit TIExMarketingAddressUpdated(
             __marketing
@@ -385,10 +389,10 @@ contract TIExShareCollections is
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (
             __presale == address(0) ||
-            __presale == investmentDistribution.presale
+            __presale == presale
         ) revert ErrorInvalidParam();
 
-        investmentDistribution.presale = __presale;
+        presale = __presale;
 
         emit TIExPresaleAddressUpdated(
             __presale
@@ -403,10 +407,10 @@ contract TIExShareCollections is
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         if (
             __reserve == address(0) ||
-            __reserve == investmentDistribution.reserve
+            __reserve == reserve
         ) revert ErrorInvalidParam();
 
-        investmentDistribution.reserve = __reserve;
+        reserve = __reserve;
 
         emit TIExReserveAddressUpdated(
             __reserve
