@@ -63,7 +63,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
      */
     modifier onlyExistingModelId(uint256 assetId) {
         if (!modelExists(assetId)) {
-            revert ErrorAssetNotFound(assetId);
+            revert AssetNotFound(assetId);
         }
         _;
     }
@@ -74,7 +74,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
      */
     modifier onlyNotExistingModelId(uint256 __modelId) {
         if (modelExists(__modelId)) {
-            revert ErrorAlreadyAllocated(__modelId);
+            revert AssetAlreadyExists(__modelId);
         }
         _;
     }
@@ -92,11 +92,11 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
     ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         // Check if the model is already trained, if so, revert the transaction
         if (assets[__modelId].metadata.trained)
-            revert ErrorAlreadyTrained(__modelId);
+            revert ModelAlreadyTrained(__modelId);
 
         // Check if the new model fingerprint is valid, if not, revert the transaction
         if (__newModelFingerprint.length == 0)
-            revert ErrorInvalidMetadata(__modelId);
+            revert InvalidMetadata(__modelId);
 
         // Set the model as trained
         assets[__modelId].metadata.trained = true;
@@ -106,7 +106,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
         assets[__modelId].metadata.fingerprint = __newModelFingerprint;
 
         // Emit an event to log the model upgrade
-        emit UpgradeAsset(__modelId, assets[__modelId].metadata);
+        emit ModelUpgraded(__modelId, assets[__modelId].metadata);
     }
 
     /**
@@ -118,7 +118,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
     ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         // Check if the new model fingerprint is valid, if not, revert the transaction
         if (__newModelFingerprint.length == 0)
-            revert ErrorInvalidMetadata(__modelId);
+            revert InvalidMetadata(__modelId);
 
         // Increment the version of the model
         assets[__modelId].metadata.version++;
@@ -126,7 +126,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
         assets[__modelId].metadata.fingerprint = __newModelFingerprint;
 
         // Emit an event to log the model upgrade
-        emit UpgradeAsset(__modelId, assets[__modelId].metadata);
+        emit ModelUpgraded(__modelId, assets[__modelId].metadata);
     }
 
     /**
@@ -144,12 +144,12 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
             __modelMetadata.watermark.length > 0 &&
             __modelMetadata.performance > 0;
 
-        if (!validForMetadata) revert ErrorInvalidMetadata(__modelId);
+        if (!validForMetadata) revert InvalidMetadata(__modelId);
         // Update the model metadata
         assets[__modelId].metadata = __modelMetadata;
 
         // Emit an event to log the update of model metadata
-        emit UpdateAssetMetadata(__modelId, assets[__modelId].metadata);
+        emit AssetMetadataUpdated(__modelId, assets[__modelId].metadata);
     }
 
     /**
@@ -164,7 +164,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
     ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyNotExistingModelId(__modelId) {
         // Check if the creator address is valid
         if (__creator == address(0)) {
-            revert ErrorInvalidCreator(address(0));
+            revert InvalidCreator(address(0));
         }
 
         // Add the model ID to the list of all model IDs
@@ -192,7 +192,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
             for (uint256 i; i < __contributors.length; i++) {
                 // If the model does not exist, revert the transaction
                 if (!modelExists(__contributors[i].modelId))
-                    revert ErrorAssetNotFound(__contributors[i].modelId);
+                    revert AssetNotFound(__contributors[i].modelId);
                 // Add the contribution rate of the current contributor to the total contribution rate
                 contributionRate = contributionRate.add(
                     __contributors[i].contributionRate
@@ -203,7 +203,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
 
             // If the total contribution rate is not 10000 (representing 100%), revert the transaction
             if (contributionRate != 10000)
-                revert ErrorInvalidContributionRate(contributionRate);
+                revert InvalidContributionRate(contributionRate);
         } else {
             // If there are no new contributors, add a default contribution of 10000 (representing 100%) for the model itself
             assets[__modelId].contributedModels.push(
@@ -219,12 +219,12 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
             __modelMetadata.watermark.length > 0 &&
             __modelMetadata.performance > 0;
 
-        if (!validForMetadata) revert ErrorInvalidMetadata(__modelId);
+        if (!validForMetadata) revert InvalidMetadata(__modelId);
         // Set the model metadata
         assets[__modelId].metadata = __modelMetadata;
 
         // Emit an event to log the allocation of the model ID
-        emit AllocateIP(
+        emit AssetCreated(
             msg.sender,
             __modelId,
             assets[__modelId],
@@ -249,7 +249,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
             for (uint256 i; i < __contributors.length; i++) {
                 // If the model does not exist, revert the transaction
                 if (!modelExists(__contributors[i].modelId))
-                    revert ErrorAssetNotFound(__contributors[i].modelId);
+                    revert AssetNotFound(__contributors[i].modelId);
                 // Add the contribution rate of the current contributor to the total contribution rate
                 contributionRate = contributionRate.add(
                     __contributors[i].contributionRate
@@ -260,7 +260,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
 
             // If the total contribution rate is not 10000 (representing 100%), revert the transaction
             if (contributionRate != 10000)
-                revert ErrorInvalidContributionRate(contributionRate);
+                revert InvalidContributionRate(contributionRate);
         } else {
             // If there are no new contributors, add a default contribution of 10000 (representing 100%) for the model itself
             assets[__modelId].contributedModels.push(
@@ -294,7 +294,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
 
         tiexShareCollections.afterRemoveModel(__modelId);
 
-        emit RemoveIP(__creator, address(0), __modelId, block.timestamp);
+        emit AssetRemoved(__creator, address(0), __modelId, block.timestamp);
     }
 
     /**
@@ -306,7 +306,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
     ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
         assets[__modelId].uri = __ipfsHash;
 
-        emit assetUriUpdated(__modelId, __ipfsHash);
+        emit AssetUriUpdated(__modelId, __ipfsHash);
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -325,7 +325,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
      */
     function assetBalanceOf(address __creator) public view returns (uint256) {
         if (__creator == address(0)) {
-            revert ErrorInvalidCreator(address(0));
+            revert InvalidCreator(address(0));
         }
         return _modelBalances[__creator];
     }
@@ -336,7 +336,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
     function creatorOf(uint256 __modelId) public view returns (address) {
         address creator = assets[__modelId].creator;
         if (creator == address(0)) {
-            revert ErrorAssetNotFound(__modelId);
+            revert AssetNotFound(__modelId);
         }
         return creator;
     }
@@ -356,7 +356,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
         uint256 __index
     ) public view returns (uint256) {
         if (__index >= assetBalanceOf(__creator)) {
-            revert ErrorOutOfBounds(__creator, __index);
+            revert OutOfBounds(__creator, __index);
         }
         return _ownedModels[__creator][__index];
     }
@@ -373,7 +373,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
      */
     function modelByIndex(uint256 __index) public view returns (uint256) {
         if (__index >= totalModelSupply()) {
-            revert ErrorOutOfBounds(address(0), __index);
+            revert OutOfBounds(address(0), __index);
         }
         return _allModels[__index];
     }

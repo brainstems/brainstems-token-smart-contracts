@@ -14,28 +14,26 @@
 
 pragma solidity ^0.8.19;
 
+// TODO: update all comments
 interface IAssets {
-    // TODO: update all comments
-
-    // Struct to represent a contribution to a model
-    // TODO: revise
+    // TODO: revise logic
     struct Contribution {
-        uint256 modelId; // The ID of the model
-        uint256 contributionRate; // The rate of the contribution
+        uint256 modelId;
+        uint256 contributionRate;
     }
 
-    // Struct to represent the metadata of an asset
+    // TODO: revise fields
     struct Metadata {
         string name;
         uint256 version;
         string description;
         bytes fingerprint;
-        bool trained; // Whether the model is trained or not
-        bytes watermark; // The fingerprint of the watermark
-        // TODO: revise
-        uint256 performance; // The performance of the model
+        bool trained;
+        bytes watermark;
+        uint256 performance;
     }
 
+    // TODO: revise fields
     struct Asset {
         address creator;
         Contribution[] contributedModels;
@@ -45,63 +43,57 @@ interface IAssets {
         string uri;
     }
 
-    // Event emitted when a new IP is allocated to a creator
-    // TODO: revise provider
-    event AllocateIP(
+    // TODO: revise all event fields
+
+    event AssetCreated(
         address provider,
         uint256 indexed assetId,
         Asset asset,
         uint256 startTime
     );
 
-    // Event emitted when an IP is removed
-    event RemoveIP(
+    event AssetRemoved(
         address creator,
         address to,
         uint256 indexed assetId,
         uint256 removedTime
     );
 
-    // Event emitted when the URI of an asset is updated
-    event assetUriUpdated(uint256 indexed assetId, string ipfsHash);
+    event AssetUriUpdated(uint256 indexed assetId, string ipfsHash);
 
-    // Event emitted when the contribution rates of a model are updated
     event ContributationRatesUpdated(
         uint256 indexed modelId,
         Contribution[] contributionRates
     );
 
     // Event emitted when an asset is upgraded
-    event UpgradeAsset(uint256 indexed assetId, Metadata metadata);
+    event ModelUpgraded(uint256 indexed assetId, Metadata metadata);
 
     // Event emitted when the metadata of an asset is updated
-    event UpdateAssetMetadata(uint256 indexed assetId, Metadata metadata);
+    event AssetMetadataUpdated(uint256 indexed assetId, Metadata metadata);
 
-    // Error thrown when an invalid creator address is provided
-    error ErrorInvalidCreator(address creator);
+    error InvalidCreator(address creator);
 
-    // Error thrown when an asset ID that is already allocated is used
-    error ErrorAlreadyAllocated(uint256 assetId);
+    error AssetAlreadyExists(uint256 assetId);
 
     // Error thrown when an invalid provider address is provided
-    error ErrorInvalidProvider(address provider);
+    error InvalidProvider(address provider);
 
     // Error thrown when an out of bounds index is used for a creator
-    error ErrorOutOfBounds(address creator, uint256 index);
+    error OutOfBounds(address creator, uint256 index);
 
     // Error thrown when a non-existent asset ID is used
-    error ErrorAssetNotFound(uint256 assetId);
+    error AssetNotFound(uint256 assetId);
 
     // Error thrown when an invalid contribution rate is used
-    error ErrorInvalidContributionRate(uint256 contributionRate);
+    error InvalidContributionRate(uint256 contributionRate);
 
     // Error thrown when an asset that is already trained is used
-    error ErrorAlreadyTrained(uint256 assetId);
+    error ModelAlreadyTrained(uint256 assetId);
 
     // Error thrown when invalid metadata is provided for an asset
-    error ErrorInvalidMetadata(uint256 assetId);
+    error InvalidMetadata(uint256 assetId);
 
-    // TODO: revise
     /**
      * @notice Upgrades a stubbed model to a trained model.
      * @param __modelId uint256 must exist.

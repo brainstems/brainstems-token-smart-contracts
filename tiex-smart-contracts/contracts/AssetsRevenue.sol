@@ -126,7 +126,7 @@ contract AssetsRevenue is
      */
     modifier onlyExistingModelId(uint256 __modelId) {
         if (!tiexBaseIPAllocation.modelExists(__modelId)) {
-            revert IAssets.ErrorAssetNotFound(__modelId);
+            revert IAssets.AssetNotFound(__modelId);
         }
         _;
     }
