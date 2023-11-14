@@ -327,7 +327,7 @@ describe("TIExShareCollections", () => {
       for (var i = 0; i < models.length; i++) {
         await tiexBaseIPAllocation
           .connect(admin)
-          .giveCreatorTIExIP(
+          .createAsset(
             models[i].modelId,
             models[i].creator,
             models[i].ipfsHash,

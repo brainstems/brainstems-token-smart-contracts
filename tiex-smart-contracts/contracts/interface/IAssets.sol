@@ -96,8 +96,8 @@ interface IAssets {
 
     /**
      * @notice Upgrades a stubbed model to a trained model.
-     * @param __modelId uint256 must exist.
-     * @param __newModelFingerprint bytes is the new fingerprint of the model.
+     * @param assetId uint256 must exist.
+     * @param fingerprint bytes is the new fingerprint of the model.
      *
      * Emits a {UpgradeModel} event.
      *
@@ -107,8 +107,8 @@ interface IAssets {
      * - The `__newModelFingerprint` must not be empty.
      */
     function upgradeStubbedModelToTrainedModel(
-        uint256 __modelId,
-        bytes memory __newModelFingerprint
+        uint256 assetId,
+        bytes memory fingerprint
     ) external;
 
     /**
@@ -127,8 +127,8 @@ interface IAssets {
 
     /**
      * @notice Updates the metadata of a model.
-     * @param __modelId The ID of the model to be updated.
-     * @param __modelMetadata The new metadata of the model.
+     * @param assetId The ID of the model to be updated.
+     * @param metadata The new metadata of the model.
      *
      * Emits an {UpdateModelMetadata} event.
      *
@@ -137,17 +137,17 @@ interface IAssets {
      * - The model with the given `__modelId` must exist.
      * - The `__modelMetadata` must be valid.
      */
-    function updateModelMetadata(
-        uint256 __modelId,
-        Metadata calldata __modelMetadata
+    function updateAssetMetadata(
+        uint256 assetId,
+        Metadata calldata metadata
     ) external;
 
     /**
      * @notice Allocates `modelId` as TIEx IP to `creator`.
-     * @param __modelId uint256 must not exist.
-     * @param __creator address cannot be the zero address.
-     * @param __ipfsHash string is for Metadata of model
-     * @param __contributors Contribution struct is for contribution rate of each model
+     * @param assetId uint256 must not exist.
+     * @param creator address cannot be the zero address.
+     * @param ipfsHash string is for Metadata of model
+     * @param contributions Contribution struct is for contribution rate of each model
      *
      * Emits a {AllocateTIExIP} event.
      *
@@ -155,12 +155,12 @@ interface IAssets {
      * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
      * - The model with the given `__modelId` must not exist.
      */
-    function giveCreatorTIExIP(
-        uint256 __modelId,
-        address __creator,
-        string calldata __ipfsHash,
-        Contribution[] calldata __contributors,
-        Metadata calldata __modelMetadata
+    function createAsset(
+        uint256 assetId,
+        address creator,
+        string calldata ipfsHash,
+        Contribution[] calldata contributions,
+        Metadata calldata metadata
     ) external;
 
     /**
@@ -173,20 +173,20 @@ interface IAssets {
      * - The model with the given `__modelId` must exist.
      */
     function updateContributionRates(
-        uint256 __modelId,
-        Contribution[] calldata __contributors
+        uint256 modelId,
+        Contribution[] calldata contributions
     ) external;
 
     /**
      * @notice Destroys `modelId`.
-     * @param __modelId must exist.
+     * @param assetId must exist.
      *
      * Emits a {RemoveTIExIP} event.
      *
      * Requirement:
      * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
      */
-    function removeModel(uint256 __modelId) external;
+    function removeAsset(uint256 assetId) external;
 
     /**
      * @notice Used to edit the model URI.
@@ -197,24 +197,24 @@ interface IAssets {
      * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
      * - The model with the given `__modelId` must exist.
      */
-    function editURI(uint256 __modelId, string calldata __ipfsHash) external;
+    function editUri(uint256 assetId, string calldata ipfsHash) external;
 
     /**
      * @notice Used to get the detail of model
-     * @param __modelId uint256 must exist
+     * @param assetId uint256 must exist
      */
-    function getAsset(uint256 __modelId) external view returns (Asset memory);
+    function getAsset(uint256 assetId) external view returns (Asset memory);
 
     /**
      * @notice Returns the number of models in ``creator``'s account.
      */
-    function assetBalanceOf(address __creator) external view returns (uint256);
+    function assetBalanceOf(address creator) external view returns (uint256);
 
     /**
      * @notice Returns the creator of the `modelId` model.
-     * @param __modelId uint256 ID of the model must exist.
+     * @param assetId uint256 ID of the model must exist.
      */
-    function creatorOf(uint256 __modelId) external view returns (address);
+    function creatorOf(uint256 assetId) external view returns (address);
 
     /**
      * @notice Returns whether `__modelId` exists.
@@ -222,32 +222,32 @@ interface IAssets {
      * Models start existing when TIEx are allocated,
      * and stop existing when TIEx are removed (`removeModel`).
      */
-    function modelExists(uint256 __modelId) external view returns (bool);
+    function assetExists(uint256 assetId) external view returns (bool);
 
     /**
      * @notice Returns a model ID owned by `creator` at a given `index` of its model list.
      * Use along with {modelBalanceOf} to enumerate all of ``creator``'s models.
      */
-    function modelOfCreatorByIndex(
-        address __creator,
-        uint256 __index
+    function creatorAssetByIndex(
+        address creator,
+        uint256 index
     ) external view returns (uint256);
 
     /**
      * @notice Returns the total amount of models stored by the contract.
      */
-    function totalModelSupply() external view returns (uint256);
+    function assetAmount() external view returns (uint256);
 
     /**
      * @notice Returns a model ID at a given `index` of all the models stored by the contract.
      * Use along with {totalModelSupply} to enumerate all models.
      */
-    function modelByIndex(uint256 __index) external view returns (uint256);
+    function assetByIndex(uint256 index) external view returns (uint256);
 
     /**
      * @notice Returns model ids allocated from account of creator.
      */
-    function modelsOfCreator(
-        address __creator
+    function creatorAssets(
+        address creator
     ) external view returns (uint256[] memory);
 }

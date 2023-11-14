@@ -62,7 +62,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
      * @param assetId must be of existing ID of model.
      */
     modifier onlyExistingModelId(uint256 assetId) {
-        if (!modelExists(assetId)) {
+        if (!assetExists(assetId)) {
             revert AssetNotFound(assetId);
         }
         _;
@@ -73,7 +73,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
      * @param __modelId uint256 must be of existing ID of model.
      */
     modifier onlyNotExistingModelId(uint256 __modelId) {
-        if (modelExists(__modelId)) {
+        if (assetExists(__modelId)) {
             revert AssetAlreadyExists(__modelId);
         }
         _;
@@ -87,52 +87,50 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
      * @dev See {ITIExBaseIPAllocation-upgradeStubbedModelToTrainedModel}.
      */
     function upgradeStubbedModelToTrainedModel(
-        uint256 __modelId,
-        bytes memory __newModelFingerprint
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+        uint256 assetId,
+        bytes memory fingerprint
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(assetId) {
         // Check if the model is already trained, if so, revert the transaction
-        if (assets[__modelId].metadata.trained)
-            revert ModelAlreadyTrained(__modelId);
+        if (assets[assetId].metadata.trained)
+            revert ModelAlreadyTrained(assetId);
 
         // Check if the new model fingerprint is valid, if not, revert the transaction
-        if (__newModelFingerprint.length == 0)
-            revert InvalidMetadata(__modelId);
+        if (fingerprint.length == 0) revert InvalidMetadata(assetId);
 
         // Set the model as trained
-        assets[__modelId].metadata.trained = true;
+        assets[assetId].metadata.trained = true;
         // Set the model version to 1
-        assets[__modelId].metadata.version = 1;
+        assets[assetId].metadata.version = 1;
         // Update the model fingerprint with the new one
-        assets[__modelId].metadata.fingerprint = __newModelFingerprint;
+        assets[assetId].metadata.fingerprint = fingerprint;
 
         // Emit an event to log the model upgrade
-        emit ModelUpgraded(__modelId, assets[__modelId].metadata);
+        emit ModelUpgraded(assetId, assets[assetId].metadata);
     }
 
     /**
      * @dev See {ITIExBaseIPAllocation-upgradeModel}.
      */
     function upgradeAsset(
-        uint256 __modelId,
-        bytes memory __newModelFingerprint
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+        uint256 assetId,
+        bytes memory fingerprint
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(assetId) {
         // Check if the new model fingerprint is valid, if not, revert the transaction
-        if (__newModelFingerprint.length == 0)
-            revert InvalidMetadata(__modelId);
+        if (fingerprint.length == 0) revert InvalidMetadata(assetId);
 
         // Increment the version of the model
-        assets[__modelId].metadata.version++;
+        assets[assetId].metadata.version++;
         // Update the model fingerprint with the new one
-        assets[__modelId].metadata.fingerprint = __newModelFingerprint;
+        assets[assetId].metadata.fingerprint = fingerprint;
 
         // Emit an event to log the model upgrade
-        emit ModelUpgraded(__modelId, assets[__modelId].metadata);
+        emit ModelUpgraded(assetId, assets[assetId].metadata);
     }
 
     /**
      * @dev See {ITIExBaseIPAllocation-updateModelMetadata}.
      */
-    function updateModelMetadata(
+    function updateAssetMetadata(
         uint256 __modelId,
         Metadata calldata __modelMetadata
     ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
@@ -155,50 +153,50 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
     /**
      * @dev See {ITIExBaseIPAllocation-giveCreatorTIExIP}.
      */
-    function giveCreatorTIExIP(
-        uint256 __modelId,
-        address __creator,
-        string calldata __ipfsHash,
-        Contribution[] calldata __contributors,
-        Metadata calldata __modelMetadata
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyNotExistingModelId(__modelId) {
+    function createAsset(
+        uint256 assetId,
+        address creator,
+        string calldata ipfsHash,
+        Contribution[] calldata contributions,
+        Metadata calldata metadata
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyNotExistingModelId(assetId) {
         // Check if the creator address is valid
-        if (__creator == address(0)) {
+        if (creator == address(0)) {
             revert InvalidCreator(address(0));
         }
 
         // Add the model ID to the list of all model IDs
-        _addModelToAllModelsEnumeration(__modelId);
+        _addModelToAllModelsEnumeration(assetId);
         // Add the model ID to the list of model IDs owned by the creator
-        _addModelToCreatorEnumeration(__creator, __modelId);
+        _addModelToCreatorEnumeration(creator, assetId);
 
         // Increase the balance of model IDs owned by the creator
         unchecked {
             // Will not overflow unless all 2**256 model ids are allocated to the same creator.
             // Given that models are allocated one by one, it is impossible in practice that
             // this ever happens. Might change if we allow batch allocating.
-            _modelBalances[__creator] += 1;
+            _modelBalances[creator] += 1;
         }
 
         // Set the creator of the model ID
-        assets[__modelId].creator = __creator;
+        assets[assetId].creator = creator;
         // Set the IPFS hash of the model's metadata
-        assets[__modelId].uri = __ipfsHash;
+        assets[assetId].uri = ipfsHash;
 
         // If there are contributors, calculate the total contribution rate and add each contributor to the list of contributors for the model ID
-        if (__contributors.length > 0) {
+        if (contributions.length > 0) {
             uint256 contributionRate = 0;
             // Iterate over each contributor
-            for (uint256 i; i < __contributors.length; i++) {
+            for (uint256 i; i < contributions.length; i++) {
                 // If the model does not exist, revert the transaction
-                if (!modelExists(__contributors[i].modelId))
-                    revert AssetNotFound(__contributors[i].modelId);
-                // Add the contribution rate of the current contributor to the total contribution rate
+                if (!assetExists(contributions[i].modelId))
+                    revert AssetNotFound(contributions[i].modelId);
+                // AdassetExistsibution rate of the current contributor to the total contribution rate
                 contributionRate = contributionRate.add(
-                    __contributors[i].contributionRate
+                    contributions[i].contributionRate
                 );
                 // Add the current contributor to the list of contributors for the model
-                assets[__modelId].contributedModels.push(__contributors[i]);
+                assets[assetId].contributedModels.push(contributions[i]);
             }
 
             // If the total contribution rate is not 10000 (representing 100%), revert the transaction
@@ -206,28 +204,28 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
                 revert InvalidContributionRate(contributionRate);
         } else {
             // If there are no new contributors, add a default contribution of 10000 (representing 100%) for the model itself
-            assets[__modelId].contributedModels.push(
-                Contribution({modelId: __modelId, contributionRate: 10000})
+            assets[assetId].contributedModels.push(
+                Contribution({modelId: assetId, contributionRate: 10000})
             );
         }
 
         // Check if the model metadata is valid
-        bool validForMetadata = bytes(__modelMetadata.name).length > 0 &&
-            bytes(__modelMetadata.description).length > 0 &&
-            __modelMetadata.version == 1 &&
-            __modelMetadata.fingerprint.length > 0 &&
-            __modelMetadata.watermark.length > 0 &&
-            __modelMetadata.performance > 0;
+        bool validForMetadata = bytes(metadata.name).length > 0 &&
+            bytes(metadata.description).length > 0 &&
+            metadata.version == 1 &&
+            metadata.fingerprint.length > 0 &&
+            metadata.watermark.length > 0 &&
+            metadata.performance > 0;
 
-        if (!validForMetadata) revert InvalidMetadata(__modelId);
+        if (!validForMetadata) revert InvalidMetadata(assetId);
         // Set the model metadata
-        assets[__modelId].metadata = __modelMetadata;
+        assets[assetId].metadata = metadata;
 
         // Emit an event to log the allocation of the model ID
         emit AssetCreated(
             msg.sender,
-            __modelId,
-            assets[__modelId],
+            assetId,
+            assets[assetId],
             block.timestamp
         );
     }
@@ -236,26 +234,26 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
      * @dev See {ITIExBaseIPAllocation-updateContributionRates}.
      */
     function updateContributionRates(
-        uint256 __modelId,
-        Contribution[] calldata __contributors
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+        uint256 modelId,
+        Contribution[] calldata contributions
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(modelId) {
         // Delete the existing contributions for the model
-        delete assets[__modelId].contributedModels;
+        delete assets[modelId].contributedModels;
 
         // If there are new contributors
-        if (__contributors.length > 0) {
+        if (contributions.length > 0) {
             uint256 contributionRate = 0;
             // Iterate over each contributor
-            for (uint256 i; i < __contributors.length; i++) {
+            for (uint256 i; i < contributions.length; i++) {
                 // If the model does not exist, revert the transaction
-                if (!modelExists(__contributors[i].modelId))
-                    revert AssetNotFound(__contributors[i].modelId);
-                // Add the contribution rate of the current contributor to the total contribution rate
+                if (!assetExists(contributions[i].modelId))
+                    revert AssetNotFound(contributions[i].modelId);
+                // AdassetExistsibution rate of the current contributor to the total contribution rate
                 contributionRate = contributionRate.add(
-                    __contributors[i].contributionRate
+                    contributions[i].contributionRate
                 );
                 // Add the current contributor to the list of contributors for the model
-                assets[__modelId].contributedModels.push(__contributors[i]);
+                assets[modelId].contributedModels.push(contributions[i]);
             }
 
             // If the total contribution rate is not 10000 (representing 100%), revert the transaction
@@ -263,50 +261,50 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
                 revert InvalidContributionRate(contributionRate);
         } else {
             // If there are no new contributors, add a default contribution of 10000 (representing 100%) for the model itself
-            assets[__modelId].contributedModels.push(
-                Contribution({modelId: __modelId, contributionRate: 10000})
+            assets[modelId].contributedModels.push(
+                Contribution({modelId: modelId, contributionRate: 10000})
             );
         }
 
         // Emit an event to log the update of contribution rates
         emit ContributationRatesUpdated(
-            __modelId,
-            assets[__modelId].contributedModels
+            modelId,
+            assets[modelId].contributedModels
         );
     }
 
     /**
      * @dev See {ITIExBaseIPAllocation-removeModel}.
      */
-    function removeModel(
-        uint256 __modelId
+    function removeAsset(
+        uint256 assetId
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        address __creator = creatorOf(__modelId);
+        address __creator = creatorOf(assetId);
 
-        _removeModelFromCreatorEnumeration(__creator, __modelId);
-        _removeModelFromAllModelsEnumeration(__modelId);
+        _removeModelFromCreatorEnumeration(__creator, assetId);
+        _removeModelFromAllModelsEnumeration(assetId);
 
         // Decrease balance with checked arithmetic, because an `creatorOf` override may
         // invalidate the assumption that `_modelBalances[from] >= 1`.
         _modelBalances[__creator] -= 1;
 
-        delete assets[__modelId];
+        delete assets[assetId];
 
-        tiexShareCollections.afterRemoveModel(__modelId);
+        tiexShareCollections.afterRemoveModel(assetId);
 
-        emit AssetRemoved(__creator, address(0), __modelId, block.timestamp);
+        emit AssetRemoved(__creator, address(0), assetId, block.timestamp);
     }
 
     /**
      * @dev See {ITIExBaseIPAllocation-editURI}.
      */
-    function editURI(
-        uint256 __modelId,
-        string calldata __ipfsHash
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
-        assets[__modelId].uri = __ipfsHash;
+    function editUri(
+        uint256 assetId,
+        string calldata ipfsHash
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(assetId) {
+        assets[assetId].uri = ipfsHash;
 
-        emit AssetUriUpdated(__modelId, __ipfsHash);
+        emit AssetUriUpdated(assetId, ipfsHash);
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -316,27 +314,27 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
     /**
      * @dev See {ITIExBaseIPAllocation-getTIExModel}.
      */
-    function getAsset(uint256 __modelId) external view returns (Asset memory) {
-        return assets[__modelId];
+    function getAsset(uint256 assetId) external view returns (Asset memory) {
+        return assets[assetId];
     }
 
     /**
      * @dev See {ITIExBaseIPAllocation-modelBalanceOf}.
      */
-    function assetBalanceOf(address __creator) public view returns (uint256) {
-        if (__creator == address(0)) {
+    function assetBalanceOf(address creator) public view returns (uint256) {
+        if (creator == address(0)) {
             revert InvalidCreator(address(0));
         }
-        return _modelBalances[__creator];
+        return _modelBalances[creator];
     }
 
     /**
      * @dev See {ITIExBaseIPAllocation-creatorOf}.
      */
-    function creatorOf(uint256 __modelId) public view returns (address) {
-        address creator = assets[__modelId].creator;
+    function creatorOf(uint256 assetId) public view returns (address) {
+        address creator = assets[assetId].creator;
         if (creator == address(0)) {
-            revert AssetNotFound(__modelId);
+            revert AssetNotFound(assetId);
         }
         return creator;
     }
@@ -344,51 +342,51 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
     /**
      * @dev See {ITIExBaseIPAllocation-modelExists}.
      */
-    function modelExists(uint256 __modelId) public view returns (bool) {
-        return assets[__modelId].creator != address(0);
+    function assetExists(uint256 assetId) public view returns (bool) {
+        return assets[assetId].creator != address(0);
     }
 
     /**
      * @dev See {ITIExBaseIPAllocation-modelOfCreatorByIndex}.
      */
-    function modelOfCreatorByIndex(
-        address __creator,
-        uint256 __index
+    function creatorAssetByIndex(
+        address creator,
+        uint256 index
     ) public view returns (uint256) {
-        if (__index >= assetBalanceOf(__creator)) {
-            revert OutOfBounds(__creator, __index);
+        if (index >= assetBalanceOf(creator)) {
+            revert OutOfBounds(creator, index);
         }
-        return _ownedModels[__creator][__index];
+        return _ownedModels[creator][index];
     }
 
     /**
      * @dev See {ITIExBaseIPAllocation-totalModelSupply}.
      */
-    function totalModelSupply() public view returns (uint256) {
+    function assetAmount() public view returns (uint256) {
         return _allModels.length;
     }
 
     /**
      * @dev See {ITIExBaseIPAllocation-modelByIndex}.
      */
-    function modelByIndex(uint256 __index) public view returns (uint256) {
-        if (__index >= totalModelSupply()) {
-            revert OutOfBounds(address(0), __index);
+    function assetByIndex(uint256 index) public view returns (uint256) {
+        if (index >= assetAmount()) {
+            revert OutOfBounds(address(0), index);
         }
-        return _allModels[__index];
+        return _allModels[index];
     }
 
     /**
      * @dev See {ITIExBaseIPAllocation-modelsOfCreator}.
      */
-    function modelsOfCreator(
-        address __creator
+    function creatorAssets(
+        address creator
     ) public view returns (uint256[] memory) {
-        uint256 modelCount = assetBalanceOf(__creator);
+        uint256 modelCount = assetBalanceOf(creator);
 
         uint256[] memory modelsId = new uint256[](modelCount);
         for (uint256 i; i < modelCount; i++) {
-            modelsId[i] = modelOfCreatorByIndex(__creator, i);
+            modelsId[i] = creatorAssetByIndex(creator, i);
         }
         return modelsId;
     }

@@ -125,7 +125,7 @@ contract AssetsRevenue is
      * @param __modelId must be of existing ID of model.
      */
     modifier onlyExistingModelId(uint256 __modelId) {
-        if (!tiexBaseIPAllocation.modelExists(__modelId)) {
+        if (!tiexBaseIPAllocation.assetExists(__modelId)) {
             revert IAssets.AssetNotFound(__modelId);
         }
         _;
