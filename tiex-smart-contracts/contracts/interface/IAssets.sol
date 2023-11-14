@@ -38,8 +38,8 @@ interface IAssets {
         address creator;
         Contribution[] contributedModels;
         Metadata metadata;
-        uint256 allAssetsIndex;
-        uint256 ownedAssetsIndex;
+        uint256 index;
+        uint256 creatorIndex;
         string uri;
     }
 
@@ -67,11 +67,12 @@ interface IAssets {
     );
 
     // Event emitted when an asset is upgraded
-    event ModelUpgraded(uint256 indexed assetId, Metadata metadata);
+    event AssetUpgraded(uint256 indexed assetId, Metadata metadata);
 
     // Event emitted when the metadata of an asset is updated
     event AssetMetadataUpdated(uint256 indexed assetId, Metadata metadata);
 
+    // TODO: revise error usage
     error InvalidCreator(address creator);
 
     error AssetAlreadyExists(uint256 assetId);
@@ -106,6 +107,7 @@ interface IAssets {
      * - The model with the given `__modelId` must not be trained already.
      * - The `__newModelFingerprint` must not be empty.
      */
+    // TODO: revise
     function upgradeStubbedModelToTrainedModel(
         uint256 assetId,
         bytes memory fingerprint
@@ -247,7 +249,7 @@ interface IAssets {
     /**
      * @notice Returns model ids allocated from account of creator.
      */
-    function creatorAssets(
+    function assetsByCreator(
         address creator
     ) external view returns (uint256[] memory);
 }

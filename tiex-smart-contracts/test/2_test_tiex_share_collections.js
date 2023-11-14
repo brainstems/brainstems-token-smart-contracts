@@ -313,7 +313,7 @@ describe("TIExShareCollections", () => {
       const default_amdin_role =
         await tiexBaseIPAllocation.DEFAULT_ADMIN_ROLE();
 
-      expect(await tiexBaseIPAllocation.tiexShareCollections()).to.eq(
+      expect(await tiexBaseIPAllocation.assetsRevenue()).to.eq(
         tiexShareCollections.address
       );
       expect(

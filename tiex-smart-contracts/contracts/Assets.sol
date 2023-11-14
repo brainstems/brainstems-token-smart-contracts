@@ -26,31 +26,25 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
     using Strings for uint256;
     using SafeMath for uint256;
 
-    /// @notice Mapping from creator to list of owned model IDs
-    mapping(address => mapping(uint256 => uint256)) private _ownedModels;
-
-    /// @notice Array with all model ids, used for enumeration
-    uint256[] private _allModels;
-
-    /// @notice Mapping creator address to model count
-    mapping(address => uint256) private _modelBalances;
-
+    // TODO: revise mappings
     /// @notice Mapping model id to TIEx Model
     mapping(uint256 => Asset) private assets;
+    /// @notice Array with all model ids, used for enumeration
+    uint256[] private assetIds;
+    /// @notice Mapping from creator to list of owned model IDs
+    mapping(address => mapping(uint256 => uint256)) private creatorAssets;
+    /// @notice Mapping creator address to model count
+    mapping(address => uint256) private creatorAssetAmounts;
 
     /// @notice TIExShareCollections
-    IAssetsRevenue public tiexShareCollections;
+    IAssetsRevenue public assetsRevenue;
 
     function initialize(
-        address __admin,
-        IAssetsRevenue __tiexShareCollections
+        address _admin,
+        IAssetsRevenue _assetsRevenue
     ) public initializer {
-        __AccessControl_init_unchained();
-        __AccessControlEnumerable_init_unchained();
-
-        tiexShareCollections = __tiexShareCollections;
-
-        _grantRole(DEFAULT_ADMIN_ROLE, __admin);
+        assetsRevenue = _assetsRevenue;
+        _grantRole(DEFAULT_ADMIN_ROLE, _admin);
     }
 
     ////////////////////////////////////////////////////////////////////////////
@@ -61,7 +55,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
      * @notice Checks if modelId allocated exists.
      * @param assetId must be of existing ID of model.
      */
-    modifier onlyExistingModelId(uint256 assetId) {
+    modifier existingAsset(uint256 assetId) {
         if (!assetExists(assetId)) {
             revert AssetNotFound(assetId);
         }
@@ -70,11 +64,11 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
 
     /**
      * @notice Checks if modelId allocated exists.
-     * @param __modelId uint256 must be of existing ID of model.
+     * @param assetId uint256 must be of existing ID of model.
      */
-    modifier onlyNotExistingModelId(uint256 __modelId) {
-        if (assetExists(__modelId)) {
-            revert AssetAlreadyExists(__modelId);
+    modifier nonExistingAsset(uint256 assetId) {
+        if (assetExists(assetId)) {
+            revert AssetAlreadyExists(assetId);
         }
         _;
     }
@@ -89,7 +83,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
     function upgradeStubbedModelToTrainedModel(
         uint256 assetId,
         bytes memory fingerprint
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(assetId) {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) existingAsset(assetId) {
         // Check if the model is already trained, if so, revert the transaction
         if (assets[assetId].metadata.trained)
             revert ModelAlreadyTrained(assetId);
@@ -105,7 +99,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
         assets[assetId].metadata.fingerprint = fingerprint;
 
         // Emit an event to log the model upgrade
-        emit ModelUpgraded(assetId, assets[assetId].metadata);
+        emit AssetUpgraded(assetId, assets[assetId].metadata);
     }
 
     /**
@@ -114,7 +108,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
     function upgradeAsset(
         uint256 assetId,
         bytes memory fingerprint
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(assetId) {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) existingAsset(assetId) {
         // Check if the new model fingerprint is valid, if not, revert the transaction
         if (fingerprint.length == 0) revert InvalidMetadata(assetId);
 
@@ -124,30 +118,30 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
         assets[assetId].metadata.fingerprint = fingerprint;
 
         // Emit an event to log the model upgrade
-        emit ModelUpgraded(assetId, assets[assetId].metadata);
+        emit AssetUpgraded(assetId, assets[assetId].metadata);
     }
 
     /**
      * @dev See {ITIExBaseIPAllocation-updateModelMetadata}.
      */
     function updateAssetMetadata(
-        uint256 __modelId,
-        Metadata calldata __modelMetadata
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(__modelId) {
+        uint256 assetId,
+        Metadata calldata metadata
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) existingAsset(assetId) {
         // Check if the model metadata is valid
-        bool validForMetadata = bytes(__modelMetadata.name).length > 0 &&
-            bytes(__modelMetadata.description).length > 0 &&
-            __modelMetadata.version > 0 &&
-            __modelMetadata.fingerprint.length > 0 &&
-            __modelMetadata.watermark.length > 0 &&
-            __modelMetadata.performance > 0;
+        bool validForMetadata = bytes(metadata.name).length > 0 &&
+            bytes(metadata.description).length > 0 &&
+            metadata.version > 0 &&
+            metadata.fingerprint.length > 0 &&
+            metadata.watermark.length > 0 &&
+            metadata.performance > 0;
 
-        if (!validForMetadata) revert InvalidMetadata(__modelId);
+        if (!validForMetadata) revert InvalidMetadata(assetId);
         // Update the model metadata
-        assets[__modelId].metadata = __modelMetadata;
+        assets[assetId].metadata = metadata;
 
         // Emit an event to log the update of model metadata
-        emit AssetMetadataUpdated(__modelId, assets[__modelId].metadata);
+        emit AssetMetadataUpdated(assetId, assets[assetId].metadata);
     }
 
     /**
@@ -159,23 +153,23 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
         string calldata ipfsHash,
         Contribution[] calldata contributions,
         Metadata calldata metadata
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyNotExistingModelId(assetId) {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) nonExistingAsset(assetId) {
         // Check if the creator address is valid
         if (creator == address(0)) {
             revert InvalidCreator(address(0));
         }
 
         // Add the model ID to the list of all model IDs
-        _addModelToAllModelsEnumeration(assetId);
+        _addAssetId(assetId);
         // Add the model ID to the list of model IDs owned by the creator
-        _addModelToCreatorEnumeration(creator, assetId);
+        _addAssetIdToCreator(creator, assetId);
 
         // Increase the balance of model IDs owned by the creator
         unchecked {
             // Will not overflow unless all 2**256 model ids are allocated to the same creator.
             // Given that models are allocated one by one, it is impossible in practice that
             // this ever happens. Might change if we allow batch allocating.
-            _modelBalances[creator] += 1;
+            creatorAssetAmounts[creator] += 1;
         }
 
         // Set the creator of the model ID
@@ -236,7 +230,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
     function updateContributionRates(
         uint256 modelId,
         Contribution[] calldata contributions
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(modelId) {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) existingAsset(modelId) {
         // Delete the existing contributions for the model
         delete assets[modelId].contributedModels;
 
@@ -279,20 +273,20 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
     function removeAsset(
         uint256 assetId
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        address __creator = creatorOf(assetId);
+        address creator = creatorOf(assetId);
 
-        _removeModelFromCreatorEnumeration(__creator, assetId);
-        _removeModelFromAllModelsEnumeration(assetId);
+        _removeModelFromCreatorEnumeration(creator, assetId);
+        _removeAssetId(assetId);
 
         // Decrease balance with checked arithmetic, because an `creatorOf` override may
         // invalidate the assumption that `_modelBalances[from] >= 1`.
-        _modelBalances[__creator] -= 1;
+        creatorAssetAmounts[creator] -= 1;
 
         delete assets[assetId];
 
-        tiexShareCollections.afterRemoveModel(assetId);
+        assetsRevenue.afterRemoveModel(assetId);
 
-        emit AssetRemoved(__creator, address(0), assetId, block.timestamp);
+        emit AssetRemoved(creator, address(0), assetId, block.timestamp);
     }
 
     /**
@@ -301,7 +295,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
     function editUri(
         uint256 assetId,
         string calldata ipfsHash
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) onlyExistingModelId(assetId) {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) existingAsset(assetId) {
         assets[assetId].uri = ipfsHash;
 
         emit AssetUriUpdated(assetId, ipfsHash);
@@ -325,7 +319,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
         if (creator == address(0)) {
             revert InvalidCreator(address(0));
         }
-        return _modelBalances[creator];
+        return creatorAssetAmounts[creator];
     }
 
     /**
@@ -356,14 +350,14 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
         if (index >= assetBalanceOf(creator)) {
             revert OutOfBounds(creator, index);
         }
-        return _ownedModels[creator][index];
+        return creatorAssets[creator][index];
     }
 
     /**
      * @dev See {ITIExBaseIPAllocation-totalModelSupply}.
      */
     function assetAmount() public view returns (uint256) {
-        return _allModels.length;
+        return assetIds.length;
     }
 
     /**
@@ -373,13 +367,13 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
         if (index >= assetAmount()) {
             revert OutOfBounds(address(0), index);
         }
-        return _allModels[index];
+        return assetIds[index];
     }
 
     /**
      * @dev See {ITIExBaseIPAllocation-modelsOfCreator}.
      */
-    function creatorAssets(
+    function assetsByCreator(
         address creator
     ) public view returns (uint256[] memory) {
         uint256 modelCount = assetBalanceOf(creator);
@@ -397,52 +391,52 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
 
     /**
      * @notice Private function to add a model to this extension's model tracking data structures.
-     * @param __modelId uint256 ID of the model to be added to the models list
+     * @param assetId uint256 ID of the model to be added to the models list
      *
      */
-    function _addModelToAllModelsEnumeration(uint256 __modelId) private {
-        assets[__modelId].allAssetsIndex = _allModels.length;
-        _allModels.push(__modelId);
+    function _addAssetId(uint256 assetId) private {
+        assets[assetId].index = assetIds.length;
+        assetIds.push(assetId);
     }
 
     /**
      * @notice Private function to add a model to this extension's ownership-tracking data structures.
-     * @param __to address representing the new owner of the given model ID
-     * @param __modelId uint256 ID of the model to be added to the models list of the given address
+     * @param creator address representing the new owner of the given model ID
+     * @param assetId uint256 ID of the model to be added to the models list of the given address
      *
      */
-    function _addModelToCreatorEnumeration(
-        address __to,
-        uint256 __modelId
+    function _addAssetIdToCreator(
+        address creator,
+        uint256 assetId
     ) private {
-        uint256 length = assetBalanceOf(__to);
-        _ownedModels[__to][length] = __modelId;
-        assets[__modelId].ownedAssetsIndex = length;
+        uint256 length = assetBalanceOf(creator);
+        creatorAssets[creator][length] = assetId;
+        assets[assetId].creatorIndex = length;
     }
 
     /**
      * @notice Private function to remove a model from this extension's model tracking data structures.
      * This has O(1) time complexity, but alters the order of the _allModels array.
-     * @param __modelId uint256 ID of the model to be removed from the models list
+     * @param assetId uint256 ID of the model to be removed from the models list
      *
      */
-    function _removeModelFromAllModelsEnumeration(uint256 __modelId) private {
+    function _removeAssetId(uint256 assetId) private {
         // To prevent a gap in the models array, we store the last model in the index of the model to delete, and
         // then delete the last slot.
 
-        uint256 lastModelIndex = _allModels.length - 1;
-        uint256 modelIndex = assets[__modelId].allAssetsIndex;
+        uint256 lastModelIndex = assetIds.length - 1;
+        uint256 modelIndex = assets[assetId].index;
 
         // When the model to delete is the last model. However, since this occurs so
         // an 'if' statement (like in _removeModelFromCreatorEnumeration)
-        uint256 lastModelId = _allModels[lastModelIndex];
+        uint256 lastModelId = assetIds[lastModelIndex];
 
-        _allModels[modelIndex] = lastModelId; // Move the last model to the slot of the to-delete model
-        assets[lastModelId].allAssetsIndex = modelIndex; // Update the moved model's index
+        assetIds[modelIndex] = lastModelId; // Move the last model to the slot of the to-delete model
+        assets[lastModelId].index = modelIndex; // Update the moved model's index
 
         // This also deletes the contents at the last position of the array
-        delete assets[__modelId].allAssetsIndex;
-        _allModels.pop();
+        delete assets[assetId].index;
+        assetIds.pop();
     }
 
     /**
@@ -462,18 +456,18 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
         // then delete the last slot
 
         uint256 lastModelIndex = assetBalanceOf(__from) - 1;
-        uint256 modelIndex = assets[__modelId].ownedAssetsIndex;
+        uint256 modelIndex = assets[__modelId].creatorIndex;
 
         // When the model to delete is the last model
         if (modelIndex != lastModelIndex) {
-            uint256 lastModelId = _ownedModels[__from][lastModelIndex];
+            uint256 lastModelId = creatorAssets[__from][lastModelIndex];
 
-            _ownedModels[__from][modelIndex] = lastModelId; // Move the last model to the slot of the to-delete model
-            assets[lastModelId].ownedAssetsIndex = modelIndex; // Update the moved model's index
+            creatorAssets[__from][modelIndex] = lastModelId; // Move the last model to the slot of the to-delete model
+            assets[lastModelId].creatorIndex = modelIndex; // Update the moved model's index
         }
 
         // This also deletes the contents at the last position of the array
-        delete assets[__modelId].ownedAssetsIndex;
-        delete _ownedModels[__from][lastModelIndex];
+        delete assets[__modelId].creatorIndex;
+        delete creatorAssets[__from][lastModelIndex];
     }
 }
