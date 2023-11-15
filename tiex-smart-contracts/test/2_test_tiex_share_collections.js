@@ -122,7 +122,6 @@ describe("TIExShareCollections", () => {
         modelId: 1,
         creator: signer0.address,
         ipfsHash: "QmSnuWmxptJZdLJpKRarxBMS2Ju2oANVrgbr2xWbie9b2D",
-        contributors: [[1, 10000]],
         maxSupply: i2b(100000),
         price: ethers.utils.parseEther("1000"),
         maxSharePurchase: i2b(1000),
@@ -141,10 +140,6 @@ describe("TIExShareCollections", () => {
         modelId: 2,
         creator: signer1.address,
         ipfsHash: "QmSnuWmxptJZdLJpKRarxBMS2Ju2oANVrgbr2xWbie9b2D",
-        contributors: [
-          [1, 5000],
-          [2, 5000],
-        ],
         maxSupply: i2b(100000),
         price: ethers.utils.parseEther("1000"),
         maxSharePurchase: i2b(1000),
@@ -163,11 +158,6 @@ describe("TIExShareCollections", () => {
         modelId: 3,
         creator: signer2.address,
         ipfsHash: "QmSnuWmxptJZdLJpKRarxBMS2Ju2oANVrgbr2xWbie9b2D",
-        contributors: [
-          [1, 5000],
-          [2, 3000],
-          [3, 2000],
-        ],
         maxSupply: i2b(100000),
         price: ethers.utils.parseEther("1000"),
         maxSharePurchase: i2b(1000),
@@ -186,11 +176,6 @@ describe("TIExShareCollections", () => {
         modelId: 4,
         creator: signer0.address,
         ipfsHash: "QmSnuWmxptJZdLJpKRarxBMS2Ju2oANVrgbr2xWbie9b2D",
-        contributors: [
-          [1, 1000],
-          [2, 3000],
-          [4, 6000],
-        ],
         maxSupply: i2b(100000),
         price: ethers.utils.parseEther("1000"),
         maxSharePurchase: i2b(1000),
@@ -209,12 +194,6 @@ describe("TIExShareCollections", () => {
         modelId: 5,
         creator: signer1.address,
         ipfsHash: "QmSnuWmxptJZdLJpKRarxBMS2Ju2oANVrgbr2xWbie9b2D",
-        contributors: [
-          [1, 1000],
-          [2, 3000],
-          [5, 5000],
-          [4, 1000],
-        ],
         maxSupply: i2b(100000),
         price: ethers.utils.parseEther("1000"),
         maxSharePurchase: i2b(1000),
@@ -317,7 +296,6 @@ describe("TIExShareCollections", () => {
             models[i].modelId,
             models[i].creator,
             models[i].ipfsHash,
-            models[i].contributors,
             models[i].metadata
           );
       }
@@ -333,19 +311,10 @@ describe("TIExShareCollections", () => {
           models[i].creator
         );
         expect(await model_detail[0]).to.eq(models[i].creator);
-        expect(await model_detail[5]).to.eq(models[i].ipfsHash);
-
-        for (var j = 0; j < models[i].contributors.length; j++) {
-          expect(await model_detail[1][j][0]).to.eq(
-            ethers.BigNumber.from(models[i].contributors[j][0])
-          );
-          expect(await model_detail[1][j][1]).to.eq(
-            ethers.BigNumber.from(models[i].contributors[j][1])
-          );
-        }
+        expect(await model_detail[4]).to.eq(models[i].ipfsHash);
 
         for (var ii = 0; ii < 9; ii++) {
-          expect(model_detail[2][ii]).to.eq(models[i].metadata[ii]);
+          expect(model_detail[1][ii]).to.eq(models[i].metadata[ii]);
         }
       }
     });

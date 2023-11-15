@@ -16,12 +16,6 @@ pragma solidity ^0.8.19;
 
 // TODO: update all comments
 interface IAssets {
-    // TODO: revise logic
-    struct Contribution {
-        uint256 modelId;
-        uint256 contributionRate;
-    }
-
     // TODO: revise fields
     struct Metadata {
         string name;
@@ -36,7 +30,6 @@ interface IAssets {
     // TODO: revise fields
     struct Asset {
         address creator;
-        Contribution[] contributedModels;
         Metadata metadata;
         uint256 index;
         uint256 creatorIndex;
@@ -60,11 +53,6 @@ interface IAssets {
     );
 
     event AssetUriUpdated(uint256 indexed assetId, string ipfsHash);
-
-    event ContributationRatesUpdated(
-        uint256 indexed modelId,
-        Contribution[] contributionRates
-    );
 
     // Event emitted when an asset is upgraded
     event AssetUpgraded(uint256 indexed assetId, Metadata metadata);
@@ -149,7 +137,6 @@ interface IAssets {
      * @param assetId uint256 must not exist.
      * @param creator address cannot be the zero address.
      * @param ipfsHash string is for Metadata of model
-     * @param contributions Contribution struct is for contribution rate of each model
      *
      * Emits a {AllocateTIExIP} event.
      *
@@ -161,34 +148,8 @@ interface IAssets {
         uint256 assetId,
         address creator,
         string calldata ipfsHash,
-        Contribution[] calldata contributions,
         Metadata calldata metadata
     ) external;
-
-    /**
-     * @notice Updates the contribution rates of a model.
-     *
-     * Emits a {ContributationRatesUpdated} event.
-     *
-     * Requirements:
-     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
-     * - The model with the given `__modelId` must exist.
-     */
-    function updateContributionRates(
-        uint256 modelId,
-        Contribution[] calldata contributions
-    ) external;
-
-    /**
-     * @notice Destroys `modelId`.
-     * @param assetId must exist.
-     *
-     * Emits a {RemoveTIExIP} event.
-     *
-     * Requirement:
-     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
-     */
-    function removeAsset(uint256 assetId) external;
 
     /**
      * @notice Used to edit the model URI.

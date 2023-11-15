@@ -151,7 +151,6 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
         uint256 assetId,
         address creator,
         string calldata ipfsHash,
-        Contribution[] calldata contributions,
         Metadata calldata metadata
     ) external onlyRole(DEFAULT_ADMIN_ROLE) nonExistingAsset(assetId) {
         // Check if the creator address is valid
@@ -177,32 +176,6 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
         // Set the IPFS hash of the model's metadata
         assets[assetId].uri = ipfsHash;
 
-        // If there are contributors, calculate the total contribution rate and add each contributor to the list of contributors for the model ID
-        if (contributions.length > 0) {
-            uint256 contributionRate = 0;
-            // Iterate over each contributor
-            for (uint256 i; i < contributions.length; i++) {
-                // If the model does not exist, revert the transaction
-                if (!assetExists(contributions[i].modelId))
-                    revert AssetNotFound(contributions[i].modelId);
-                // AdassetExistsibution rate of the current contributor to the total contribution rate
-                contributionRate = contributionRate.add(
-                    contributions[i].contributionRate
-                );
-                // Add the current contributor to the list of contributors for the model
-                assets[assetId].contributedModels.push(contributions[i]);
-            }
-
-            // If the total contribution rate is not 10000 (representing 100%), revert the transaction
-            if (contributionRate != 10000)
-                revert InvalidContributionRate(contributionRate);
-        } else {
-            // If there are no new contributors, add a default contribution of 10000 (representing 100%) for the model itself
-            assets[assetId].contributedModels.push(
-                Contribution({modelId: assetId, contributionRate: 10000})
-            );
-        }
-
         // Check if the model metadata is valid
         bool validForMetadata = bytes(metadata.name).length > 0 &&
             bytes(metadata.description).length > 0 &&
@@ -222,71 +195,6 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
             assets[assetId],
             block.timestamp
         );
-    }
-
-    /**
-     * @dev See {ITIExBaseIPAllocation-updateContributionRates}.
-     */
-    function updateContributionRates(
-        uint256 modelId,
-        Contribution[] calldata contributions
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) existingAsset(modelId) {
-        // Delete the existing contributions for the model
-        delete assets[modelId].contributedModels;
-
-        // If there are new contributors
-        if (contributions.length > 0) {
-            uint256 contributionRate = 0;
-            // Iterate over each contributor
-            for (uint256 i; i < contributions.length; i++) {
-                // If the model does not exist, revert the transaction
-                if (!assetExists(contributions[i].modelId))
-                    revert AssetNotFound(contributions[i].modelId);
-                // AdassetExistsibution rate of the current contributor to the total contribution rate
-                contributionRate = contributionRate.add(
-                    contributions[i].contributionRate
-                );
-                // Add the current contributor to the list of contributors for the model
-                assets[modelId].contributedModels.push(contributions[i]);
-            }
-
-            // If the total contribution rate is not 10000 (representing 100%), revert the transaction
-            if (contributionRate != 10000)
-                revert InvalidContributionRate(contributionRate);
-        } else {
-            // If there are no new contributors, add a default contribution of 10000 (representing 100%) for the model itself
-            assets[modelId].contributedModels.push(
-                Contribution({modelId: modelId, contributionRate: 10000})
-            );
-        }
-
-        // Emit an event to log the update of contribution rates
-        emit ContributationRatesUpdated(
-            modelId,
-            assets[modelId].contributedModels
-        );
-    }
-
-    /**
-     * @dev See {ITIExBaseIPAllocation-removeModel}.
-     */
-    function removeAsset(
-        uint256 assetId
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        address creator = creatorOf(assetId);
-
-        _removeAssetIdFromCreator(creator, assetId);
-        _removeAssetId(assetId);
-
-        // Decrease balance with checked arithmetic, because an `creatorOf` override may
-        // invalidate the assumption that `_modelBalances[from] >= 1`.
-        creatorAssetAmounts[creator] -= 1;
-
-        delete assets[assetId];
-
-        // assetsRevenue.afterRemoveModel(assetId);
-
-        emit AssetRemoved(creator, address(0), assetId, block.timestamp);
     }
 
     /**
