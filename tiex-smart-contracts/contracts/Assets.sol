@@ -133,7 +133,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
             bytes(metadata.description).length > 0 &&
             metadata.version > 0 &&
             metadata.fingerprint.length > 0 &&
-            metadata.watermark.length > 0 &&
+            metadata.watermarkFingerprint.length > 0 &&
             metadata.performance > 0;
 
         if (!validForMetadata) revert InvalidMetadata(assetId);
@@ -208,7 +208,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
             bytes(metadata.description).length > 0 &&
             metadata.version == 1 &&
             metadata.fingerprint.length > 0 &&
-            metadata.watermark.length > 0 &&
+            metadata.watermarkFingerprint.length > 0 &&
             metadata.performance > 0;
 
         if (!validForMetadata) revert InvalidMetadata(assetId);
@@ -275,7 +275,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         address creator = creatorOf(assetId);
 
-        _removeModelFromCreatorEnumeration(creator, assetId);
+        _removeAssetIdFromCreator(creator, assetId);
         _removeAssetId(assetId);
 
         // Decrease balance with checked arithmetic, because an `creatorOf` override may
@@ -284,7 +284,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
 
         delete assets[assetId];
 
-        assetsRevenue.afterRemoveModel(assetId);
+        // assetsRevenue.afterRemoveModel(assetId);
 
         emit AssetRemoved(creator, address(0), assetId, block.timestamp);
     }
@@ -405,10 +405,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
      * @param assetId uint256 ID of the model to be added to the models list of the given address
      *
      */
-    function _addAssetIdToCreator(
-        address creator,
-        uint256 assetId
-    ) private {
+    function _addAssetIdToCreator(address creator, uint256 assetId) private {
         uint256 length = assetBalanceOf(creator);
         creatorAssets[creator][length] = assetId;
         assets[assetId].creatorIndex = length;
@@ -444,30 +441,30 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
      * while the model is not assigned a new creator, the `_ownedModelsIndex` mapping is _not_ updated: this allows for
      * gas optimizations e.g. when performing a allocate operation (avoiding double writes).
      * This has O(1) time complexity, but alters the order of the _ownedModels array.
-     * @param __from address representing the previous creator of the given model ID
-     * @param __modelId uint256 ID of the model to be removed from the models list of the given address
+     * @param creator address representing the previous creator of the given model ID
+     * @param assetId uint256 ID of the model to be removed from the models list of the given address
      *
      */
-    function _removeModelFromCreatorEnumeration(
-        address __from,
-        uint256 __modelId
+    function _removeAssetIdFromCreator(
+        address creator,
+        uint256 assetId
     ) private {
         // To prevent a gap in from's models array, we store the last model in the index of the model to delete, and
         // then delete the last slot
 
-        uint256 lastModelIndex = assetBalanceOf(__from) - 1;
-        uint256 modelIndex = assets[__modelId].creatorIndex;
+        uint256 lastModelIndex = assetBalanceOf(creator) - 1;
+        uint256 modelIndex = assets[assetId].creatorIndex;
 
         // When the model to delete is the last model
         if (modelIndex != lastModelIndex) {
-            uint256 lastModelId = creatorAssets[__from][lastModelIndex];
+            uint256 lastModelId = creatorAssets[creator][lastModelIndex];
 
-            creatorAssets[__from][modelIndex] = lastModelId; // Move the last model to the slot of the to-delete model
+            creatorAssets[creator][modelIndex] = lastModelId; // Move the last model to the slot of the to-delete model
             assets[lastModelId].creatorIndex = modelIndex; // Update the moved model's index
         }
 
         // This also deletes the contents at the last position of the array
-        delete assets[__modelId].creatorIndex;
-        delete creatorAssets[__from][lastModelIndex];
+        delete assets[assetId].creatorIndex;
+        delete creatorAssets[creator][lastModelIndex];
     }
 }

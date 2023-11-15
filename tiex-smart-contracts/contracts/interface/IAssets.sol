@@ -29,7 +29,7 @@ interface IAssets {
         string description;
         bytes fingerprint;
         bool trained;
-        bytes watermark;
+        bytes watermarkFingerprint;
         uint256 performance;
     }
 

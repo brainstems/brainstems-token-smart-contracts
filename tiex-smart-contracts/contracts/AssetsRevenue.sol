@@ -35,39 +35,17 @@ contract AssetsRevenue is
     using SafeMath for uint256;
     using SafeERC20 for IPaymentToken;
 
-    /// @notice MAX_INT = 2**256 - 1 = uint256(-1)
-    uint256 constant MAX_INT =
-        0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
-
-    /// @notice See {ITIExShareCollections-name}.
-    string public override name;
-
-    /// @notice See {ITIExShareCollections-symbol}.
-    string public override symbol;
-
-    /// @notice Mapping of share collctions
-    mapping(uint256 => TIExShareCollection) private _shareCollections;
-
-    /// @notice Mapping the number of shares purchased per account in every share collection
-    mapping(uint256 => mapping(address => uint256)) public purchasedPerAccount;
-
-    /// @notice See {ITIExShareCollections-truthHolder}.
-    address public override truthHolder;
-
     /// @notice See {ITIExShareCollections-paymentToken}.
     IPaymentToken public override paymentToken;
-
-    /// @notice Mapping of nonces used
-    mapping(uint256 => bool) public noncesUsed;
 
     /// @notice See {ITIExShareCollections-investmentDistribution}.
     InvestmentDistribution public override investmentDistribution;
 
     /// @notice See {ITIExShareCollections-utility}.
-    IUtility public override utility;
+    IUtility public override utilityContract;
 
     /// @notice See {ITIExShareCollections-tiexBaseIPAllocation}.
-    IAssets public override tiexBaseIPAllocation;
+    IAssets public override assetsContract;
 
     /**
      * @notice Defines the initialize function, which sets the name, symbol,
@@ -75,7 +53,6 @@ contract AssetsRevenue is
      * It also grants the initial roles to the owner upon construction.
      */
     function initialize(
-        address __truthHolder,
         IPaymentToken __paymentToken,
         address __admin,
         InvestmentDistribution memory __investmentDistribution,
@@ -90,14 +67,10 @@ contract AssetsRevenue is
 
         if (_tRate != 10000) revert ErrorInvalidParam();
 
-        name = "TIEx Share Collections";
-        symbol = "TIExSHARE";
-
-        truthHolder = __truthHolder;
         paymentToken = __paymentToken;
         investmentDistribution = __investmentDistribution;
-        utility = __utility;
-        tiexBaseIPAllocation = __tiexBaseIPAllocation;
+        utilityContract = __utility;
+        assetsContract = __tiexBaseIPAllocation;
 
         __Context_init_unchained();
         __Pausable_init_unchained();
@@ -110,45 +83,12 @@ contract AssetsRevenue is
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @notice Modifier that checks if a Share Collection with the given modelId is not paused.
-     * @param __modelId The modelId of the Share Collection to check.
-     */
-    modifier whenShareCollectionNotPaused(uint256 __modelId) {
-        if (_shareCollections[__modelId].paused) {
-            revert ErrorShareCollectionPaused(__modelId);
-        }
-        _;
-    }
-
-    /**
      * @notice Checks if modelId allocated exists.
      * @param __modelId must be of existing ID of model.
      */
     modifier onlyExistingModelId(uint256 __modelId) {
-        if (!tiexBaseIPAllocation.assetExists(__modelId)) {
+        if (!assetsContract.assetExists(__modelId)) {
             revert IAssets.AssetNotFound(__modelId);
-        }
-        _;
-    }
-
-    /**
-     * @notice Modifier that checks if a Share Collection with the given modelId exists.
-     * @param __modelId The modelId of the Share Collection to check.
-     */
-    modifier onlyExistingShareCollection(uint256 __modelId) {
-        if (!shareCollectionExists(__modelId)) {
-            revert ErrorShareCollectionNotFound(__modelId);
-        }
-        _;
-    }
-
-    /**
-     * @notice Modifier that checks if a Share Collection with the given modelId doesn't exist.
-     * @param __modelId The modelId of the Share Collection to check.
-     */
-    modifier onlyNotExistingShareCollection(uint256 __modelId) {
-        if (shareCollectionExists(__modelId)) {
-            revert ErrorTIExShareCollectionReleasedAlready(__modelId);
         }
         _;
     }
@@ -157,127 +97,81 @@ contract AssetsRevenue is
     // INTERNALS
     ////////////////////////////////////////////////////////////////////////////
 
-    /**
-     * @dev See {ITIExShareCollections-afterRemoveModel}.
-     */
-    function afterRemoveModel(uint256 __modelId) external {
-        if (msg.sender != address(tiexBaseIPAllocation))
-            revert ErrorInvalidMsgSender();
-        if (shareCollectionExists(__modelId)) {
-            delete _shareCollections[__modelId];
-        }
-    }
-
     ////////////////////////////////////////////////////////////////////////////
     // ADMIN
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @dev See {ITIExShareCollections-releaseShareCollection}.
-     */
-    function releaseShareCollection(
-        uint256 __maxSupply,
-        uint256 __modelId,
-        uint256 __price,
-        uint256 __maxSharePurchase,
-        bool __forOnlyUSInvestors
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyNotExistingShareCollection(__modelId)
-        onlyExistingModelId(__modelId)
-    {
-        if (__maxSupply > 0 && __price > 0 && __maxSharePurchase > 0) {
-            _shareCollections[__modelId] = TIExShareCollection({
-                maxSupply: __maxSupply,
-                totalInvestment: 0,
-                withdrawnAmount: 0,
-                price: __price,
-                launchStartTime: block.timestamp,
-                paused: true,
-                blocked: false,
-                forOnlyUSInvestors: __forOnlyUSInvestors,
-                maxSharePurchase: __maxSharePurchase
-            });
-
-            emit TIExShareCollectionReleased(
-                __modelId,
-                _shareCollections[__modelId]
-            );
-        } else revert ErrorInvalidParam();
-    }
-
-    /**
      * @dev See {ITIExShareCollections-distribute}.
      */
-    function distribute(
-        uint256 __modelId
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyExistingModelId(__modelId)
-        onlyExistingShareCollection(__modelId)
-        nonReentrant
-    {
-        uint256 restOfAmount = _shareCollections[__modelId].totalInvestment.sub(
-            _shareCollections[__modelId].withdrawnAmount
-        );
+    // function distribute(
+    //     uint256 __modelId
+    // )
+    //     external
+    //     onlyRole(DEFAULT_ADMIN_ROLE)
+    //     onlyExistingModelId(__modelId)
+    //     onlyExistingShareCollection(__modelId)
+    //     nonReentrant
+    // {
+    //     uint256 restOfAmount = _shareCollections[__modelId].totalInvestment.sub(
+    //         _shareCollections[__modelId].withdrawnAmount
+    //     );
 
-        // TODO: replace with funds added by TIEX instead of shares investments, which are no longer present
-        // if (restOfAmount == 0) revert();
+    //     // TODO: replace with funds added by TIEX instead of shares investments, which are no longer present
+    //     // if (restOfAmount == 0) revert();
 
-        uint256 toCreators = restOfAmount.mul(
-            investmentDistribution.creatorRate
-        );
-        uint256 toMarketing = restOfAmount.mul(
-            investmentDistribution.marketingtRate
-        );
-        uint256 toReserve = restOfAmount.mul(
-            investmentDistribution.reserveRate
-        );
-        uint256 toPresale = restOfAmount.mul(
-            investmentDistribution.presaleRate
-        );
+    //     uint256 toCreators = restOfAmount.mul(
+    //         investmentDistribution.creatorRate
+    //     );
+    //     uint256 toMarketing = restOfAmount.mul(
+    //         investmentDistribution.marketingtRate
+    //     );
+    //     uint256 toReserve = restOfAmount.mul(
+    //         investmentDistribution.reserveRate
+    //     );
+    //     uint256 toPresale = restOfAmount.mul(
+    //         investmentDistribution.presaleRate
+    //     );
 
-        IAssets.Contribution[] memory contributedModels = tiexBaseIPAllocation
-            .getAsset(__modelId)
-            .contributedModels;
+    //     IAssets.Contribution[] memory contributedModels = tiexBaseIPAllocation
+    //         .getAsset(__modelId)
+    //         .contributedModels;
 
-        _shareCollections[__modelId].withdrawnAmount = _shareCollections[
-            __modelId
-        ].withdrawnAmount.add(restOfAmount);
+    //     _shareCollections[__modelId].withdrawnAmount = _shareCollections[
+    //         __modelId
+    //     ].withdrawnAmount.add(restOfAmount);
 
-        for (uint256 i = 0; i < contributedModels.length; i++) {
-            address contributer = tiexBaseIPAllocation
-                .getAsset(contributedModels[i].modelId)
-                .creator;
+    //     for (uint256 i = 0; i < contributedModels.length; i++) {
+    //         address contributer = tiexBaseIPAllocation
+    //             .getAsset(contributedModels[i].modelId)
+    //             .creator;
 
-            if (contributer == address(0)) continue;
+    //         if (contributer == address(0)) continue;
 
-            uint256 toContributer = toCreators *
-                contributedModels[i].contributionRate;
+    //         uint256 toContributer = toCreators *
+    //             contributedModels[i].contributionRate;
 
-            paymentToken.safeTransfer(
-                contributer,
-                toContributer.div(10000).div(10000)
-            );
-        }
+    //         paymentToken.safeTransfer(
+    //             contributer,
+    //             toContributer.div(10000).div(10000)
+    //         );
+    //     }
 
-        paymentToken.safeTransfer(
-            investmentDistribution.marketing,
-            toMarketing.div(10000)
-        );
-        paymentToken.safeTransfer(
-            investmentDistribution.reserve,
-            toReserve.div(10000)
-        );
-        paymentToken.safeTransfer(
-            investmentDistribution.presale,
-            toPresale.div(10000)
-        );
+    //     paymentToken.safeTransfer(
+    //         investmentDistribution.marketing,
+    //         toMarketing.div(10000)
+    //     );
+    //     paymentToken.safeTransfer(
+    //         investmentDistribution.reserve,
+    //         toReserve.div(10000)
+    //     );
+    //     paymentToken.safeTransfer(
+    //         investmentDistribution.presale,
+    //         toPresale.div(10000)
+    //     );
 
-        emit Distribute(__modelId, restOfAmount, block.timestamp);
-    }
+    //     emit Distribute(__modelId, restOfAmount, block.timestamp);
+    // }
 
     /**
      * @dev See {ITIExShareCollections-updateUtility}.
@@ -287,47 +181,34 @@ contract AssetsRevenue is
     ) external onlyRole("DEFAULT_ADMIN_ROLE") {
         if (address(__utility) == address(0)) revert ErrorInvalidParam();
 
-        utility = __utility;
+        utilityContract = __utility;
 
         emit TIExUtilityUpdated(__utility);
     }
 
-    /**
-     * @dev See {ITIExShareCollections-updateTruthHolder}.
-     */
-    function updateTruthHolder(
-        address __truthHolder
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (__truthHolder == address(0) || __truthHolder == truthHolder)
-            revert ErrorInvalidParam();
-        truthHolder = __truthHolder;
+    // /**
+    //  * @dev See {ITIExShareCollections-updateInvestmentDistributionRate}.
+    //  */
+    // function updateInvestmentDistributionRate(
+    //     uint256 __creatorRate,
+    //     uint256 __marketingRate,
+    //     uint256 __presaleRate,
+    //     uint256 __reserveRate
+    // ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    //     uint256 _tRate = __creatorRate
+    //         .add(__marketingRate)
+    //         .add(__presaleRate)
+    //         .add(__reserveRate);
 
-        emit TIExTruthHolderUpdated(__truthHolder);
-    }
+    //     if (_tRate != 10000 || __creatorRate < 2000) revert ErrorInvalidParam();
 
-    /**
-     * @dev See {ITIExShareCollections-updateInvestmentDistributionRate}.
-     */
-    function updateInvestmentDistributionRate(
-        uint256 __creatorRate,
-        uint256 __marketingRate,
-        uint256 __presaleRate,
-        uint256 __reserveRate
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        uint256 _tRate = __creatorRate
-            .add(__marketingRate)
-            .add(__presaleRate)
-            .add(__reserveRate);
+    //     investmentDistribution.creatorRate = __creatorRate;
+    //     investmentDistribution.marketingtRate = __marketingRate;
+    //     investmentDistribution.presaleRate = __presaleRate;
+    //     investmentDistribution.reserveRate = __reserveRate;
 
-        if (_tRate != 10000 || __creatorRate < 2000) revert ErrorInvalidParam();
-
-        investmentDistribution.creatorRate = __creatorRate;
-        investmentDistribution.marketingtRate = __marketingRate;
-        investmentDistribution.presaleRate = __presaleRate;
-        investmentDistribution.reserveRate = __reserveRate;
-
-        emit TIExInvestmentDistributionRate(investmentDistribution);
-    }
+    //     emit TIExInvestmentDistributionRate(investmentDistribution);
+    // }
 
     /**
      * @dev See {ITIExShareCollections-updateMarketingAddress}.
@@ -394,151 +275,6 @@ contract AssetsRevenue is
     }
 
     /**
-     * @dev See {ITIExShareCollections-setPause}.
-     */
-    function setPause(
-        uint256 __modelId
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyExistingShareCollection(__modelId)
-    {
-        if (_shareCollections[__modelId].paused) revert ErrorInvalidParam();
-        _shareCollections[__modelId].paused = true;
-        emit TIExShareCollectionPaused(__modelId);
-    }
-
-    /**
-     * @dev See {ITIExShareCollections-setUnpause}.
-     */
-    function setUnpause(
-        uint256 __modelId
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyExistingShareCollection(__modelId)
-    {
-        if (!_shareCollections[__modelId].paused) revert ErrorInvalidParam();
-        _shareCollections[__modelId].paused = false;
-        emit TIExShareCollectionUnpaused(__modelId);
-    }
-
-    /**
-     * @dev See {ITIExShareCollections-setBlock}.
-     */
-    function setBlock(
-        uint256 __modelId
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyExistingShareCollection(__modelId)
-    {
-        if (_shareCollections[__modelId].blocked) revert ErrorInvalidParam();
-        _shareCollections[__modelId].blocked = true;
-        emit TIExShareCollectionBlocked(__modelId);
-    }
-
-    /**
-     * @dev See {ITIExShareCollections-setUnblock}.
-     */
-    function setUnblock(
-        uint256 __modelId
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyExistingShareCollection(__modelId)
-    {
-        if (!_shareCollections[__modelId].blocked) revert ErrorInvalidParam();
-        _shareCollections[__modelId].blocked = false;
-        emit TIExShareCollectionUnblocked(__modelId);
-    }
-
-    /**
-     * @dev See {ITIExShareCollections-updateSharePrice}.
-     */
-    function updateSharePrice(
-        uint256 __modelId,
-        uint256 __price
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyExistingShareCollection(__modelId)
-    {
-        if (__price == 0 || __price == _shareCollections[__modelId].price)
-            revert ErrorInvalidParam();
-
-        _shareCollections[__modelId].price = __price;
-
-        emit TIExSharePriceUpdated(__modelId, __price);
-    }
-
-    /**
-     * @dev See {ITIExShareCollections-updateMaxSupply}.
-     */
-    function updateMaxSupply(
-        uint256 __modelId,
-        uint256 __maxSupply
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyExistingShareCollection(__modelId)
-    {
-        if (
-            __maxSupply == 0 ||
-            __maxSupply == _shareCollections[__modelId].maxSupply
-        ) revert ErrorInvalidParam();
-
-        _shareCollections[__modelId].maxSupply = __maxSupply;
-
-        emit TIExMaxSupplyUpdated(__modelId, __maxSupply);
-    }
-
-    /**
-     * @dev See {ITIExShareCollections-updateMaxSharePurchase}.
-     */
-    function updateMaxSharePurchase(
-        uint256 __modelId,
-        uint256 __maxSharePurchase
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyExistingShareCollection(__modelId)
-    {
-        if (
-            __maxSharePurchase == 0 ||
-            __maxSharePurchase == _shareCollections[__modelId].maxSharePurchase
-        ) revert ErrorInvalidParam();
-
-        _shareCollections[__modelId].maxSharePurchase = __maxSharePurchase;
-
-        emit TIExMaxSharePurchaseUpdated(__modelId, __maxSharePurchase);
-    }
-
-    /**
-     * @dev See {ITIExShareCollections-updateInvestorPosition}.
-     */
-    function updateInvestorPosition(
-        uint256 __modelId,
-        bool __forOnlyUSInvestors
-    )
-        external
-        onlyRole(DEFAULT_ADMIN_ROLE)
-        onlyExistingShareCollection(__modelId)
-    {
-        if (
-            __forOnlyUSInvestors ==
-            _shareCollections[__modelId].forOnlyUSInvestors
-        ) revert ErrorInvalidParam();
-
-        _shareCollections[__modelId].forOnlyUSInvestors = __forOnlyUSInvestors;
-
-        emit TIExShareCollectionInvestorPositionUpdated(
-            __modelId,
-            __forOnlyUSInvestors
-        );
-    }
-
-    /**
      * @dev See {ITIExShareCollections-resume}.
      */
     function resume() external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -557,32 +293,6 @@ contract AssetsRevenue is
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @dev See {ITIExShareCollections-shareCollectionExists}.
-     */
-    function shareCollectionExists(
-        uint256 __modelId
-    ) public view returns (bool) {
-        return _shareCollections[__modelId].launchStartTime != 0;
-    }
-
-    /**
-     * @dev See {ITIExShareCollections-shareCollection}.
-     */
-    function shareCollection(
-        uint256 __modelId
-    )
-        external
-        view
-        onlyExistingShareCollection(__modelId)
-        returns (TIExShareCollection memory, IAssets.Asset memory)
-    {
-        return (
-            _shareCollections[__modelId],
-            tiexBaseIPAllocation.getAsset(__modelId)
-        );
-    }
-
-    /**
      * @notice Returns the model URI.
      *
      */
@@ -593,7 +303,7 @@ contract AssetsRevenue is
             string(
                 abi.encodePacked(
                     "ipfs://",
-                    tiexBaseIPAllocation.getAsset(__modelId).uri
+                    assetsContract.getAsset(__modelId).uri
                 )
             );
     }

@@ -26,31 +26,7 @@ interface IPaymentToken is IERC20, IERC20Permit {
 }
 
 interface IAssetsRevenue {
-    /**
-     * @notice Defines details of each share collection for investors.
-     */
-    struct TIExShareCollection {
-        /// @notice Indicates the maximum share supply.
-        uint256 maxSupply;
-        /// @notice Indicates the total investment in the share
-        uint256 totalInvestment;
-        /// @notice Indicates the amount that has been withdrawn.
-        uint256 withdrawnAmount;
-        /// @notice Indicates the price per share.
-        uint256 price;
-        /// @notice Indicates the time when the share collection was launched.
-        uint256 launchStartTime;
-        /// @notice Indicates the maximum share purchase allowed per account.
-        uint256 maxSharePurchase;
-        /// @notice Indicates whether the sale is paused or not.
-        bool paused;
-        /// @notice Indicates whether the share collection is available for
-        /// trading and share sale or not.
-        bool blocked;
-        /// @notice Indicates whether the share collection is only available
-        /// for U.S. investors or not.
-        bool forOnlyUSInvestors;
-    }
+    // TODO: revise same as assets
 
     /**
      * @notice Defines the distribution rates and addresses for different aspects
@@ -112,21 +88,8 @@ interface IAssetsRevenue {
     // @notice Indicates that the msg.sender() is invalid
     error ErrorInvalidMsgSender();
 
-    /// @notice Emitted when a share collection is released for a specific model.
-    /// It provides the model ID and the share collection object as parameters.
-    event TIExShareCollectionReleased(
-        uint256 indexed modelId,
-        TIExShareCollection shareCollection
-    );
-
     /// @notice Emitted when the URI associated with a model is updated.
     event TIExCollectionURIUpdated(uint256 indexed modelId, string uri);
-
-    /// @notice Emitted when the share collection for the detail of model is updated.
-    event TIExShareCollectionUpdated(
-        uint256 indexed modelId,
-        TIExShareCollection newShareCollection
-    );
 
     /// @notice Emitted when the payment token used in the contract is updated.
     event TIExPaymentTokenUpdated(IPaymentToken newPaymentToken);
@@ -185,15 +148,6 @@ interface IAssetsRevenue {
     /// @notice Emitted when distributing funds fromm investors to creators, marketing etc.
     event Distribute(uint256 indexed modelId, uint256 amount, uint256 when);
 
-    /// @notice The token name
-    function name() external view returns (string memory);
-
-    /// @notice The token symbol
-    function symbol() external view returns (string memory);
-
-    /// @notice The truth holder (TIEx Signer for generating ECDSA Signature)
-    function truthHolder() external view returns (address);
-
     /// @notice The payment token (ERC20: INTELL token)
     function paymentToken() external view returns (IPaymentToken);
 
@@ -212,51 +166,15 @@ interface IAssetsRevenue {
         );
 
     /// @notice Utility
-    function utility() external view returns (IUtility);
+    function utilityContract() external view returns (IUtility);
 
     /// @notice TIExBaseIPAllocation
-    function tiexBaseIPAllocation() external view returns (IAssets);
+    function assetsContract() external view returns (IAssets);
 
-    /**
-     * @notice Used to clean up data related to a model after it has been removed.
-     * @param __modelId uint256 The ID of the model associated with the Share Collection.
-     *
-     * Requirements:
-     * - Must be called by TIExBaseIPAllocation contract.
-     */
-    function afterRemoveModel(uint256 __modelId) external;
-
-    /**
-     * @notice Used to release a new Share Collection.
-     * @param __maxSupply uint256 The maximum supply of shares for the collection.
-     * @param __modelId uint256 The ID of the model associated with the Share Collection.
-     * @param __price uint256 The price of each share in the collection.
-     * @param __maxSharePurchase uint256 The maximum number of shares that can be purchased per account.
-     * @param __forOnlyUSInvestors bool Indicates whether the Share Collection is only available to U.S. investors.
-     *
-     * Emits a {TIExShareCollectionReleased} event.
-     *
-     * Requirements:
-     *
-     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
-     * - A shared collection with the given `__modelId` must not already exist.
-     * - The model with the given `__modelId` must exist.
-     * - `__maxSupply` must be greater than 0.
-     * - `__price` must be greater than 0.
-     * - `__maxSharePurchase` must be greater than 0.
-     */
-    function releaseShareCollection(
-        uint256 __maxSupply,
-        uint256 __modelId,
-        uint256 __price,
-        uint256 __maxSharePurchase,
-        bool __forOnlyUSInvestors
-    ) external;
-
-    /**
-     * @notice Distributes funds from investor
-     */
-    function distribute(uint256 __modelId) external;
+    // /**
+    //  * @notice Distributes funds from investor
+    //  */
+    // function distribute(uint256 __modelId) external;
 
     /**
      * @notice Updates the Utiltity address.
@@ -271,41 +189,27 @@ interface IAssetsRevenue {
      */
     function updateUtility(IUtility __utility) external;
 
-    /**
-     * @notice Updates the address of truth holder, which is responsible for generating and
-     * signing ECDSA singatures for rquested messages from investors.
-     *
-     * Emits a {TIExTruthHolderUpdated} event.
-     *
-     * Requirements:
-     *
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - `__truthHolder` address must not be the zero address(address(0)) or the same as the
-     * current truth holder address.
-     */
-    function updateTruthHolder(address __truthHolder) external;
-
-    /**
-     * @notice Update investment distribution rates.
-     * @param __creatorRate uint256 The rate for the creators.
-     * @param __marketingRate uint256 The rate for theh marketing.
-     * @param __presaleRate uint256 The rate for the presale.
-     * @param __reserveRate uint256 The rate for the reserve.
-     *
-     * Emits a {TIExInvestmentDistributionRate} event.
-     *
-     * Requirements:
-     *
-     * - `__creatorRate` + `__marketingRate` + `__presaleRate` + `__reserveRate` must be equal to 10000 (100%).
-     * - `__creatorRate` must not be less than 2000 (20%).
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     */
-    function updateInvestmentDistributionRate(
-        uint256 __creatorRate,
-        uint256 __marketingRate,
-        uint256 __presaleRate,
-        uint256 __reserveRate
-    ) external;
+    // /**
+    //  * @notice Update investment distribution rates.
+    //  * @param __creatorRate uint256 The rate for the creators.
+    //  * @param __marketingRate uint256 The rate for theh marketing.
+    //  * @param __presaleRate uint256 The rate for the presale.
+    //  * @param __reserveRate uint256 The rate for the reserve.
+    //  *
+    //  * Emits a {TIExInvestmentDistributionRate} event.
+    //  *
+    //  * Requirements:
+    //  *
+    //  * - `__creatorRate` + `__marketingRate` + `__presaleRate` + `__reserveRate` must be equal to 10000 (100%).
+    //  * - `__creatorRate` must not be less than 2000 (20%).
+    //  * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
+    //  */
+    // function updateInvestmentDistributionRate(
+    //     uint256 __creatorRate,
+    //     uint256 __marketingRate,
+    //     uint256 __presaleRate,
+    //     uint256 __reserveRate
+    // ) external;
 
     /**
      * @notice Updates the marketing address.
@@ -359,169 +263,4 @@ interface IAssetsRevenue {
      * - `__paymentToken` address must not be the zero address(address(0))
      */
     function updatePaymentToken(IPaymentToken __paymentToken) external;
-
-    /**
-     * @notice Pauses the selling of shares for the share collection with a specific `__modelId`.
-     * @param __modelId uint256 The model id
-     *
-     * Emits a {TIExShareCollectionPaused} event.
-     *
-     * Requirements:
-     *
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - The share collection with the given `__modelId` must exist.
-     *
-     * WARNING: If the share collection is already paused, the function will throw an error.
-     */
-    function setPause(uint256 __modelId) external;
-
-    /**
-     * @notice Unpauses the selling of shares for the share collection with a specific `__modelId`.
-     * @param __modelId uint256 The model id
-     *
-     * Emits a {TIExShareCollectionUnpaused} event.
-     *
-     * Requirements:
-     *
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - The share collection with the given `__modelId` must exist.
-     *
-     * WARNING: If the share collection is already unpaused, the function will throw an error.
-     */
-    function setUnpause(uint256 __modelId) external;
-
-    /**
-     * @notice Blocks a share collection
-     * @param __modelId uint256 The model id.
-     *
-     * Emits a {TIExShareCollectionBlocked} event.
-     *
-     * Requirements:
-     *
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - The share collection with the given `__modelId` must exist.
-     * WARNING: If the share collection is already blocked, the function will throw an error.
-     */
-    function setBlock(uint256 __modelId) external;
-
-    /**
-     * @notice Unblocks a share collection
-     * @param __modelId uint256 The model id.
-     *
-     * Emits a {TIExShareCollectionUnblocked} event.
-     *
-     * Requirements:
-     *
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - The share collection with the given `__modelId` must exist.
-     * WARNING: If the share collection is already unblocked, the function will throw an error.
-     */
-    function setUnblock(uint256 __modelId) external;
-
-    /**
-     * @notice Updates the price per share for a specific share collection.
-     * @param __modelId uint256 The model id.
-     * @param __price uint256 The price per share.
-     *
-     * Emits a {TIExSharePriceUpdated} event.
-     *
-     * Requirements:
-     *
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - The share collection with the given `__modelId` must exist.
-     * - `__price` must not be zero.
-     *
-     * WARNING: If `__price` is equal to the current price, it reverts with
-     * an `ErrorInvalidParam` error.
-     */
-    function updateSharePrice(uint256 __modelId, uint256 __price) external;
-
-    /**
-     * @notice Updates maximum supply of a share collection.
-     * @param __modelId uint256 The model id.
-     * @param __maxSupply uint256 The maximum supply.
-     *
-     * Emits a {TIExMaxSupplyUpdated} event.
-     *
-     * Requirements:
-     *
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - The share collection with the given `__modelId` must exist.
-     * - `__maxSupply` must not be zero.
-     *
-     * WARNING: If `__maxSupply` is equal to the current maximum supply, it reverts with
-     * an `ErrorInvalidParam` error.
-     */
-    function updateMaxSupply(uint256 __modelId, uint256 __maxSupply) external;
-
-    /**
-     * @notice Updates maximum share purchase allowed per account.
-     * @param __modelId uint256 The model id.
-     * @param __maxSharePurchase uint256 The maximum share purchase allowed per account.
-     *
-     * Emits a {TIExMaxSharePurchaseUpdated} event.
-     *
-     * Requirements:
-     *
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - The share collection with the given `__modelId` must exist.
-     * - `__maxSharePurchase` must not be zero.
-     *
-     * WARNING: If `__maxSharePurchase` is equal to the current maximum share purchase, it reverts with
-     * an `ErrorInvalidParam` error.
-     */
-    function updateMaxSharePurchase(
-        uint256 __modelId,
-        uint256 __maxSharePurchase
-    ) external;
-
-    /**
-     * @notice Updates the available position for investors
-     * @param __modelId uint256 The model id.
-     * @param __forOnlyUSInvestors bool Indicates whether the Share Collection is only available to U.S. investors.
-     *
-     * Emits a {TIExShareCollectionInvestorPositionUpdated} event.
-     *
-     * Requirements:
-     *
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - The share collection with the given `__modelId` must exist.
-     * - the `__forOnlyUSInvestors` parameter must not be the same as the current value of `forOnlyUSInvestors` in the share collection
-     */
-    function updateInvestorPosition(
-        uint256 __modelId,
-        bool __forOnlyUSInvestors
-    ) external;
-
-    /**
-     * @notice Resumes operating the platform
-     *
-     * Requirements:
-     *
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     */
-    function resume() external;
-
-    /**
-     * @notice Pauses operating the platform
-     *
-     * Requirements:
-     *
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     */
-    function emergency() external;
-
-    /**
-     * @notice Returns whether or not an shareCollection exists.
-     */
-    function shareCollectionExists(
-        uint256 __modelId
-    ) external view returns (bool);
-
-    /**
-     * @notice Returns an Share Collection Status.
-     */
-    function shareCollection(
-        uint256 __modelId
-    ) external view returns (TIExShareCollection memory, IAssets.Asset memory);
 }

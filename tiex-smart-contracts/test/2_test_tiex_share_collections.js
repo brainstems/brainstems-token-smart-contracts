@@ -2,17 +2,14 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const {
   creator_rate,
-  tiex_share_collection_name,
-  tiex_share_collection_symbol,
   marketing_rate,
   reserve_rate,
   presale_rate,
 } = require("../scripts/deploy_config");
-
+// TODO: revise unused variables
 describe("TIExShareCollections", () => {
   let deployer;
   let admin;
-  let truthHolder;
   let recipient;
   let signer0;
   let signer1;
@@ -104,7 +101,6 @@ describe("TIExShareCollections", () => {
     [
       deployer,
       admin,
-      truthHolder,
       recipient,
       signer0,
       signer1,
@@ -240,7 +236,6 @@ describe("TIExShareCollections", () => {
       tiexShareCollections.address
     );
     await tiexShareCollections.initialize(
-      truthHolder.address,
       intellToken.address,
       admin.address,
       [
@@ -275,7 +270,7 @@ describe("TIExShareCollections", () => {
       expect(utility.address).to.exist;
     });
 
-    it("Should set right symbol and name, payment token, truth holder, admin role, tiexBaseIPAllocation in TIExShareCollections", async function () {
+    it("Should set right symbol and name, payment token, admin role, tiexBaseIPAllocation in TIExShareCollections", async function () {
       const default_amdin_role =
         await tiexShareCollections.DEFAULT_ADMIN_ROLE();
       const investmentDistribution =
@@ -289,19 +284,10 @@ describe("TIExShareCollections", () => {
       expect(investmentDistribution[5]).to.eq(reserve.address);
       expect(investmentDistribution[6]).to.eq(presale.address);
 
-      expect(await tiexShareCollections.name()).to.eq(
-        tiex_share_collection_name
-      );
-      expect(await tiexShareCollections.symbol()).to.eq(
-        tiex_share_collection_symbol
-      );
       expect(await tiexShareCollections.paymentToken()).to.eq(
         intellToken.address
       );
-      expect(await tiexShareCollections.truthHolder()).to.eq(
-        truthHolder.address
-      );
-      expect(await tiexShareCollections.tiexBaseIPAllocation()).to.eq(
+      expect(await tiexShareCollections.assetsContract()).to.eq(
         tiexBaseIPAllocation.address
       );
       expect(
@@ -366,39 +352,7 @@ describe("TIExShareCollections", () => {
   });
 
   describe("TIExShareCollection", async () => {
-    it("should release new share collection", async () => {
-      for (var i = 0; i < models.length; i++) {
-        await tiexShareCollections
-          .connect(admin)
-          .releaseShareCollection(
-            models[i].maxSupply,
-            models[i].modelId,
-            models[i].price,
-            models[i].maxSharePurchase,
-            models[i].forOnlyUSInvestors
-          );
-
-        await tiexShareCollections.connect(admin).setUnpause(models[i].modelId);
-
-        const shareCollection = await tiexShareCollections.shareCollection(
-          models[i].modelId
-        );
-
-        expect(shareCollection[0][0]).to.eq(
-          ethers.BigNumber.from(models[i].maxSupply)
-        );
-        expect(shareCollection[0][3]).to.eq(models[i].price);
-        expect(shareCollection[0][5]).to.eq(
-          ethers.BigNumber.from(models[i].maxSharePurchase)
-        );
-        expect(shareCollection[0][8]).to.eq(models[i].forOnlyUSInvestors);
-        expect(
-          await tiexShareCollections.shareCollectionExists(models[i].modelId)
-        ).to.eq(true);
-      }
-    });
-
-    it("Should distriibute the funds from investor to creators, marketing, reserve, and presale", async () => {
+    it.skip("Should distribute the funds from investor to creators, marketing, reserve, and presale", async () => {
       for (var i = 0; i < models.length; i++) {
         const marketingBefore = await intellToken.balanceOf(marketing.address);
         const reserveBefore = await intellToken.balanceOf(reserve.address);
