@@ -27,10 +27,19 @@ interface IAssets {
         uint256 performance;
     }
 
+    struct Contributors {
+        address creator;
+        address marketing;
+        address presale; 
+        uint256 creatorRate;
+        uint256 marketingRate;
+        uint256 presaleRate;
+    }
+
     // TODO: revise fields
     struct Asset {
-        address creator;
         Metadata metadata;
+        Contributors contributors;
         uint256 index;
         uint256 creatorIndex;
         string uri;
@@ -135,7 +144,6 @@ interface IAssets {
     /**
      * @notice Allocates `modelId` as TIEx IP to `creator`.
      * @param assetId uint256 must not exist.
-     * @param creator address cannot be the zero address.
      * @param ipfsHash string is for Metadata of model
      *
      * Emits a {AllocateTIExIP} event.
@@ -146,7 +154,7 @@ interface IAssets {
      */
     function createAsset(
         uint256 assetId,
-        address creator,
+        Contributors calldata contributors,
         string calldata ipfsHash,
         Metadata calldata metadata
     ) external;

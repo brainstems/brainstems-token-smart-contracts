@@ -38,9 +38,6 @@ contract AssetsRevenue is
     /// @notice See {ITIExShareCollections-paymentToken}.
     IPaymentToken public override paymentToken;
 
-    /// @notice See {ITIExShareCollections-investmentDistribution}.
-    InvestmentDistribution public override investmentDistribution;
-
     /// @notice See {ITIExShareCollections-utility}.
     IUtility public override utilityContract;
 
@@ -55,20 +52,10 @@ contract AssetsRevenue is
     function initialize(
         IPaymentToken __paymentToken,
         address __admin,
-        InvestmentDistribution memory __investmentDistribution,
         IUtility __utility,
         IAssets __tiexBaseIPAllocation
     ) public initializer {
-        uint256 _tRate = __investmentDistribution
-            .creatorRate
-            .add(__investmentDistribution.marketingtRate)
-            .add(__investmentDistribution.presaleRate)
-            .add(__investmentDistribution.reserveRate);
-
-        if (_tRate != 10000) revert ErrorInvalidParam();
-
         paymentToken = __paymentToken;
-        investmentDistribution = __investmentDistribution;
         utilityContract = __utility;
         assetsContract = __tiexBaseIPAllocation;
 
@@ -214,14 +201,17 @@ contract AssetsRevenue is
      * @dev See {ITIExShareCollections-updateMarketingAddress}.
      */
     function updateMarketingAddress(
+        uint256 assetId,
         address __marketing
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        IAssets.Asset memory asset = assetsContract.getAsset(assetId);
+
         if (
             __marketing == address(0) ||
-            __marketing == investmentDistribution.marketing
+            __marketing == asset.contributors.marketing
         ) revert ErrorInvalidParam();
 
-        investmentDistribution.marketing = __marketing;
+        asset.contributors.marketing = __marketing;
 
         emit TIExMarketingAddressUpdated(__marketing);
     }
@@ -230,48 +220,17 @@ contract AssetsRevenue is
      * @dev See {ITIExShareCollections-updatePresaleAddress}.
      */
     function updatePresaleAddress(
+        uint256 assetId,
         address __presale
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (
-            __presale == address(0) ||
-            __presale == investmentDistribution.presale
-        ) revert ErrorInvalidParam();
+        IAssets.Asset memory asset = assetsContract.getAsset(assetId);
 
-        investmentDistribution.presale = __presale;
+        if (__presale == address(0) || __presale == asset.contributors.presale)
+            revert ErrorInvalidParam();
+
+        asset.contributors.presale = __presale;
 
         emit TIExPresaleAddressUpdated(__presale);
-    }
-
-    /**
-     * @dev See {ITIExShareCollections-updateReserveAddress}.
-     */
-    function updateReserveAddress(
-        address __reserve
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (
-            __reserve == address(0) ||
-            __reserve == investmentDistribution.reserve
-        ) revert ErrorInvalidParam();
-
-        investmentDistribution.reserve = __reserve;
-
-        emit TIExReserveAddressUpdated(__reserve);
-    }
-
-    /**
-     * @dev See {ITIExShareCollections-updatePaymentToken}.
-     */
-    function updatePaymentToken(
-        IPaymentToken __paymentToken
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (
-            address(__paymentToken) == address(0) ||
-            address(paymentToken) == address(__paymentToken)
-        ) revert ErrorInvalidParam();
-
-        paymentToken = __paymentToken;
-
-        emit TIExPaymentTokenUpdated(__paymentToken);
     }
 
     /**

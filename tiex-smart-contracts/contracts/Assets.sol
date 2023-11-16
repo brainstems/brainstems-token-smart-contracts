@@ -149,10 +149,11 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
      */
     function createAsset(
         uint256 assetId,
-        address creator,
+        Contributors calldata contributors,
         string calldata ipfsHash,
         Metadata calldata metadata
     ) external onlyRole(DEFAULT_ADMIN_ROLE) nonExistingAsset(assetId) {
+        address creator = contributors.creator;
         // Check if the creator address is valid
         if (creator == address(0)) {
             revert InvalidCreator(address(0));
@@ -172,9 +173,16 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
         }
 
         // Set the creator of the model ID
-        assets[assetId].creator = creator;
+        assets[assetId].contributors = contributors;
         // Set the IPFS hash of the model's metadata
         assets[assetId].uri = ipfsHash;
+
+        uint256 _tRate = contributors
+        .creatorRate
+        .add(contributors.marketingRate)
+        .add(contributors.presaleRate);
+
+        if (_tRate != 10000) revert("invalid contributor rates"); 
 
         // Check if the model metadata is valid
         bool validForMetadata = bytes(metadata.name).length > 0 &&
@@ -234,7 +242,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
      * @dev See {ITIExBaseIPAllocation-creatorOf}.
      */
     function creatorOf(uint256 assetId) public view returns (address) {
-        address creator = assets[assetId].creator;
+        address creator = assets[assetId].contributors.creator;
         if (creator == address(0)) {
             revert AssetNotFound(assetId);
         }
@@ -245,7 +253,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
      * @dev See {ITIExBaseIPAllocation-modelExists}.
      */
     function assetExists(uint256 assetId) public view returns (bool) {
-        return assets[assetId].creator != address(0);
+        return assets[assetId].contributors.creator != address(0);
     }
 
     /**

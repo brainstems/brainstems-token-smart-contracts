@@ -28,27 +28,6 @@ interface IPaymentToken is IERC20, IERC20Permit {
 interface IAssetsRevenue {
     // TODO: revise same as assets
 
-    /**
-     * @notice Defines the distribution rates and addresses for different aspects
-     * of an investment.
-     */
-    struct InvestmentDistribution {
-        /// @notice Indicates the rate of investment distribution for the creator.
-        uint256 creatorRate;
-        /// @notice Indicates the rate of investment distribution for marketing.
-        uint256 marketingtRate;
-        /// @notice Indicates the rate of investment distribution for reserves.
-        uint256 reserveRate;
-        /// @notice Indicates the rate of investment distribution for presale.
-        uint256 presaleRate;
-        /// @notice Indicates the address where the marketing funds will be distributed.
-        address marketing;
-        /// @notice Indicates the address where the reserve funds will be distributed.
-        address reserve;
-        /// @notice Indicates the address where the presale funds will be distributed.
-        address presale;
-    }
-
     /// @notice Indicates that a share collection cannot be found
     error ErrorShareCollectionNotFound(uint256 modelId);
 
@@ -128,11 +107,6 @@ interface IAssetsRevenue {
         bool newInvestorPosition
     );
 
-    /// @notice Emitted when the investment distribution rate is updated.
-    event TIExInvestmentDistributionRate(
-        InvestmentDistribution newInvestmentDistribution
-    );
-
     /// @notice Emitted when the marketing address is update.
     event TIExMarketingAddressUpdated(address newMarketingAddress);
 
@@ -150,20 +124,6 @@ interface IAssetsRevenue {
 
     /// @notice The payment token (ERC20: INTELL token)
     function paymentToken() external view returns (IPaymentToken);
-
-    /// @notice Investment distribution rates and addresses
-    function investmentDistribution()
-        external
-        view
-        returns (
-            uint256 creatorRate,
-            uint256 marketingtRate,
-            uint256 reserveRate,
-            uint256 presaleRate,
-            address marketing,
-            address reserve,
-            address presale
-        );
 
     /// @notice Utility
     function utilityContract() external view returns (IUtility);
@@ -223,7 +183,10 @@ interface IAssetsRevenue {
      * - `__marketing` address must not be the zero address(address(0)) or the same as the
      * current truth holder address.
      */
-    function updateMarketingAddress(address __marketing) external;
+    function updateMarketingAddress(
+        uint256 assetId,
+        address __marketing
+    ) external;
 
     /**
      * @notice Updates the presale address.
@@ -236,31 +199,5 @@ interface IAssetsRevenue {
      * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
      * - `__presale` address must not be the zero address(address(0))
      */
-    function updatePresaleAddress(address __presale) external;
-
-    /**
-     * @notice Updates the reserve address.
-     * @param __reserve address The address where the reserve funds will be distributed.
-     *
-     * Emits a {TIExReserveAddressUpdated} event.
-     *
-     * Requirements:
-     *
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - `__reserve` address must not be the zero address(address(0))
-     */
-    function updateReserveAddress(address __reserve) external;
-
-    /**
-     * @notice Updates the payment token address.
-     * @param __paymentToken address The address for ERC20 token used as utility token on TIEx.
-     *
-     * Emits a {TIExPaymentTokenUpdated} event.
-     *
-     * Requirements:
-     *
-     * - Must be called by an account with the `DEFAULT_ADMIN_ROLE` role.
-     * - `__paymentToken` address must not be the zero address(address(0))
-     */
-    function updatePaymentToken(IPaymentToken __paymentToken) external;
+    function updatePresaleAddress(uint256 assetId, address __presale) external;
 }

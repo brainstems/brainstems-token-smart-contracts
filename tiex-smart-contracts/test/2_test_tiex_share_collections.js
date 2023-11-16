@@ -120,7 +120,14 @@ describe("TIExShareCollections", () => {
     models = [
       {
         modelId: 1,
-        creator: signer0.address,
+        contributors: {
+          creator: signer0.address,
+          marketing: ethers.constants.AddressZero,
+          presale: ethers.constants.AddressZero,
+          creatorRate: 10000,
+          marketingRate: 0,
+          presaleRate: 0,
+        },
         ipfsHash: "QmSnuWmxptJZdLJpKRarxBMS2Ju2oANVrgbr2xWbie9b2D",
         maxSupply: i2b(100000),
         price: ethers.utils.parseEther("1000"),
@@ -138,7 +145,14 @@ describe("TIExShareCollections", () => {
       },
       {
         modelId: 2,
-        creator: signer1.address,
+        contributors: {
+          creator: signer1.address,
+          marketing: ethers.constants.AddressZero,
+          presale: ethers.constants.AddressZero,
+          creatorRate: 10000,
+          marketingRate: 0,
+          presaleRate: 0,
+        },
         ipfsHash: "QmSnuWmxptJZdLJpKRarxBMS2Ju2oANVrgbr2xWbie9b2D",
         maxSupply: i2b(100000),
         price: ethers.utils.parseEther("1000"),
@@ -156,7 +170,14 @@ describe("TIExShareCollections", () => {
       },
       {
         modelId: 3,
-        creator: signer2.address,
+        contributors: {
+          creator: signer2.address,
+          marketing: ethers.constants.AddressZero,
+          presale: ethers.constants.AddressZero,
+          creatorRate: 10000,
+          marketingRate: 0,
+          presaleRate: 0,
+        },
         ipfsHash: "QmSnuWmxptJZdLJpKRarxBMS2Ju2oANVrgbr2xWbie9b2D",
         maxSupply: i2b(100000),
         price: ethers.utils.parseEther("1000"),
@@ -174,7 +195,14 @@ describe("TIExShareCollections", () => {
       },
       {
         modelId: 4,
-        creator: signer0.address,
+        contributors: {
+          creator: signer0.address,
+          marketing: ethers.constants.AddressZero,
+          presale: ethers.constants.AddressZero,
+          creatorRate: 10000,
+          marketingRate: 0,
+          presaleRate: 0,
+        },
         ipfsHash: "QmSnuWmxptJZdLJpKRarxBMS2Ju2oANVrgbr2xWbie9b2D",
         maxSupply: i2b(100000),
         price: ethers.utils.parseEther("1000"),
@@ -192,7 +220,14 @@ describe("TIExShareCollections", () => {
       },
       {
         modelId: 5,
-        creator: signer1.address,
+        contributors: {
+          creator: signer1.address,
+          marketing: ethers.constants.AddressZero,
+          presale: ethers.constants.AddressZero,
+          creatorRate: 10000,
+          marketingRate: 0,
+          presaleRate: 0,
+        },
         ipfsHash: "QmSnuWmxptJZdLJpKRarxBMS2Ju2oANVrgbr2xWbie9b2D",
         maxSupply: i2b(100000),
         price: ethers.utils.parseEther("1000"),
@@ -217,15 +252,6 @@ describe("TIExShareCollections", () => {
     await tiexShareCollections.initialize(
       intellToken.address,
       admin.address,
-      [
-        creator_rate,
-        marketing_rate,
-        reserve_rate,
-        presale_rate,
-        marketing.address,
-        reserve.address,
-        presale.address,
-      ],
       utility.address,
       tiexBaseIPAllocation.address
     );
@@ -252,16 +278,6 @@ describe("TIExShareCollections", () => {
     it("Should set right symbol and name, payment token, admin role, tiexBaseIPAllocation in TIExShareCollections", async function () {
       const default_amdin_role =
         await tiexShareCollections.DEFAULT_ADMIN_ROLE();
-      const investmentDistribution =
-        await tiexShareCollections.investmentDistribution();
-
-      expect(investmentDistribution[0]).to.eq(i2b(creator_rate));
-      expect(investmentDistribution[1]).to.eq(i2b(marketing_rate));
-      expect(investmentDistribution[2]).to.eq(i2b(reserve_rate));
-      expect(investmentDistribution[3]).to.eq(i2b(presale_rate));
-      expect(investmentDistribution[4]).to.eq(marketing.address);
-      expect(investmentDistribution[5]).to.eq(reserve.address);
-      expect(investmentDistribution[6]).to.eq(presale.address);
 
       expect(await tiexShareCollections.paymentToken()).to.eq(
         intellToken.address
@@ -294,7 +310,7 @@ describe("TIExShareCollections", () => {
           .connect(admin)
           .createAsset(
             models[i].modelId,
-            models[i].creator,
+            models[i].contributors,
             models[i].ipfsHash,
             models[i].metadata
           );
@@ -308,13 +324,15 @@ describe("TIExShareCollections", () => {
         );
 
         expect(await tiexBaseIPAllocation.creatorOf(models[i].modelId)).to.eq(
-          models[i].creator
+          models[i].contributors.creator
         );
-        expect(await model_detail[0]).to.eq(models[i].creator);
-        expect(await model_detail[4]).to.eq(models[i].ipfsHash);
+        expect(await model_detail.contributors.creator).to.eq(
+          models[i].contributors.creator
+        );
+        expect(await model_detail.uri).to.eq(models[i].ipfsHash);
 
         for (var ii = 0; ii < 9; ii++) {
-          expect(model_detail[1][ii]).to.eq(models[i].metadata[ii]);
+          expect(model_detail.metadata[ii]).to.eq(models[i].metadata[ii]);
         }
       }
     });
