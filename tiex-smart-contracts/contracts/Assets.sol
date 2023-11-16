@@ -14,17 +14,25 @@
 
 pragma solidity ^0.8.19;
 
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "./interface/IAssets.sol";
-import "./interface/IAssetsRevenue.sol";
 
-contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
+contract Assets is
+    Initializable,
+    AccessControlEnumerableUpgradeable,
+    IAssets,
+    ReentrancyGuardUpgradeable
+{
     using Strings for uint256;
     using SafeMath for uint256;
+    using SafeERC20 for ERC20;
 
     // TODO: revise mappings
     /// @notice Mapping model id to TIEx Model
@@ -35,15 +43,16 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
     mapping(address => mapping(uint256 => uint256)) private creatorAssets;
     /// @notice Mapping creator address to model count
     mapping(address => uint256) private creatorAssetAmounts;
+    // asset ID to address to balance
+    mapping(uint256 => mapping(address => uint256)) balances;
 
-    /// @notice TIExShareCollections
-    IAssetsRevenue public assetsRevenue;
+    ERC20 public paymentToken;
 
     function initialize(
         address _admin,
-        IAssetsRevenue _assetsRevenue
+        ERC20 _paymentToken
     ) public initializer {
-        assetsRevenue = _assetsRevenue;
+        paymentToken = _paymentToken;
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
     }
 
@@ -245,6 +254,79 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
         asset.contributors.presale = __presale;
 
         emit TIExPresaleAddressUpdated(__presale);
+    }
+
+    function updateInvestmentDistributionRate(
+        uint256 assetId,
+        uint256 __creatorRate,
+        uint256 __marketingRate,
+        uint256 __presaleRate
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        uint256 _tRate = __creatorRate.add(__marketingRate).add(__presaleRate);
+
+        if (_tRate != 10000 || __creatorRate < 2000) revert ErrorInvalidParam();
+
+        Asset storage asset = assets[assetId];
+
+        asset.contributors.creatorRate = __creatorRate;
+        asset.contributors.marketingRate = __marketingRate;
+        asset.contributors.presaleRate = __presaleRate;
+    }
+
+    function deposit(
+        uint256 assetId,
+        uint256 amount
+    )
+        external
+        onlyRole(DEFAULT_ADMIN_ROLE)
+        existingAsset(assetId)
+        nonReentrant
+    {
+        require(amount > 0, "amount is 0");
+
+        Asset memory asset = assets[assetId];
+        Contributors memory contributors = asset.contributors;
+
+        uint256 creatorAmount = (amount.mul(contributors.creatorRate) / 100) *
+            100;
+        uint256 marketingAmount = (amount.mul(contributors.marketingRate) /
+            100) * 100;
+        uint256 presaleAmount = (amount.mul(contributors.presaleRate) / 100) *
+            100;
+
+        balances[assetId][contributors.creator] += creatorAmount;
+        balances[assetId][contributors.marketing] += marketingAmount;
+        balances[assetId][contributors.presale] += presaleAmount;
+
+        paymentToken.safeTransferFrom(msg.sender, address(this), creatorAmount);
+        paymentToken.safeTransferFrom(
+            msg.sender,
+            address(this),
+            marketingAmount
+        );
+        paymentToken.safeTransferFrom(msg.sender, address(this), presaleAmount);
+    }
+
+    /**
+     * @dev See {ITIExShareCollections-distribute}.
+     */
+    function withdraw(uint256 assetId) external {
+        address caller = msg.sender;
+        uint256 balance = balances[assetId][caller];
+        require(balance > 0);
+
+        Asset memory asset = assets[assetId];
+        Contributors memory contributors = asset.contributors;
+
+        require(
+            caller == contributors.creator ||
+                caller == contributors.marketing ||
+                caller == contributors.presale,
+            "caller is not a contributor"
+        );
+
+        balances[assetId][caller] = 0;
+        paymentToken.safeTransferFrom(msg.sender, address(this), balance);
     }
 
     ////////////////////////////////////////////////////////////////////////////
