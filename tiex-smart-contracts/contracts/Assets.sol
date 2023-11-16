@@ -41,8 +41,6 @@ contract Assets is
     uint256[] private assetIds;
     /// @notice Mapping from creator to list of owned model IDs
     mapping(address => mapping(uint256 => uint256)) private creatorAssets;
-    /// @notice Mapping creator address to model count
-    mapping(address => uint256) private creatorAssetAmounts;
     // asset ID to address to balance
     mapping(uint256 => mapping(address => uint256)) balances;
 
@@ -99,19 +97,6 @@ contract Assets is
         // Check if the creator address is valid
         if (creator == address(0)) {
             revert InvalidCreator(address(0));
-        }
-
-        // Add the model ID to the list of all model IDs
-        _addAssetId(assetId);
-        // Add the model ID to the list of model IDs owned by the creator
-        _addAssetIdToCreator(creator, assetId);
-
-        // Increase the balance of model IDs owned by the creator
-        unchecked {
-            // Will not overflow unless all 2**256 model ids are allocated to the same creator.
-            // Given that models are allocated one by one, it is impossible in practice that
-            // this ever happens. Might change if we allow batch allocating.
-            creatorAssetAmounts[creator] += 1;
         }
 
         // Set the creator of the model ID
@@ -296,16 +281,6 @@ contract Assets is
     }
 
     /**
-     * @dev See {ITIExBaseIPAllocation-modelBalanceOf}.
-     */
-    function assetBalanceOf(address creator) public view returns (uint256) {
-        if (creator == address(0)) {
-            revert InvalidCreator(address(0));
-        }
-        return creatorAssetAmounts[creator];
-    }
-
-    /**
      * @dev See {ITIExBaseIPAllocation-creatorOf}.
      */
     function creatorOf(uint256 assetId) public view returns (address) {
@@ -323,18 +298,6 @@ contract Assets is
         return assets[assetId].contributors.creator != address(0);
     }
 
-    /**
-     * @dev See {ITIExBaseIPAllocation-modelOfCreatorByIndex}.
-     */
-    function creatorAssetByIndex(
-        address creator,
-        uint256 index
-    ) public view returns (uint256) {
-        if (index >= assetBalanceOf(creator)) {
-            revert OutOfBounds(creator, index);
-        }
-        return creatorAssets[creator][index];
-    }
 
     /**
      * @dev See {ITIExBaseIPAllocation-totalModelSupply}.
@@ -343,117 +306,9 @@ contract Assets is
         return assetIds.length;
     }
 
-    /**
-     * @dev See {ITIExBaseIPAllocation-modelByIndex}.
-     */
-    function assetByIndex(uint256 index) public view returns (uint256) {
-        if (index >= assetAmount()) {
-            revert OutOfBounds(address(0), index);
-        }
-        return assetIds[index];
-    }
-
-    /**
-     * @dev See {ITIExBaseIPAllocation-modelsOfCreator}.
-     */
-    function assetsByCreator(
-        address creator
-    ) public view returns (uint256[] memory) {
-        uint256 modelCount = assetBalanceOf(creator);
-
-        uint256[] memory modelsId = new uint256[](modelCount);
-        for (uint256 i; i < modelCount; i++) {
-            modelsId[i] = creatorAssetByIndex(creator, i);
-        }
-        return modelsId;
-    }
-
     function uri(
         uint256 __modelId
     ) public view existingAsset(__modelId) returns (string memory) {
         return string(abi.encodePacked("ipfs://", getAsset(__modelId).uri));
-    }
-
-    ////////////////////////////////////////////////////////////////////////////
-    // PRIVATE
-    ////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * @notice Private function to add a model to this extension's model tracking data structures.
-     * @param assetId uint256 ID of the model to be added to the models list
-     *
-     */
-    function _addAssetId(uint256 assetId) private {
-        assets[assetId].index = assetIds.length;
-        assetIds.push(assetId);
-    }
-
-    /**
-     * @notice Private function to add a model to this extension's ownership-tracking data structures.
-     * @param creator address representing the new owner of the given model ID
-     * @param assetId uint256 ID of the model to be added to the models list of the given address
-     *
-     */
-    function _addAssetIdToCreator(address creator, uint256 assetId) private {
-        uint256 length = assetBalanceOf(creator);
-        creatorAssets[creator][length] = assetId;
-        assets[assetId].creatorIndex = length;
-    }
-
-    /**
-     * @notice Private function to remove a model from this extension's model tracking data structures.
-     * This has O(1) time complexity, but alters the order of the _allModels array.
-     * @param assetId uint256 ID of the model to be removed from the models list
-     *
-     */
-    function _removeAssetId(uint256 assetId) private {
-        // To prevent a gap in the models array, we store the last model in the index of the model to delete, and
-        // then delete the last slot.
-
-        uint256 lastModelIndex = assetIds.length - 1;
-        uint256 modelIndex = assets[assetId].index;
-
-        // When the model to delete is the last model. However, since this occurs so
-        // an 'if' statement (like in _removeModelFromCreatorEnumeration)
-        uint256 lastModelId = assetIds[lastModelIndex];
-
-        assetIds[modelIndex] = lastModelId; // Move the last model to the slot of the to-delete model
-        assets[lastModelId].index = modelIndex; // Update the moved model's index
-
-        // This also deletes the contents at the last position of the array
-        delete assets[assetId].index;
-        assetIds.pop();
-    }
-
-    /**
-     * @notice Private function to remove a model from this extension's ownership-tracking data structures. Note that
-     * while the model is not assigned a new creator, the `_ownedModelsIndex` mapping is _not_ updated: this allows for
-     * gas optimizations e.g. when performing a allocate operation (avoiding double writes).
-     * This has O(1) time complexity, but alters the order of the _ownedModels array.
-     * @param creator address representing the previous creator of the given model ID
-     * @param assetId uint256 ID of the model to be removed from the models list of the given address
-     *
-     */
-    function _removeAssetIdFromCreator(
-        address creator,
-        uint256 assetId
-    ) private {
-        // To prevent a gap in from's models array, we store the last model in the index of the model to delete, and
-        // then delete the last slot
-
-        uint256 lastModelIndex = assetBalanceOf(creator) - 1;
-        uint256 modelIndex = assets[assetId].creatorIndex;
-
-        // When the model to delete is the last model
-        if (modelIndex != lastModelIndex) {
-            uint256 lastModelId = creatorAssets[creator][lastModelIndex];
-
-            creatorAssets[creator][modelIndex] = lastModelId; // Move the last model to the slot of the to-delete model
-            assets[lastModelId].creatorIndex = modelIndex; // Update the moved model's index
-        }
-
-        // This also deletes the contents at the last position of the array
-        delete assets[assetId].creatorIndex;
-        delete creatorAssets[creator][lastModelIndex];
     }
 }

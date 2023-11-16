@@ -5,6 +5,7 @@ const {
   marketing_rate,
   reserve_rate,
   presale_rate,
+  paymentToken,
 } = require("../scripts/deploy_config");
 // TODO: revise unused variables
 describe("TIExShareCollections", () => {
@@ -110,12 +111,10 @@ describe("TIExShareCollections", () => {
       marketing,
     ] = await ethers.getSigners();
 
-    utility = await ethers.deployContract("Utility");
     intellToken = await ethers.deployContract("IntelligenceToken", [
       recipient.address,
     ]);
     tiexBaseIPAllocation = await ethers.deployContract("Assets");
-    tiexShareCollections = await ethers.deployContract("AssetsRevenue");
 
     models = [
       {
@@ -245,16 +244,7 @@ describe("TIExShareCollections", () => {
       },
     ];
 
-    await tiexBaseIPAllocation.initialize(
-      admin.address,
-      tiexShareCollections.address
-    );
-    await tiexShareCollections.initialize(
-      intellToken.address,
-      admin.address,
-      utility.address,
-      tiexBaseIPAllocation.address
-    );
+    await tiexBaseIPAllocation.initialize(admin.address, intellToken.address);
 
     const toSend = ethers.utils.parseEther("100000000");
     await intellToken.connect(recipient).transfer(signer0.address, toSend);
@@ -263,31 +253,8 @@ describe("TIExShareCollections", () => {
   });
 
   describe("Deployment", function () {
-    it("Should deploy TIExShareCollections", async () => {
-      expect(tiexShareCollections.address).to.exist;
-    });
-
     it("Should deploy TIExBaseIPAllocatioin", async () => {
       expect(tiexBaseIPAllocation.address).to.exist;
-    });
-
-    it("Should deploy Utility", async () => {
-      expect(utility.address).to.exist;
-    });
-
-    it("Should set right symbol and name, payment token, admin role, tiexBaseIPAllocation in TIExShareCollections", async function () {
-      const default_amdin_role =
-        await tiexShareCollections.DEFAULT_ADMIN_ROLE();
-
-      expect(await tiexShareCollections.paymentToken()).to.eq(
-        intellToken.address
-      );
-      expect(await tiexShareCollections.assetsContract()).to.eq(
-        tiexBaseIPAllocation.address
-      );
-      expect(
-        await tiexShareCollections.hasRole(default_amdin_role, admin.address)
-      ).to.eq(true);
     });
 
     it("Should set right tiexShareCollection, admin role in TIExBaseIPAllocation", async function () {
@@ -331,73 +298,6 @@ describe("TIExShareCollections", () => {
         for (var ii = 0; ii < 9; ii++) {
           expect(model_detail.metadata[ii]).to.eq(models[i].metadata[ii]);
         }
-      }
-    });
-  });
-
-  describe("TIExShareCollection", async () => {
-    it.skip("Should distribute the funds from investor to creators, marketing, reserve, and presale", async () => {
-      for (var i = 0; i < models.length; i++) {
-        const marketingBefore = await intellToken.balanceOf(marketing.address);
-        const reserveBefore = await intellToken.balanceOf(reserve.address);
-        const presaleBefore = await intellToken.balanceOf(presale.address);
-        const shareCollectionBefore =
-          await tiexShareCollections.shareCollection(models[i].modelId);
-
-        const restOfAmount = shareCollectionBefore[0][1].sub(
-          shareCollectionBefore[0][2]
-        );
-        const toCreators = restOfAmount.mul(creator_rate);
-        const toMarketing = restOfAmount.mul(marketing_rate);
-        const toPresale = restOfAmount.mul(presale_rate);
-        const toReserve = restOfAmount.mul(reserve_rate);
-        const creators = [];
-        const toEachCreator = {};
-
-        for (var j = 0; j < models[i].contributors.length; j++) {
-          const contributor = models[i].contributors[j];
-          const creator = await tiexBaseIPAllocation.creatorOf(contributor[0]);
-          const balanceOfCreatorBefore = await intellToken.balanceOf(creator);
-          if (toEachCreator[creator] == undefined)
-            toEachCreator[creator] = i2b(0);
-          toEachCreator[creator] = toEachCreator[creator].add(
-            toCreators.mul(contributor[1]).div(10000_0000)
-          );
-          creators.push({
-            creator,
-            balanceOfCreatorBefore,
-          });
-        }
-
-        await tiexShareCollections.connect(admin).distribute(models[i].modelId);
-
-        const marketingAfter = await intellToken.balanceOf(marketing.address);
-        const reserveAfter = await intellToken.balanceOf(reserve.address);
-        const presaleAfter = await intellToken.balanceOf(presale.address);
-        const shareCollectionAfter = await tiexShareCollections.shareCollection(
-          models[i].modelId
-        );
-
-        for (var j = 0; j < models[i].contributors.length; j++) {
-          const balanceOfCreatorAfter = await intellToken.balanceOf(
-            creators[j].creator
-          );
-          expect(
-            creators[j].balanceOfCreatorBefore.add(
-              toEachCreator[creators[j].creator]
-            )
-          ).to.eq(balanceOfCreatorAfter);
-        }
-
-        expect(marketingBefore.add(toMarketing.div(10000))).to.eq(
-          marketingAfter
-        );
-        expect(reserveBefore.add(toReserve.div(10000))).to.eq(reserveAfter);
-        expect(presaleBefore.add(toPresale.div(10000))).to.eq(presaleAfter);
-        expect(shareCollectionAfter[0][1]).to.eq(shareCollectionAfter[0][2]);
-
-        await expect(tiexShareCollections.distribute(models[i].modelId)).to.be
-          .reverted;
       }
     });
   });

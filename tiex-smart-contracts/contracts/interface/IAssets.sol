@@ -40,8 +40,6 @@ interface IAssets {
     struct Asset {
         Metadata metadata;
         Contributors contributors;
-        uint256 index;
-        uint256 creatorIndex;
         string uri;
     }
 
@@ -230,11 +228,6 @@ interface IAssets {
     function getAsset(uint256 assetId) external view returns (Asset memory);
 
     /**
-     * @notice Returns the number of models in ``creator``'s account.
-     */
-    function assetBalanceOf(address creator) external view returns (uint256);
-
-    /**
      * @notice Returns the creator of the `modelId` model.
      * @param assetId uint256 ID of the model must exist.
      */
@@ -249,29 +242,7 @@ interface IAssets {
     function assetExists(uint256 assetId) external view returns (bool);
 
     /**
-     * @notice Returns a model ID owned by `creator` at a given `index` of its model list.
-     * Use along with {modelBalanceOf} to enumerate all of ``creator``'s models.
-     */
-    function creatorAssetByIndex(
-        address creator,
-        uint256 index
-    ) external view returns (uint256);
-
-    /**
      * @notice Returns the total amount of models stored by the contract.
      */
     function assetAmount() external view returns (uint256);
-
-    /**
-     * @notice Returns a model ID at a given `index` of all the models stored by the contract.
-     * Use along with {totalModelSupply} to enumerate all models.
-     */
-    function assetByIndex(uint256 index) external view returns (uint256);
-
-    /**
-     * @notice Returns model ids allocated from account of creator.
-     */
-    function assetsByCreator(
-        address creator
-    ) external view returns (uint256[] memory);
 }
