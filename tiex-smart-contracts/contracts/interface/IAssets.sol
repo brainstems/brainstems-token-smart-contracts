@@ -181,27 +181,9 @@ interface IAssets {
     event Distribute(uint256 indexed modelId, uint256 amount, uint256 when);
 
     /**
-     * @notice Upgrades a stubbed model to a trained model.
-     * @param assetId uint256 must exist.
-     * @param fingerprint bytes is the new fingerprint of the model.
-     *
-     * Emits a {UpgradeModel} event.
-     *
-     * Requirements:
-     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
-     * - The model with the given `__modelId` must not be trained already.
-     * - The `__newModelFingerprint` must not be empty.
-     */
-    // TODO: revise
-    function upgradeStubbedModelToTrainedModel(
-        uint256 assetId,
-        bytes memory fingerprint
-    ) external;
-
-    /**
      * @notice Upgrades an asset by updating its fingerprint and incrementing its version.
      * @param assetId The ID of the asset to be upgraded.
-     * @param fingerprint The new fingerprint of the asset.
+     * @param metadata The new fingerprint of the asset.
      *
      * Emits an {UpgradeAsset} event.
      *
@@ -210,24 +192,7 @@ interface IAssets {
      * - The asset with the given `assetId` must exist.
      * - The `fingerprint` must not be empty.
      */
-    function upgradeAsset(uint256 assetId, bytes memory fingerprint) external;
-
-    /**
-     * @notice Updates the metadata of a model.
-     * @param assetId The ID of the model to be updated.
-     * @param metadata The new metadata of the model.
-     *
-     * Emits an {UpdateModelMetadata} event.
-     *
-     * Requirements:
-     * - The caller must have the `DEFAULT_ADMIN_ROLE`.
-     * - The model with the given `__modelId` must exist.
-     * - The `__modelMetadata` must be valid.
-     */
-    function updateAssetMetadata(
-        uint256 assetId,
-        Metadata calldata metadata
-    ) external;
+    function upgradeAsset(uint256 assetId, Metadata memory metadata) external;
 
     /**
      * @notice Allocates `modelId` as TIEx IP to `creator`.

@@ -87,73 +87,6 @@ contract Assets is
     ////////////////////////////////////////////////////////////////////////////
 
     /**
-     * @dev See {ITIExBaseIPAllocation-upgradeStubbedModelToTrainedModel}.
-     */
-    function upgradeStubbedModelToTrainedModel(
-        uint256 assetId,
-        bytes memory fingerprint
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) existingAsset(assetId) {
-        // Check if the model is already trained, if so, revert the transaction
-        if (assets[assetId].metadata.trained)
-            revert ModelAlreadyTrained(assetId);
-
-        // Check if the new model fingerprint is valid, if not, revert the transaction
-        if (fingerprint.length == 0) revert InvalidMetadata(assetId);
-
-        // Set the model as trained
-        assets[assetId].metadata.trained = true;
-        // Set the model version to 1
-        assets[assetId].metadata.version = 1;
-        // Update the model fingerprint with the new one
-        assets[assetId].metadata.fingerprint = fingerprint;
-
-        // Emit an event to log the model upgrade
-        emit AssetUpgraded(assetId, assets[assetId].metadata);
-    }
-
-    /**
-     * @dev See {ITIExBaseIPAllocation-upgradeModel}.
-     */
-    function upgradeAsset(
-        uint256 assetId,
-        bytes memory fingerprint
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) existingAsset(assetId) {
-        // Check if the new model fingerprint is valid, if not, revert the transaction
-        if (fingerprint.length == 0) revert InvalidMetadata(assetId);
-
-        // Increment the version of the model
-        assets[assetId].metadata.version++;
-        // Update the model fingerprint with the new one
-        assets[assetId].metadata.fingerprint = fingerprint;
-
-        // Emit an event to log the model upgrade
-        emit AssetUpgraded(assetId, assets[assetId].metadata);
-    }
-
-    /**
-     * @dev See {ITIExBaseIPAllocation-updateModelMetadata}.
-     */
-    function updateAssetMetadata(
-        uint256 assetId,
-        Metadata calldata metadata
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) existingAsset(assetId) {
-        // Check if the model metadata is valid
-        bool validForMetadata = bytes(metadata.name).length > 0 &&
-            bytes(metadata.description).length > 0 &&
-            metadata.version > 0 &&
-            metadata.fingerprint.length > 0 &&
-            metadata.watermarkFingerprint.length > 0 &&
-            metadata.performance > 0;
-
-        if (!validForMetadata) revert InvalidMetadata(assetId);
-        // Update the model metadata
-        assets[assetId].metadata = metadata;
-
-        // Emit an event to log the update of model metadata
-        emit AssetMetadataUpdated(assetId, assets[assetId].metadata);
-    }
-
-    /**
      * @dev See {ITIExBaseIPAllocation-giveCreatorTIExIP}.
      */
     function createAsset(
@@ -212,6 +145,28 @@ contract Assets is
             assets[assetId],
             block.timestamp
         );
+    }
+
+    /**
+     * @dev See {ITIExBaseIPAllocation-updateModelMetadata}.
+     */
+    function upgradeAsset(
+        uint256 assetId,
+        Metadata calldata metadata
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) existingAsset(assetId) {
+        // Check if the model metadata is valid
+        bool validForMetadata = bytes(metadata.name).length > 0 &&
+            bytes(metadata.description).length > 0 &&
+            metadata.version > 0 &&
+            metadata.fingerprint.length > 0 &&
+            metadata.watermarkFingerprint.length > 0 &&
+            metadata.performance > 0;
+
+        if (!validForMetadata) revert InvalidMetadata(assetId);
+        assets[assetId].metadata.version++;
+        assets[assetId].metadata = metadata;
+
+        emit AssetUpgraded(assetId, assets[assetId].metadata);
     }
 
     /**
