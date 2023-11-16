@@ -178,11 +178,11 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
         assets[assetId].uri = ipfsHash;
 
         uint256 _tRate = contributors
-        .creatorRate
-        .add(contributors.marketingRate)
-        .add(contributors.presaleRate);
+            .creatorRate
+            .add(contributors.marketingRate)
+            .add(contributors.presaleRate);
 
-        if (_tRate != 10000) revert("invalid contributor rates"); 
+        if (_tRate != 10000) revert("invalid contributor rates");
 
         // Check if the model metadata is valid
         bool validForMetadata = bytes(metadata.name).length > 0 &&
@@ -217,6 +217,36 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
         emit AssetUriUpdated(assetId, ipfsHash);
     }
 
+    function updateMarketingAddress(
+        uint256 assetId,
+        address __marketing
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        IAssets.Asset memory asset = getAsset(assetId);
+
+        if (
+            __marketing == address(0) ||
+            __marketing == asset.contributors.marketing
+        ) revert ErrorInvalidParam();
+
+        asset.contributors.marketing = __marketing;
+
+        emit TIExMarketingAddressUpdated(__marketing);
+    }
+
+    function updatePresaleAddress(
+        uint256 assetId,
+        address __presale
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        IAssets.Asset memory asset = getAsset(assetId);
+
+        if (__presale == address(0) || __presale == asset.contributors.presale)
+            revert ErrorInvalidParam();
+
+        asset.contributors.presale = __presale;
+
+        emit TIExPresaleAddressUpdated(__presale);
+    }
+
     ////////////////////////////////////////////////////////////////////////////
     // READ
     ////////////////////////////////////////////////////////////////////////////
@@ -224,7 +254,7 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
     /**
      * @dev See {ITIExBaseIPAllocation-getTIExModel}.
      */
-    function getAsset(uint256 assetId) external view returns (Asset memory) {
+    function getAsset(uint256 assetId) public view returns (Asset memory) {
         return assets[assetId];
     }
 
@@ -299,6 +329,12 @@ contract Assets is Initializable, AccessControlEnumerableUpgradeable, IAssets {
             modelsId[i] = creatorAssetByIndex(creator, i);
         }
         return modelsId;
+    }
+
+    function uri(
+        uint256 __modelId
+    ) public view existingAsset(__modelId) returns (string memory) {
+        return string(abi.encodePacked("ipfs://", getAsset(__modelId).uri));
     }
 
     ////////////////////////////////////////////////////////////////////////////

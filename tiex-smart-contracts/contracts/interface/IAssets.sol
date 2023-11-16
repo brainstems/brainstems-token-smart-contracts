@@ -30,7 +30,7 @@ interface IAssets {
     struct Contributors {
         address creator;
         address marketing;
-        address presale; 
+        address presale;
         uint256 creatorRate;
         uint256 marketingRate;
         uint256 presaleRate;
@@ -91,6 +91,94 @@ interface IAssets {
 
     // Error thrown when invalid metadata is provided for an asset
     error InvalidMetadata(uint256 assetId);
+
+    /// @notice Indicates that a share collection cannot be found
+    error ErrorShareCollectionNotFound(uint256 modelId);
+
+    /// @notice Indicates that a share collection with the specified
+    /// model ID has already been released.
+    error ErrorTIExShareCollectionReleasedAlready(uint256 modelId);
+
+    /// @notice Indicates that there is not enough supply available for share sale.
+    error ErrorNotEnoughSupply();
+
+    /// @notice Indicates that a share collection with the specified model ID has been
+    /// paused and is currently not available.
+    error ErrorShareCollectionPaused(uint256 modelId);
+
+    /// @notice Indicates that the share collection with the specified model ID is blocked.
+    error ErrorShareCollectionBlocked(uint256 modelId);
+
+    /// @notice Indicates that the TIEx is currently paused.
+    error ErrorTIExPaused();
+
+    /// @notice Indicates that the maximum limit for share purchases has been exceeded.
+    error ErrorExceedMaxSharePurchase();
+
+    /// @notice Indicates that the signature provided for authentication or verification
+    /// purposes is invalid or cannot be verified.
+    error ErrorInvalidSignature();
+
+    /// @notice Indicates that one or more parameters provided in the request are invalid or missing.
+    error ErrorInvalidParam();
+
+    /// @notice Indicates that the provided nonce (a unique identifier) is invalid or has already been used.
+    error ErrorInvalidNonce();
+
+    // @notice Indicates that the deadline for a certain operation has been reached.
+    error ErrorDeadlineReached();
+
+    // @notice Indicates that the msg.sender() is invalid
+    error ErrorInvalidMsgSender();
+
+    /// @notice Emitted when the URI associated with a model is updated.
+    event TIExCollectionURIUpdated(uint256 indexed modelId, string uri);
+
+    /// @notice Emitted when the truth holder address is updated.
+    event TIExTruthHolderUpdated(address newTruthHolder);
+
+    /// @notice Emitted when the price of a share for a specific model is updated.
+    event TIExSharePriceUpdated(uint256 indexed modelId, uint256 newPrice);
+
+    /// @notice Emitted when the maximum supply of shares for a model is updated.
+    event TIExMaxSupplyUpdated(uint256 indexed modelId, uint256 newMaxSupply);
+
+    /// @notice Emitted when the maximum share purchase limit for a model is updated.
+    event TIExMaxSharePurchaseUpdated(
+        uint256 indexed modelId,
+        uint256 newMaxSharePurchase
+    );
+
+    /// @notice Emitted when a share collection for a model is blocked or disabled.
+    event TIExShareCollectionBlocked(uint256 indexed modelId);
+
+    /// @notice Emitted when a previously blocked share collection for a model is unblocked or enabled.
+    event TIExShareCollectionUnblocked(uint256 indexed modelId);
+
+    /// @notice Emitted when a share collection for a model is paused.
+    event TIExShareCollectionPaused(uint256 indexed modelId);
+
+    /// @notice Emitted when a previously paused share collection for a model is unpaused.
+    event TIExShareCollectionUnpaused(uint256 indexed modelId);
+
+    /// @notice Emitted when the investor position of share collection is updated.
+    /// e.g. U.S. investor => Non-U.S. investor or Non-U.S. investor => U.S. Investor
+    event TIExShareCollectionInvestorPositionUpdated(
+        uint256 indexed modelId,
+        bool newInvestorPosition
+    );
+
+    /// @notice Emitted when the marketing address is update.
+    event TIExMarketingAddressUpdated(address newMarketingAddress);
+
+    /// @notice Emitted when the presale address is updated.
+    event TIExPresaleAddressUpdated(address newPresaleAddress);
+
+    /// @notice Emitted when reserve address is updated.
+    event TIExReserveAddressUpdated(address newReserveAddress);
+
+    /// @notice Emitted when distributing funds fromm investors to creators, marketing etc.
+    event Distribute(uint256 indexed modelId, uint256 amount, uint256 when);
 
     /**
      * @notice Upgrades a stubbed model to a trained model.

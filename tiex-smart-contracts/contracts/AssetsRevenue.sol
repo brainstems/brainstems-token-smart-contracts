@@ -29,20 +29,19 @@ contract AssetsRevenue is
     Initializable,
     PausableUpgradeable,
     ReentrancyGuardUpgradeable,
-    AccessControlEnumerableUpgradeable,
-    IAssetsRevenue
+    AccessControlEnumerableUpgradeable
 {
     using SafeMath for uint256;
     using SafeERC20 for IPaymentToken;
 
     /// @notice See {ITIExShareCollections-paymentToken}.
-    IPaymentToken public override paymentToken;
+    IPaymentToken public paymentToken;
 
     /// @notice See {ITIExShareCollections-utility}.
-    IUtility public override utilityContract;
+    IUtility public utilityContract;
 
     /// @notice See {ITIExShareCollections-tiexBaseIPAllocation}.
-    IAssets public override assetsContract;
+    IAssets public assetsContract;
 
     /**
      * @notice Defines the initialize function, which sets the name, symbol,
@@ -68,17 +67,6 @@ contract AssetsRevenue is
     ////////////////////////////////////////////////////////////////////////////
     // MODIFIERS
     ////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * @notice Checks if modelId allocated exists.
-     * @param __modelId must be of existing ID of model.
-     */
-    modifier onlyExistingModelId(uint256 __modelId) {
-        if (!assetsContract.assetExists(__modelId)) {
-            revert IAssets.AssetNotFound(__modelId);
-        }
-        _;
-    }
 
     ////////////////////////////////////////////////////////////////////////////
     // INTERNALS
@@ -163,15 +151,6 @@ contract AssetsRevenue is
     /**
      * @dev See {ITIExShareCollections-updateUtility}.
      */
-    function updateUtility(
-        IUtility __utility
-    ) external onlyRole("DEFAULT_ADMIN_ROLE") {
-        if (address(__utility) == address(0)) revert ErrorInvalidParam();
-
-        utilityContract = __utility;
-
-        emit TIExUtilityUpdated(__utility);
-    }
 
     // /**
     //  * @dev See {ITIExShareCollections-updateInvestmentDistributionRate}.
@@ -200,38 +179,10 @@ contract AssetsRevenue is
     /**
      * @dev See {ITIExShareCollections-updateMarketingAddress}.
      */
-    function updateMarketingAddress(
-        uint256 assetId,
-        address __marketing
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        IAssets.Asset memory asset = assetsContract.getAsset(assetId);
-
-        if (
-            __marketing == address(0) ||
-            __marketing == asset.contributors.marketing
-        ) revert ErrorInvalidParam();
-
-        asset.contributors.marketing = __marketing;
-
-        emit TIExMarketingAddressUpdated(__marketing);
-    }
 
     /**
      * @dev See {ITIExShareCollections-updatePresaleAddress}.
      */
-    function updatePresaleAddress(
-        uint256 assetId,
-        address __presale
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        IAssets.Asset memory asset = assetsContract.getAsset(assetId);
-
-        if (__presale == address(0) || __presale == asset.contributors.presale)
-            revert ErrorInvalidParam();
-
-        asset.contributors.presale = __presale;
-
-        emit TIExPresaleAddressUpdated(__presale);
-    }
 
     /**
      * @dev See {ITIExShareCollections-resume}.
@@ -255,17 +206,6 @@ contract AssetsRevenue is
      * @notice Returns the model URI.
      *
      */
-    function uri(
-        uint256 __modelId
-    ) public view onlyExistingModelId(__modelId) returns (string memory) {
-        return
-            string(
-                abi.encodePacked(
-                    "ipfs://",
-                    assetsContract.getAsset(__modelId).uri
-                )
-            );
-    }
 
     /**
      * @notice See {AccessControl-supportsInterface}.
