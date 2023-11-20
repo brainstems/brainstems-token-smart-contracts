@@ -14,6 +14,7 @@
 
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
@@ -26,6 +27,8 @@ contract IntelligenceToken is
     AccessControlEnumerableUpgradeable,
     PausableUpgradeable
 {
+    using SafeERC20 for IERC20;
+
     enum SaleStage {
         Whitelist,
         PrivateSale,
@@ -37,12 +40,17 @@ contract IntelligenceToken is
     event TokensPurchased(
         address indexed buyer,
         uint256 amount,
+        uint256 price,
         SaleStage stage
     );
     event RateUpdated(uint256 rate);
 
     mapping(address => bool) public whitelist;
     mapping(address => bool) public investors;
+
+    IERC20 public usdcToken;
+    uint256 public tokenToUsdc; // exchange rate
+    uint256 public usdcEarnings;
 
     SaleStage public currentStage;
 
@@ -53,9 +61,16 @@ contract IntelligenceToken is
     uint256 public privateSaleTokensSold;
     uint256 public publicSaleTokensSold;
 
-    function initialize(address admin) public initializer {
+    function initialize(
+        address _admin,
+        IERC20 _usdcToken,
+        uint256 _tokenToUsdc
+    ) public initializer {
+        require(_tokenToUsdc > 0, "invalid ratio");
         __ERC20_init("Intelligence Token", "INTELL");
-        _grantRole(DEFAULT_ADMIN_ROLE, admin);
+        _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+        usdcToken = _usdcToken;
+        tokenToUsdc = _tokenToUsdc;
         currentStage = SaleStage.Whitelist;
     }
 
@@ -71,7 +86,13 @@ contract IntelligenceToken is
         emit WhitelistUpdated(investor);
     }
 
-    function setRate() external onlyRole(DEFAULT_ADMIN_ROLE) {}
+    function setPrice(
+        uint256 _tokenToUsdc
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_tokenToUsdc > 0, "invalid ratio");
+        tokenToUsdc = _tokenToUsdc;
+        emit RateUpdated(_tokenToUsdc);
+    }
 
     function moveToNextStage() external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(currentStage != SaleStage.Finished, "sales finished");
@@ -135,12 +156,15 @@ contract IntelligenceToken is
             publicSaleTokensSold += amount;
         }
 
+        uint256 price = amount * tokenToUsdc;
+        usdcEarnings += price;
+        usdcToken.transferFrom(address(this), msg.sender, price);
         _mint(msg.sender, amount);
-        emit TokensPurchased(msg.sender, amount, currentStage);
+        emit TokensPurchased(msg.sender, amount, price, currentStage);
     }
 
     // distribute to other pools (e.g. community programs, emissions)
-    function distributeTokens(
+    function distribute(
         address recipient,
         uint256 amount
     ) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
@@ -149,5 +173,10 @@ contract IntelligenceToken is
         _mint(recipient, amount);
     }
 
-    function cashOut() external onlyRole(DEFAULT_ADMIN_ROLE) {}
+    function claimEarnings(
+        address cashOutRecipient
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        usdcToken.transferFrom(address(this), cashOutRecipient, usdcEarnings);
+        usdcEarnings = 0;
+    }
 }

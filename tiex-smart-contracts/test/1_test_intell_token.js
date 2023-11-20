@@ -2,6 +2,7 @@ const { loadFixture } = require("@nomicfoundation/hardhat-network-helpers");
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { parseUnits, DECIMALS } = require("./helper");
+const { usdcToken } = require("../scripts/deploy_config");
 
 describe("IntelligenceInvestmentToken", function () {
   async function deployIntelligenceExchangeProtocolFixture() {
@@ -18,7 +19,7 @@ describe("IntelligenceInvestmentToken", function () {
     const intelligenceInvestmentToken =
       await IntelligenceInvestmentToken.deploy();
 
-    await intelligenceInvestmentToken.initialize(owner.address);
+    await intelligenceInvestmentToken.initialize(owner.address, usdcToken, 1);
 
     return {
       owner,

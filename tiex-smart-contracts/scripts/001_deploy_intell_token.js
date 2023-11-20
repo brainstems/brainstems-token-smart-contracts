@@ -14,8 +14,8 @@ async function main() {
   const IntelligenceInvestmentToken = await hre.ethers.getContractFactory(
     "IntelligenceToken"
   );
-  const intelligenceInvestmentToken = await IntelligenceInvestmentToken.deploy();
-  
+  const intelligenceInvestmentToken =
+    await IntelligenceInvestmentToken.deploy();
 
   await intelligenceInvestmentToken.deployed();
   console.log(green(`Deployed to ${intelligenceInvestmentToken.address}`));

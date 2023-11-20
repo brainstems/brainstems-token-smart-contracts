@@ -6,6 +6,7 @@ const {
   reserve_rate,
   presale_rate,
   paymentToken,
+  usdcToken,
 } = require("../scripts/deploy_config");
 // TODO: revise unused variables
 describe("TIExShareCollections", () => {
@@ -112,7 +113,7 @@ describe("TIExShareCollections", () => {
     ] = await ethers.getSigners();
 
     intellToken = await ethers.deployContract("IntelligenceToken");
-    await intellToken.initialize(recipient.address);
+    await intellToken.initialize(recipient.address, usdcToken, 1);
     tiexBaseIPAllocation = await ethers.deployContract("Assets");
 
     models = [
