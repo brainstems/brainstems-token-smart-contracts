@@ -39,8 +39,6 @@ contract Assets is
     mapping(uint256 => Asset) private assets;
     /// @notice Array with all model ids, used for enumeration
     uint256[] private assetIds;
-    /// @notice Mapping from creator to list of owned model IDs
-    mapping(address => mapping(uint256 => uint256)) private creatorAssets;
     // asset ID to address to balance
     mapping(uint256 => mapping(address => uint256)) balances;
 
@@ -89,6 +87,7 @@ contract Assets is
      */
     function createAsset(
         uint256 assetId,
+        uint256 baseAsset,
         Contributors calldata contributors,
         string calldata ipfsHash,
         Metadata calldata metadata
@@ -99,6 +98,12 @@ contract Assets is
             revert InvalidCreator(address(0));
         }
 
+        require(
+            baseAsset == 0 ||
+                getAsset(baseAsset).contributors.creator != address(0),
+            "invalid base asset"
+        );
+        assets[assetId].baseAsset = baseAsset;
         // Set the creator of the model ID
         assets[assetId].contributors = contributors;
         // Set the IPFS hash of the model's metadata
@@ -297,7 +302,6 @@ contract Assets is
     function assetExists(uint256 assetId) public view returns (bool) {
         return assets[assetId].contributors.creator != address(0);
     }
-
 
     /**
      * @dev See {ITIExBaseIPAllocation-totalModelSupply}.

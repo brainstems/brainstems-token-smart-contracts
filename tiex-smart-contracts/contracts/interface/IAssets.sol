@@ -38,6 +38,7 @@ interface IAssets {
 
     // TODO: revise fields
     struct Asset {
+        uint256 baseAsset;
         Metadata metadata;
         Contributors contributors;
         string uri;
@@ -205,6 +206,7 @@ interface IAssets {
      */
     function createAsset(
         uint256 assetId,
+        uint256 baseAsset,
         Contributors calldata contributors,
         string calldata ipfsHash,
         Metadata calldata metadata

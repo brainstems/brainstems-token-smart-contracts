@@ -111,14 +111,14 @@ describe("TIExShareCollections", () => {
       marketing,
     ] = await ethers.getSigners();
 
-    intellToken = await ethers.deployContract("IntelligenceToken", [
-      recipient.address,
-    ]);
+    intellToken = await ethers.deployContract("IntelligenceToken");
+    await intellToken.initialize(recipient.address);
     tiexBaseIPAllocation = await ethers.deployContract("Assets");
 
     models = [
       {
         modelId: 1,
+        baseAsset: 0,
         contributors: {
           creator: signer0.address,
           marketing: ethers.constants.AddressZero,
@@ -144,6 +144,7 @@ describe("TIExShareCollections", () => {
       },
       {
         modelId: 2,
+        baseAsset: 0,
         contributors: {
           creator: signer1.address,
           marketing: ethers.constants.AddressZero,
@@ -169,6 +170,7 @@ describe("TIExShareCollections", () => {
       },
       {
         modelId: 3,
+        baseAsset: 0,
         contributors: {
           creator: signer2.address,
           marketing: ethers.constants.AddressZero,
@@ -194,6 +196,7 @@ describe("TIExShareCollections", () => {
       },
       {
         modelId: 4,
+        baseAsset: 0,
         contributors: {
           creator: signer0.address,
           marketing: ethers.constants.AddressZero,
@@ -219,6 +222,7 @@ describe("TIExShareCollections", () => {
       },
       {
         modelId: 5,
+        baseAsset: 0,
         contributors: {
           creator: signer1.address,
           marketing: ethers.constants.AddressZero,
@@ -245,11 +249,6 @@ describe("TIExShareCollections", () => {
     ];
 
     await tiexBaseIPAllocation.initialize(admin.address, intellToken.address);
-
-    const toSend = ethers.utils.parseEther("100000000");
-    await intellToken.connect(recipient).transfer(signer0.address, toSend);
-    await intellToken.connect(recipient).transfer(signer1.address, toSend);
-    await intellToken.connect(recipient).transfer(signer2.address, toSend);
   });
 
   describe("Deployment", function () {
@@ -274,6 +273,7 @@ describe("TIExShareCollections", () => {
           .connect(admin)
           .createAsset(
             models[i].modelId,
+            models[i].baseAsset,
             models[i].contributors,
             models[i].ipfsHash,
             models[i].metadata
