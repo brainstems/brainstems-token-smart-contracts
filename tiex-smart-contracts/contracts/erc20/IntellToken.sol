@@ -14,6 +14,7 @@
 
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
@@ -42,7 +43,7 @@ contract IntelligenceToken is
     }
 
     event InvestorAdded(address indexed investor, uint256 balance);
-    event WhitelistUpdated(address indexed participant);
+    event WhitelistUpdated(bytes32 merkleRoot);
     event TokensPurchased(
         address indexed buyer,
         uint256 amount,
@@ -52,7 +53,9 @@ contract IntelligenceToken is
     event TokensClaimed(address indexed investor, uint256 amount);
     event RateUpdated(uint256 rate);
 
-    mapping(address => bool) public whitelist;
+    // merkle tree root for whitelisted addresses
+    bytes32 public whitelistRoot;
+
     mapping(address => Balance) public investors;
 
     IERC20 public usdcToken;
@@ -81,9 +84,12 @@ contract IntelligenceToken is
         currentStage = Stage.Whitelisting;
     }
 
-    function signUpToWhitelist() external whenNotPaused {
-        whitelist[msg.sender] = true;
-        emit WhitelistUpdated(msg.sender);
+    function setWhitelistRoot(
+        bytes32 _root
+    ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(_root.length > 0, "invalid root");
+        whitelistRoot = _root;
+        emit WhitelistUpdated(_root);
     }
 
     function addInvestor(
@@ -134,17 +140,37 @@ contract IntelligenceToken is
         balance.balance = 0;
     }
 
-    function buyTokens(uint256 amount) external whenNotPaused {
-        require(
-            currentStage == Stage.PrivateSale ||
-                currentStage == Stage.PublicSale,
-            "invalid stage"
-        );
+    function buyWhitelistedTokens(
+        uint256 amount,
+        bytes32[] memory proof
+    ) external whenNotPaused {
+        require(currentStage == Stage.PrivateSale, "invalid stage");
+        _buyTokens(amount, msg.sender, proof);
+    }
+
+    function buyPublicTokens(uint256 amount) external whenNotPaused {
+        require(currentStage == Stage.PublicSale, "invalid stage");
+        bytes32[] memory emptyProof;
+        _buyTokens(amount, msg.sender, emptyProof);
+    }
+
+    function _buyTokens(
+        uint256 amount,
+        address buyer,
+        bytes32[] memory proof
+    ) internal {
         require(amount > 0, "amount is 0");
 
-        if (currentStage == Stage.PrivateSale) {
-            require(whitelist[msg.sender], "not whitelisted");
+        if (proof.length > 0) {
+            bytes32 leaf = keccak256(
+                bytes.concat(keccak256(abi.encode(buyer)))
+            );
+            require(
+                MerkleProof.verify(proof, whitelistRoot, leaf),
+                "not whitelisted"
+            );
         }
+
         require(
             tokensSold + amount <= SALES_CAP,
             "insufficient available tokens"
@@ -153,9 +179,9 @@ contract IntelligenceToken is
 
         uint256 price = amount * tokenToUsdc;
         usdcEarnings += price;
-        usdcToken.transferFrom(address(this), msg.sender, price);
-        _mint(msg.sender, amount);
-        emit TokensPurchased(msg.sender, amount, price, currentStage);
+        usdcToken.transferFrom(address(this), buyer, price);
+        _mint(buyer, amount);
+        emit TokensPurchased(buyer, amount, price, currentStage);
     }
 
     // distribute to other pools (e.g. community programs, emissions)
