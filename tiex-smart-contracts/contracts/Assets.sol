@@ -61,20 +61,7 @@ contract Assets is
      * @param assetId must be of existing ID of model.
      */
     modifier existingAsset(uint256 assetId) {
-        if (!assetExists(assetId)) {
-            revert AssetNotFound(assetId);
-        }
-        _;
-    }
-
-    /**
-     * @notice Checks if modelId allocated exists.
-     * @param assetId uint256 must be of existing ID of model.
-     */
-    modifier nonExistingAsset(uint256 assetId) {
-        if (assetExists(assetId)) {
-            revert AssetAlreadyExists(assetId);
-        }
+        require(assetExists(assetId), "asset not found");
         _;
     }
 
@@ -91,12 +78,10 @@ contract Assets is
         Contributors calldata contributors,
         string calldata ipfsHash,
         Metadata calldata metadata
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) nonExistingAsset(assetId) {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(!assetExists(assetId), "asset already exists");
         address creator = contributors.creator;
-        // Check if the creator address is valid
-        if (creator == address(0)) {
-            revert InvalidCreator(address(0));
-        }
+        require(creator != address(0), "invalid creator");
 
         require(
             baseAsset == 0 ||
@@ -116,23 +101,17 @@ contract Assets is
 
         if (_tRate != 10000) revert("invalid contributor rates");
 
-        // Check if the model metadata is valid
-        bool validForMetadata = bytes(metadata.name).length > 0 &&
+        bool validMetadata = bytes(metadata.name).length > 0 &&
             bytes(metadata.description).length > 0 &&
             metadata.version == 1 &&
             metadata.fingerprint.length > 0 &&
             metadata.watermarkFingerprint.length > 0 &&
             metadata.performance > 0;
 
-        if (!validForMetadata) revert InvalidMetadata(assetId);
-        // Set the model metadata
+        require(validMetadata, "invalid metadata");
         assets[assetId].metadata = metadata;
 
-        // Emit an event to log the allocation of the model ID
-        emit AssetCreated(
-            assetId,
-            assets[assetId]
-        );
+        emit AssetCreated(assetId, assets[assetId]);
     }
 
     /**
@@ -142,16 +121,14 @@ contract Assets is
         uint256 assetId,
         Metadata calldata metadata
     ) external onlyRole(DEFAULT_ADMIN_ROLE) existingAsset(assetId) {
-        // Check if the model metadata is valid
-        bool validForMetadata = bytes(metadata.name).length > 0 &&
+        bool validMetadata = bytes(metadata.name).length > 0 &&
             bytes(metadata.description).length > 0 &&
-            metadata.version > 0 &&
+            metadata.version > assets[assetId].metadata.version &&
             metadata.fingerprint.length > 0 &&
             metadata.watermarkFingerprint.length > 0 &&
             metadata.performance > 0;
 
-        if (!validForMetadata) revert InvalidMetadata(assetId);
-        assets[assetId].metadata.version++;
+        require(validMetadata, "invalid metadata");
         assets[assetId].metadata = metadata;
 
         emit AssetUpgraded(assetId, assets[assetId].metadata);
@@ -175,11 +152,10 @@ contract Assets is
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         IAssets.Asset memory asset = getAsset(assetId);
 
-        if (
-            __marketing == address(0) ||
-            __marketing == asset.contributors.marketing
-        ) revert ErrorInvalidParam();
-
+        require(
+            __marketing != asset.contributors.marketing,
+            "no change to address"
+        );
         asset.contributors.marketing = __marketing;
 
         emit AssetMarketingAddressUpdated(assetId, __marketing);
@@ -191,9 +167,10 @@ contract Assets is
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         IAssets.Asset memory asset = getAsset(assetId);
 
-        if (__presale == address(0) || __presale == asset.contributors.presale)
-            revert ErrorInvalidParam();
-
+        require(
+            __presale != asset.contributors.presale,
+            "no change to address"
+        );
         asset.contributors.presale = __presale;
 
         emit AssetPresaleAddressUpdated(assetId, __presale);
@@ -207,7 +184,7 @@ contract Assets is
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 _tRate = __creatorRate.add(__marketingRate).add(__presaleRate);
 
-        if (_tRate != 10000 || __creatorRate < 2000) revert ErrorInvalidParam();
+        require(_tRate == 10000 && __creatorRate >= 2000, "invalid rates");
 
         Asset storage asset = assets[assetId];
 
@@ -286,11 +263,10 @@ contract Assets is
     /**
      * @dev See {ITIExBaseIPAllocation-creatorOf}.
      */
-    function creatorOf(uint256 assetId) public view returns (address) {
+    function creatorOf(
+        uint256 assetId
+    ) public view existingAsset(assetId) returns (address) {
         address creator = assets[assetId].contributors.creator;
-        if (creator == address(0)) {
-            revert AssetNotFound(assetId);
-        }
         return creator;
     }
 

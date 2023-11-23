@@ -48,28 +48,6 @@ interface IAssets {
     event AssetPresaleAddressUpdated(uint256 indexed id, address presale);
     event Distribute(uint256 indexed modelId, uint256 amount, uint256 when);
 
-    error InvalidCreator(address creator);
-    error AssetAlreadyExists(uint256 assetId);
-    error InvalidProvider(address provider);
-    error OutOfBounds(address creator, uint256 index);
-    error AssetNotFound(uint256 assetId);
-    error InvalidContributionRate(uint256 contributionRate);
-    error ModelAlreadyTrained(uint256 assetId);
-    error InvalidMetadata(uint256 assetId);
-    error ErrorShareCollectionNotFound(uint256 modelId);
-    error ErrorTIExShareCollectionReleasedAlready(uint256 modelId);
-    error ErrorNotEnoughSupply();
-    error ErrorShareCollectionPaused(uint256 modelId);
-    error ErrorShareCollectionBlocked(uint256 modelId);
-    error ErrorTIExPaused();
-    error ErrorExceedMaxSharePurchase();
-    error ErrorInvalidSignature();
-    error ErrorInvalidParam();
-    error ErrorInvalidNonce();
-    error ErrorDeadlineReached();
-    error ErrorInvalidMsgSender();
-    event TIExCollectionURIUpdated(uint256 indexed modelId, string uri);
-
     /**
      * @notice Upgrades an asset by updating its fingerprint and incrementing its version.
      * @param assetId The ID of the asset to be upgraded.
