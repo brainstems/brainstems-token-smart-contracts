@@ -46,8 +46,24 @@ interface IAssets {
     event AssetUpgraded(uint256 indexed id, Metadata metadata);
     event AssetMarketingAddressUpdated(uint256 indexed id, address marketing);
     event AssetPresaleAddressUpdated(uint256 indexed id, address presale);
-    event Distribute(uint256 indexed modelId, uint256 amount, uint256 when);
-    
+    event AssetRatesUpdated(
+        uint256 indexed id,
+        uint256 creatorRate,
+        uint256 marketingRate,
+        uint256 presaleRate
+    );
+    event AssetEarningsDeposited(
+        uint256 indexed id,
+        uint256 creatorAmount,
+        uint256 marketingAmount,
+        uint256 presaleAmount
+    );
+    event AssetEarningsWithdrawn(
+        uint256 indexed id,
+        address indexed contributor,
+        uint256 amount
+    );
+
     /**
      * @notice Registers an asset in the contract.
      * @param assetId identifier for the asset.

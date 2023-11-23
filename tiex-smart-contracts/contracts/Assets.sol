@@ -34,12 +34,8 @@ contract Assets is
     using SafeMath for uint256;
     using SafeERC20 for ERC20;
 
-    // TODO: revise mappings
-    /// @notice Mapping model id to TIEx Model
     mapping(uint256 => Asset) private assets;
-    /// @notice Array with all model ids, used for enumeration
     uint256[] private assetIds;
-    // asset ID to address to balance
     mapping(uint256 => mapping(address => uint256)) balances;
 
     ERC20 public paymentToken;
@@ -52,26 +48,11 @@ contract Assets is
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
     }
 
-    ////////////////////////////////////////////////////////////////////////////
-    // MODIFIERS
-    ////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * @notice Checks if modelId allocated exists.
-     * @param assetId must be of existing ID of model.
-     */
     modifier existingAsset(uint256 assetId) {
         require(assetExists(assetId), "asset not found");
         _;
     }
 
-    ////////////////////////////////////////////////////////////////////////////
-    // ADMIN
-    ////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * @dev See {ITIExBaseIPAllocation-giveCreatorTIExIP}.
-     */
     function createAsset(
         uint256 assetId,
         uint256 baseAsset,
@@ -89,9 +70,7 @@ contract Assets is
             "invalid base asset"
         );
         assets[assetId].baseAsset = baseAsset;
-        // Set the creator of the model ID
         assets[assetId].contributors = contributors;
-        // Set the IPFS hash of the model's metadata
         assets[assetId].uri = ipfsHash;
 
         uint256 _tRate = contributors
@@ -114,9 +93,6 @@ contract Assets is
         emit AssetCreated(assetId, assets[assetId]);
     }
 
-    /**
-     * @dev See {ITIExBaseIPAllocation-updateModelMetadata}.
-     */
     function upgradeAsset(
         uint256 assetId,
         Metadata calldata metadata
@@ -134,9 +110,6 @@ contract Assets is
         emit AssetUpgraded(assetId, assets[assetId].metadata);
     }
 
-    /**
-     * @dev See {ITIExBaseIPAllocation-editURI}.
-     */
     function editUri(
         uint256 assetId,
         string calldata ipfsHash
@@ -148,49 +121,56 @@ contract Assets is
 
     function updateMarketingAddress(
         uint256 assetId,
-        address __marketing
+        address marketing
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         IAssets.Asset memory asset = getAsset(assetId);
 
         require(
-            __marketing != asset.contributors.marketing,
+            marketing != asset.contributors.marketing,
             "no change to address"
         );
-        asset.contributors.marketing = __marketing;
+        asset.contributors.marketing = marketing;
 
-        emit AssetMarketingAddressUpdated(assetId, __marketing);
+        emit AssetMarketingAddressUpdated(assetId, marketing);
     }
 
     function updatePresaleAddress(
         uint256 assetId,
-        address __presale
+        address presale
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         IAssets.Asset memory asset = getAsset(assetId);
 
         require(
-            __presale != asset.contributors.presale,
+            presale != asset.contributors.presale,
             "no change to address"
         );
-        asset.contributors.presale = __presale;
+        asset.contributors.presale = presale;
 
-        emit AssetPresaleAddressUpdated(assetId, __presale);
+        emit AssetPresaleAddressUpdated(assetId, presale);
     }
 
     function updateInvestmentDistributionRate(
         uint256 assetId,
-        uint256 __creatorRate,
-        uint256 __marketingRate,
-        uint256 __presaleRate
+        uint256 creatorRate,
+        uint256 marketingRate,
+        uint256 presaleRate
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        uint256 _tRate = __creatorRate.add(__marketingRate).add(__presaleRate);
+        uint256 totalRate = creatorRate.add(marketingRate).add(presaleRate);
 
-        require(_tRate == 10000 && __creatorRate >= 2000, "invalid rates");
+        require(totalRate == 10000 && creatorRate >= 2000, "invalid rates");
 
         Asset storage asset = assets[assetId];
 
-        asset.contributors.creatorRate = __creatorRate;
-        asset.contributors.marketingRate = __marketingRate;
-        asset.contributors.presaleRate = __presaleRate;
+        asset.contributors.creatorRate = creatorRate;
+        asset.contributors.marketingRate = marketingRate;
+        asset.contributors.presaleRate = presaleRate;
+
+        emit AssetRatesUpdated(
+            assetId,
+            creatorRate,
+            marketingRate,
+            presaleRate
+        );
     }
 
     function deposit(
@@ -225,11 +205,15 @@ contract Assets is
             marketingAmount
         );
         paymentToken.safeTransferFrom(msg.sender, address(this), presaleAmount);
+
+        emit AssetEarningsDeposited(
+            assetId,
+            creatorAmount,
+            marketingAmount,
+            presaleAmount
+        );
     }
 
-    /**
-     * @dev See {ITIExShareCollections-distribute}.
-     */
     function withdraw(uint256 assetId) external {
         address caller = msg.sender;
         uint256 balance = balances[assetId][caller];
@@ -247,22 +231,14 @@ contract Assets is
 
         balances[assetId][caller] = 0;
         paymentToken.safeTransferFrom(msg.sender, address(this), balance);
+
+        emit AssetEarningsWithdrawn(assetId, caller, balance);
     }
 
-    ////////////////////////////////////////////////////////////////////////////
-    // READ
-    ////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * @dev See {ITIExBaseIPAllocation-getTIExModel}.
-     */
     function getAsset(uint256 assetId) public view returns (Asset memory) {
         return assets[assetId];
     }
 
-    /**
-     * @dev See {ITIExBaseIPAllocation-creatorOf}.
-     */
     function creatorOf(
         uint256 assetId
     ) public view existingAsset(assetId) returns (address) {
@@ -270,23 +246,17 @@ contract Assets is
         return creator;
     }
 
-    /**
-     * @dev See {ITIExBaseIPAllocation-modelExists}.
-     */
     function assetExists(uint256 assetId) public view returns (bool) {
         return assets[assetId].contributors.creator != address(0);
     }
 
-    /**
-     * @dev See {ITIExBaseIPAllocation-totalModelSupply}.
-     */
     function assetAmount() public view returns (uint256) {
         return assetIds.length;
     }
 
     function uri(
-        uint256 __modelId
-    ) public view existingAsset(__modelId) returns (string memory) {
-        return string(abi.encodePacked("ipfs://", getAsset(__modelId).uri));
+        uint256 assetId
+    ) public view existingAsset(assetId) returns (string memory) {
+        return string(abi.encodePacked("ipfs://", getAsset(assetId).uri));
     }
 }
