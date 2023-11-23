@@ -130,10 +130,8 @@ contract Assets is
 
         // Emit an event to log the allocation of the model ID
         emit AssetCreated(
-            msg.sender,
             assetId,
-            assets[assetId],
-            block.timestamp
+            assets[assetId]
         );
     }
 
@@ -184,7 +182,7 @@ contract Assets is
 
         asset.contributors.marketing = __marketing;
 
-        emit TIExMarketingAddressUpdated(__marketing);
+        emit AssetMarketingAddressUpdated(assetId, __marketing);
     }
 
     function updatePresaleAddress(
@@ -198,7 +196,7 @@ contract Assets is
 
         asset.contributors.presale = __presale;
 
-        emit TIExPresaleAddressUpdated(__presale);
+        emit AssetPresaleAddressUpdated(assetId, __presale);
     }
 
     function updateInvestmentDistributionRate(

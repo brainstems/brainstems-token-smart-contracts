@@ -14,9 +14,7 @@
 
 pragma solidity ^0.8.19;
 
-// TODO: update all comments
 interface IAssets {
-    // TODO: revise fields
     struct Metadata {
         string name;
         uint256 version;
@@ -36,7 +34,6 @@ interface IAssets {
         uint256 presaleRate;
     }
 
-    // TODO: revise fields
     struct Asset {
         uint256 baseAsset;
         Metadata metadata;
@@ -44,140 +41,34 @@ interface IAssets {
         string uri;
     }
 
-    // TODO: revise all event fields
-
-    event AssetCreated(
-        address provider,
-        uint256 indexed assetId,
-        Asset asset,
-        uint256 startTime
-    );
-
-    event AssetRemoved(
-        address creator,
-        address to,
-        uint256 indexed assetId,
-        uint256 removedTime
-    );
-
-    event AssetUriUpdated(uint256 indexed assetId, string ipfsHash);
-
-    // Event emitted when an asset is upgraded
-    event AssetUpgraded(uint256 indexed assetId, Metadata metadata);
-
-    // Event emitted when the metadata of an asset is updated
-    event AssetMetadataUpdated(uint256 indexed assetId, Metadata metadata);
-
-    // TODO: revise error usage
-    error InvalidCreator(address creator);
-
-    error AssetAlreadyExists(uint256 assetId);
-
-    // Error thrown when an invalid provider address is provided
-    error InvalidProvider(address provider);
-
-    // Error thrown when an out of bounds index is used for a creator
-    error OutOfBounds(address creator, uint256 index);
-
-    // Error thrown when a non-existent asset ID is used
-    error AssetNotFound(uint256 assetId);
-
-    // Error thrown when an invalid contribution rate is used
-    error InvalidContributionRate(uint256 contributionRate);
-
-    // Error thrown when an asset that is already trained is used
-    error ModelAlreadyTrained(uint256 assetId);
-
-    // Error thrown when invalid metadata is provided for an asset
-    error InvalidMetadata(uint256 assetId);
-
-    /// @notice Indicates that a share collection cannot be found
-    error ErrorShareCollectionNotFound(uint256 modelId);
-
-    /// @notice Indicates that a share collection with the specified
-    /// model ID has already been released.
-    error ErrorTIExShareCollectionReleasedAlready(uint256 modelId);
-
-    /// @notice Indicates that there is not enough supply available for share sale.
-    error ErrorNotEnoughSupply();
-
-    /// @notice Indicates that a share collection with the specified model ID has been
-    /// paused and is currently not available.
-    error ErrorShareCollectionPaused(uint256 modelId);
-
-    /// @notice Indicates that the share collection with the specified model ID is blocked.
-    error ErrorShareCollectionBlocked(uint256 modelId);
-
-    /// @notice Indicates that the TIEx is currently paused.
-    error ErrorTIExPaused();
-
-    /// @notice Indicates that the maximum limit for share purchases has been exceeded.
-    error ErrorExceedMaxSharePurchase();
-
-    /// @notice Indicates that the signature provided for authentication or verification
-    /// purposes is invalid or cannot be verified.
-    error ErrorInvalidSignature();
-
-    /// @notice Indicates that one or more parameters provided in the request are invalid or missing.
-    error ErrorInvalidParam();
-
-    /// @notice Indicates that the provided nonce (a unique identifier) is invalid or has already been used.
-    error ErrorInvalidNonce();
-
-    // @notice Indicates that the deadline for a certain operation has been reached.
-    error ErrorDeadlineReached();
-
-    // @notice Indicates that the msg.sender() is invalid
-    error ErrorInvalidMsgSender();
-
-    /// @notice Emitted when the URI associated with a model is updated.
-    event TIExCollectionURIUpdated(uint256 indexed modelId, string uri);
-
-    /// @notice Emitted when the truth holder address is updated.
-    event TIExTruthHolderUpdated(address newTruthHolder);
-
-    /// @notice Emitted when the price of a share for a specific model is updated.
-    event TIExSharePriceUpdated(uint256 indexed modelId, uint256 newPrice);
-
-    /// @notice Emitted when the maximum supply of shares for a model is updated.
-    event TIExMaxSupplyUpdated(uint256 indexed modelId, uint256 newMaxSupply);
-
-    /// @notice Emitted when the maximum share purchase limit for a model is updated.
-    event TIExMaxSharePurchaseUpdated(
-        uint256 indexed modelId,
-        uint256 newMaxSharePurchase
-    );
-
-    /// @notice Emitted when a share collection for a model is blocked or disabled.
-    event TIExShareCollectionBlocked(uint256 indexed modelId);
-
-    /// @notice Emitted when a previously blocked share collection for a model is unblocked or enabled.
-    event TIExShareCollectionUnblocked(uint256 indexed modelId);
-
-    /// @notice Emitted when a share collection for a model is paused.
-    event TIExShareCollectionPaused(uint256 indexed modelId);
-
-    /// @notice Emitted when a previously paused share collection for a model is unpaused.
-    event TIExShareCollectionUnpaused(uint256 indexed modelId);
-
-    /// @notice Emitted when the investor position of share collection is updated.
-    /// e.g. U.S. investor => Non-U.S. investor or Non-U.S. investor => U.S. Investor
-    event TIExShareCollectionInvestorPositionUpdated(
-        uint256 indexed modelId,
-        bool newInvestorPosition
-    );
-
-    /// @notice Emitted when the marketing address is update.
-    event TIExMarketingAddressUpdated(address newMarketingAddress);
-
-    /// @notice Emitted when the presale address is updated.
-    event TIExPresaleAddressUpdated(address newPresaleAddress);
-
-    /// @notice Emitted when reserve address is updated.
-    event TIExReserveAddressUpdated(address newReserveAddress);
-
-    /// @notice Emitted when distributing funds fromm investors to creators, marketing etc.
+    event AssetCreated(uint256 indexed id, Asset asset);
+    event AssetUriUpdated(uint256 indexed id, string ipfsHash);
+    event AssetUpgraded(uint256 indexed id, Metadata metadata);
+    event AssetMarketingAddressUpdated(uint256 indexed id, address marketing);
+    event AssetPresaleAddressUpdated(uint256 indexed id, address presale);
     event Distribute(uint256 indexed modelId, uint256 amount, uint256 when);
+
+    error InvalidCreator(address creator);
+    error AssetAlreadyExists(uint256 assetId);
+    error InvalidProvider(address provider);
+    error OutOfBounds(address creator, uint256 index);
+    error AssetNotFound(uint256 assetId);
+    error InvalidContributionRate(uint256 contributionRate);
+    error ModelAlreadyTrained(uint256 assetId);
+    error InvalidMetadata(uint256 assetId);
+    error ErrorShareCollectionNotFound(uint256 modelId);
+    error ErrorTIExShareCollectionReleasedAlready(uint256 modelId);
+    error ErrorNotEnoughSupply();
+    error ErrorShareCollectionPaused(uint256 modelId);
+    error ErrorShareCollectionBlocked(uint256 modelId);
+    error ErrorTIExPaused();
+    error ErrorExceedMaxSharePurchase();
+    error ErrorInvalidSignature();
+    error ErrorInvalidParam();
+    error ErrorInvalidNonce();
+    error ErrorDeadlineReached();
+    error ErrorInvalidMsgSender();
+    event TIExCollectionURIUpdated(uint256 indexed modelId, string uri);
 
     /**
      * @notice Upgrades an asset by updating its fingerprint and incrementing its version.
