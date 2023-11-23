@@ -47,31 +47,14 @@ interface IAssets {
     event AssetMarketingAddressUpdated(uint256 indexed id, address marketing);
     event AssetPresaleAddressUpdated(uint256 indexed id, address presale);
     event Distribute(uint256 indexed modelId, uint256 amount, uint256 when);
-
+    
     /**
-     * @notice Upgrades an asset by updating its fingerprint and incrementing its version.
-     * @param assetId The ID of the asset to be upgraded.
-     * @param metadata The new fingerprint of the asset.
-     *
-     * Emits an {UpgradeAsset} event.
-     *
-     * Requirements:
-     * - The caller must have the `DEFAULT_ADMIN_ROLE`.
-     * - The asset with the given `assetId` must exist.
-     * - The `fingerprint` must not be empty.
-     */
-    function upgradeAsset(uint256 assetId, Metadata memory metadata) external;
-
-    /**
-     * @notice Allocates `modelId` as TIEx IP to `creator`.
-     * @param assetId uint256 must not exist.
-     * @param ipfsHash string is for Metadata of model
-     *
-     * Emits a {AllocateTIExIP} event.
-     *
-     * Requirements:
-     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
-     * - The model with the given `__modelId` must not exist.
+     * @notice Registers an asset in the contract.
+     * @param assetId identifier for the asset.
+     * @param baseAsset identifier for the asset used as a basis for the one being registered, if it exists.
+     * @param contributors addresses to identify the asset creator, the marketing role and the presale roles, each with their own contribution rates.
+     * @param ipfsHash asset URI in the form of an IPFS hash to store additional data.
+     * @param metadata asset metadata that needs to go on-chain, unlike the data stored on IPFS.
      */
     function createAsset(
         uint256 assetId,
@@ -82,33 +65,29 @@ interface IAssets {
     ) external;
 
     /**
-     * @notice Used to edit the model URI.
-     *
-     * Emits a {TIExModelURIUpdated} event.
-     *
-     * Requirements:
-     * - Must be called by an address with the `DEFAULT_ADMIN_ROLE` role.
-     * - The model with the given `__modelId` must exist.
+     * @notice Upgrades an asset.
+     * @param assetId identifier for the asset.
+     * @param metadata updated asset metadata.
+     */
+    function upgradeAsset(uint256 assetId, Metadata memory metadata) external;
+
+    /**
+     * @notice Used to edit the asset URI, expected to be in the form of an IPFS hash.
      */
     function editUri(uint256 assetId, string calldata ipfsHash) external;
 
     /**
-     * @notice Used to get the detail of model
-     * @param assetId uint256 must exist
+     * @notice Returns the detailed asset identified by the provided id.
      */
     function getAsset(uint256 assetId) external view returns (Asset memory);
 
     /**
-     * @notice Returns the creator of the `modelId` model.
-     * @param assetId uint256 ID of the model must exist.
+     * @notice Returns the creator of the asset identified by the provided id.
      */
     function creatorOf(uint256 assetId) external view returns (address);
 
     /**
-     * @notice Returns whether `__modelId` exists.
-     *
-     * Models start existing when TIEx are allocated,
-     * and stop existing when TIEx are removed (`removeModel`).
+     * @notice Returns whether the asset identified by the provided id exists.
      */
     function assetExists(uint256 assetId) external view returns (bool);
 
