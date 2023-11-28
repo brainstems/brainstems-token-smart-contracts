@@ -8,7 +8,9 @@
   },
   "scripts": {
     "clean": "npx hardhat clean",
-    "compile": "npx hardhat compile",
+    "build": "npx hardhat compile",
+    "rebuild": "npm run clean && npm run build",
+    "node": "npx hardhat node",
     "test": "npx hardhat test",
     "size": "npx hardhat size-contracts",
     "deploy:go:intell-token": "npx hardhat run scripts/001_deploy_intell_token.js --network goerli",
