@@ -14,35 +14,16 @@
 
 pragma solidity ^0.8.19;
 
-interface IMembership {
-    struct Ecosystem {
+interface IFederation {
+    struct Federation {
         uint256 id;
-        string name;
+        uint256 name;
     }
 
-    // company
-    struct Member {
-        uint256 id;
-        string name;
-    }
-
-    function createEcosystem(Ecosystem calldata ecosystem) external;
-
-    function createCompany(Member calldata member) external;
-
-    function addMember(uint256 ecosystemId, uint256 memberId) external;
-
-    function removeMember(uint256 ecosystemId, uint256 memberId) external;
-
-    function addUser(
-        uint256 ecosystemId,
-        uint256 memberId,
-        address user
+    function createFederation(
+        Federation calldata federation,
+        uint256[] calldata companyIds
     ) external;
 
-    function removeUser(
-        uint256 ecosystemId,
-        uint256 memberId,
-        address user
-    ) external;
+    function registerAsset(uint256 federationId, uint256 assetId) external;
 }
