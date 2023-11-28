@@ -30,4 +30,7 @@ interface IFederation {
         uint256 assetId,
         uint256[] calldata baseAssetIds
     ) external;
+
+    function federationExists(uint256 federationId) external view returns (bool);
+    function assetInFederation(uint256 assetId, uint256 federationId) external view returns (bool);
 }
