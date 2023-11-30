@@ -12,7 +12,7 @@
         | '--------------' || '--------------' || '--------------' || '--------------' |
         '----------------'  '----------------'  '----------------'  '----------------' */
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -96,10 +96,7 @@ contract IntelligenceToken is
         address investor,
         uint256 balance
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(
-            investors[investor].isInvestor == false,
-            "investor already added"
-        );
+        require(!investors[investor].isInvestor, "investor already added");
         require(
             investorTokensAllocated + balance <= INVESTORS_CAP,
             "insufficient investor tokens"
@@ -150,7 +147,7 @@ contract IntelligenceToken is
 
     function buyPublicTokens(uint256 amount) external whenNotPaused {
         require(currentStage == Stage.PublicSale, "invalid stage");
-        bytes32[] memory emptyProof;
+        bytes32[] memory emptyProof = new bytes32[](0);
         _buyTokens(amount, msg.sender, emptyProof);
     }
 
@@ -179,7 +176,7 @@ contract IntelligenceToken is
 
         uint256 price = amount * tokenToUsdc;
         usdcEarnings += price;
-        usdcToken.transferFrom(address(this), buyer, price);
+        usdcToken.safeTransferFrom(address(this), buyer, price);
         _mint(buyer, amount);
         emit TokensPurchased(buyer, amount, price, currentStage);
     }
@@ -197,7 +194,12 @@ contract IntelligenceToken is
     function claimEarnings(
         address cashOutRecipient
     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        usdcToken.transferFrom(address(this), cashOutRecipient, usdcEarnings);
+        uint256 _usdcEarnings = usdcEarnings;
         usdcEarnings = 0;
+        usdcToken.safeTransferFrom(
+            address(this),
+            cashOutRecipient,
+            _usdcEarnings
+        );
     }
 }

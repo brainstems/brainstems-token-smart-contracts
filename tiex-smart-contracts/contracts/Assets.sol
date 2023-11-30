@@ -12,7 +12,7 @@
   | '--------------' || '--------------' || '--------------' || '--------------' |
   '----------------'  '----------------'  '----------------'  '----------------' */
 
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
@@ -35,7 +35,6 @@ contract Assets is
     using SafeERC20 for ERC20;
 
     mapping(uint256 => Asset) private assets;
-    uint256[] private assetIds;
     mapping(uint256 => mapping(address => uint256)) balances;
 
     ERC20 public paymentToken;
@@ -184,16 +183,21 @@ contract Assets is
         Asset memory asset = assets[assetId];
         Contributors memory contributors = asset.contributors;
 
-        uint256 creatorAmount = (amount.mul(contributors.creatorRate) / 100) *
-            100;
-        uint256 marketingAmount = (amount.mul(contributors.marketingRate) /
-            100) * 100;
-        uint256 presaleAmount = (amount.mul(contributors.presaleRate) / 100) *
-            100;
+        uint256 creatorAmount = amount.mul(contributors.creatorRate) / 10000;
+        uint256 marketingAmount = amount.mul(contributors.marketingRate) /
+            10000;
+        uint256 presaleAmount = amount.mul(contributors.presaleRate) / 10000;
 
         balances[assetId][contributors.creator] += creatorAmount;
         balances[assetId][contributors.marketing] += marketingAmount;
         balances[assetId][contributors.presale] += presaleAmount;
+
+        emit AssetEarningsDeposited(
+            assetId,
+            creatorAmount,
+            marketingAmount,
+            presaleAmount
+        );
 
         paymentToken.safeTransferFrom(msg.sender, address(this), creatorAmount);
         paymentToken.safeTransferFrom(
@@ -202,13 +206,6 @@ contract Assets is
             marketingAmount
         );
         paymentToken.safeTransferFrom(msg.sender, address(this), presaleAmount);
-
-        emit AssetEarningsDeposited(
-            assetId,
-            creatorAmount,
-            marketingAmount,
-            presaleAmount
-        );
     }
 
     function withdraw(uint256 assetId) external {
@@ -227,9 +224,10 @@ contract Assets is
         );
 
         balances[assetId][caller] = 0;
-        paymentToken.safeTransferFrom(msg.sender, address(this), balance);
 
         emit AssetEarningsWithdrawn(assetId, caller, balance);
+
+        paymentToken.safeTransferFrom(msg.sender, address(this), balance);
     }
 
     function getAsset(uint256 assetId) public view returns (Asset memory) {
@@ -245,10 +243,6 @@ contract Assets is
 
     function assetExists(uint256 assetId) public view returns (bool) {
         return assets[assetId].contributors.creator != address(0);
-    }
-
-    function assetAmount() public view returns (uint256) {
-        return assetIds.length;
     }
 
     function uri(

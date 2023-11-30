@@ -12,9 +12,9 @@
   | '--------------' || '--------------' || '--------------' || '--------------' |
   '----------------'  '----------------'  '----------------'  '----------------' */
 
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.7;
 
-interface IValidation {
+interface IExecution {
     function useAsset(uint256 assetId) external;
 
     function queryAssetUse(uint256 executionId) external;

@@ -12,7 +12,7 @@
   | '--------------' || '--------------' || '--------------' || '--------------' |
   '----------------'  '----------------'  '----------------'  '----------------' */
 
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.7;
 
 interface IAssets {
     struct Metadata {
@@ -106,9 +106,4 @@ interface IAssets {
      * @notice Returns whether the asset identified by the provided id exists.
      */
     function assetExists(uint256 assetId) external view returns (bool);
-
-    /**
-     * @notice Returns the total amount of models stored by the contract.
-     */
-    function assetAmount() external view returns (uint256);
 }

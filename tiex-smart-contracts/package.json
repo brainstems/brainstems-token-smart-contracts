@@ -13,6 +13,7 @@
     "node": "npx hardhat node",
     "test": "npx hardhat test",
     "size": "npx hardhat size-contracts",
+    "slither": "slither . --filter-paths 'node_modules'",
     "deploy:go:intell-token": "npx hardhat run scripts/001_deploy_intell_token.js --network goerli",
     "deploy:go:share-token": "npx hardhat run scripts/002_deploy_tiex_share_collection.js --network goerli",
     "deploy:go:upgrade-share-token": "npx hardhat run scripts/003_upgrade_tiex_share.js --network goerli",

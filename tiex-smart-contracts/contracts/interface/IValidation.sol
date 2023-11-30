@@ -12,7 +12,7 @@
   | '--------------' || '--------------' || '--------------' || '--------------' |
   '----------------'  '----------------'  '----------------'  '----------------' */
 
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.7;
 
 interface IValidation {
     function validateAsset(uint256 assetId) external;
