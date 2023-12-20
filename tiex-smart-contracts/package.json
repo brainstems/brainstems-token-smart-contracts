@@ -14,11 +14,10 @@
     "test": "npx hardhat test",
     "size": "npx hardhat size-contracts",
     "slither": "slither . --filter-paths 'node_modules'",
-    "deploy:go:intell-token": "npx hardhat run scripts/001_deploy_intell_token.js --network goerli",
-    "deploy:go:share-token": "npx hardhat run scripts/002_deploy_tiex_share_collection.js --network goerli",
+    "deploy-intell-local": "npx hardhat run scripts/001_deploy_intell_token.js --network localhost",
+    "deploy-intell-goerli": "npx hardhat run scripts/001_deploy_intell_token.js --network goerli",
     "deploy:go:upgrade-share-token": "npx hardhat run scripts/003_upgrade_tiex_share.js --network goerli",
-    "deploy:fuji:intell-token": "npx hardhat run scripts/001_deploy_intell_token.js --network fuji",
-    "deploy:fuji:share-token": "npx hardhat run scripts/002_deploy_tiex_share_collection.js --network fuji",
+    "deploy-intell-fuji": "npx hardhat run scripts/001_deploy_intell_token.js --network fuji",
     "deploy:fuji:upgrade-share-token": "npx hardhat run scripts/003_upgrade_tiex_share.js --network fuji"
   },
   "repository": {
