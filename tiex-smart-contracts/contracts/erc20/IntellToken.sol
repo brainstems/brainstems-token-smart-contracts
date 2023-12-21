@@ -16,10 +16,10 @@ pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
 contract IntelligenceToken is
     Initializable,
@@ -73,15 +73,18 @@ contract IntelligenceToken is
 
     function initialize(
         address _admin,
-        IERC20 _usdcToken,
+        address _usdcToken,
         uint256 _tokenToUsdc
     ) public initializer {
-        require(_tokenToUsdc > 0, "invalid ratio");
+        require(_tokenToUsdc > 0, "invalid conversion");
+        require(_usdcToken != address(0), "invalid contract param");
         __ERC20_init("Intelligence Token", "INTELL");
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
-        usdcToken = _usdcToken;
+        usdcToken = IERC20(_usdcToken);
         tokenToUsdc = _tokenToUsdc;
         currentStage = Stage.Whitelisting;
+
+        emit RateUpdated(_tokenToUsdc);
     }
 
     function setWhitelistRoot(
