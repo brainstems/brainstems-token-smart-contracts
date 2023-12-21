@@ -14,11 +14,9 @@
     "test": "npx hardhat test",
     "size": "npx hardhat size-contracts",
     "slither": "slither . --filter-paths 'node_modules'",
-    "deploy-intell-local": "npx hardhat run scripts/001_deploy_intell_token.js --network localhost",
-    "deploy-intell-goerli": "npx hardhat run scripts/001_deploy_intell_token.js --network goerli",
-    "deploy:go:upgrade-share-token": "npx hardhat run scripts/003_upgrade_tiex_share.js --network goerli",
-    "deploy-intell-fuji": "npx hardhat run scripts/001_deploy_intell_token.js --network fuji",
-    "deploy:fuji:upgrade-share-token": "npx hardhat run scripts/003_upgrade_tiex_share.js --network fuji"
+    "deploy-intell-local": "npx hardhat run scripts/deploy_intell_token.js --network localhost",
+    "deploy-intell-goerli": "npx hardhat run scripts/deploy_intell_token.js --network goerli",
+    "deploy-intell-fuji": "npx hardhat run scripts/deploy_intell_token.js --network fuji"
   },
   "repository": {
     "type": "git",
@@ -36,29 +34,14 @@
   "author": "krumfi team",
   "license": "ISC",
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "^2.2.3",
-    "@openzeppelin/hardhat-upgrades": "^1.26.0",
-    "ethers": "^5.7.2",
-    "hardhat": "^2.17.1",
-    "hardhat-contract-sizer": "^2.10.0",
-    "web3": "^1.10.0"
-  },
-  "dependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^2.0.2",
-    "@nomicfoundation/hardhat-verify": "^1.0.0",
-    "@openzeppelin/contracts": "^4.9.3",
-    "@openzeppelin/contracts-upgradeable": "^4.9.3",
-    "@uniswap/snapshot-gas-cost": "^1.0.0",
-    "@uniswap/v2-core": "github:uniswap/v2-core",
-    "@uniswap/v3-core": "^1.0.1",
-    "@uniswap/v3-sdk": "github:uniswap/v3-sdk",
-    "chalk": "^5.2.0",
-    "compile": "^0.0.2",
-    "console-log-colors": "^0.4.0",
-    "dotenv": "^16.0.3",
-    "ethers-js-permit": "^1.0.3",
-    "keccak256": "^1.0.6",
-    "merkletreejs": "^0.3.10",
-    "prompt-sync": "^4.2.0"
+    "@nomicfoundation/hardhat-ethers": "^3.0.5",
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "@openzeppelin/contracts-upgradeable": "^5.0.0",
+    "@openzeppelin/hardhat-upgrades": "^2.5.0",
+    "@openzeppelin/merkle-tree": "^1.0.5",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.9.1",
+    "hardhat": "^2.19.0",
+    "hardhat-contract-sizer": "^2.10.0"
   }
 }

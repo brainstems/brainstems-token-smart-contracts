@@ -15,12 +15,10 @@
 pragma solidity ^0.8.7;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts-upgradeable/access/AccessControlEnumerableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 
 import "./interface/IAssets.sol";
 
@@ -30,8 +28,6 @@ contract Assets is
     IAssets,
     ReentrancyGuardUpgradeable
 {
-    using Strings for uint256;
-    using SafeMath for uint256;
     using SafeERC20 for ERC20;
 
     mapping(uint256 => Asset) private assets;
@@ -72,10 +68,9 @@ contract Assets is
         assets[assetId].contributors = contributors;
         assets[assetId].uri = ipfsHash;
 
-        uint256 _tRate = contributors
-            .creatorRate
-            .add(contributors.marketingRate)
-            .add(contributors.presaleRate);
+        uint256 _tRate = contributors.creatorRate +
+            contributors.marketingRate +
+            contributors.presaleRate;
 
         if (_tRate != 10000) revert("invalid contributor rates");
 
@@ -151,7 +146,7 @@ contract Assets is
         uint256 marketingRate,
         uint256 presaleRate
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        uint256 totalRate = creatorRate.add(marketingRate).add(presaleRate);
+        uint256 totalRate = creatorRate + marketingRate + presaleRate;
 
         require(totalRate == 10000 && creatorRate >= 2000, "invalid rates");
 
@@ -183,10 +178,9 @@ contract Assets is
         Asset memory asset = assets[assetId];
         Contributors memory contributors = asset.contributors;
 
-        uint256 creatorAmount = amount.mul(contributors.creatorRate) / 10000;
-        uint256 marketingAmount = amount.mul(contributors.marketingRate) /
-            10000;
-        uint256 presaleAmount = amount.mul(contributors.presaleRate) / 10000;
+        uint256 creatorAmount = (amount * contributors.creatorRate) / 10000;
+        uint256 marketingAmount = (amount * contributors.marketingRate) / 10000;
+        uint256 presaleAmount = (amount * contributors.presaleRate) / 10000;
 
         balances[assetId][contributors.creator] += creatorAmount;
         balances[assetId][contributors.marketing] += marketingAmount;
