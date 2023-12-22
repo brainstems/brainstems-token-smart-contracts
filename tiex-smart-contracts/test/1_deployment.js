@@ -9,11 +9,11 @@ const {
 } = require("./consts");
 const { verifyEvents } = require("./utils");
 
-let owner, user, IntellToken;
+let owner, IntellToken;
 
 describe("Deployment", function () {
   before(async () => {
-    [owner, user] = await ethers.getSigners();
+    [owner] = await ethers.getSigners();
 
     IntellToken = await ethers.getContractFactory("IntelligenceToken");
   });

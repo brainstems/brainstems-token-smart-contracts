@@ -31,7 +31,7 @@ contract IntelligenceToken is
     using SafeERC20 for IERC20;
 
     struct Balance {
-        bool isInvestor;
+        bool enabled;
         uint256 balance; // in tokens
     }
 
@@ -99,12 +99,12 @@ contract IntelligenceToken is
         address investor,
         uint256 balance
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(!investors[investor].isInvestor, "investor already added");
+        require(!investors[investor].enabled, "investor already added");
         require(
             investorTokensAllocated + balance <= INVESTORS_CAP,
             "insufficient investor tokens"
         );
-        investors[investor].isInvestor = true;
+        investors[investor].enabled = true;
         investors[investor].balance = balance;
         investorTokensAllocated += balance;
         emit InvestorAdded(investor, balance);
@@ -131,9 +131,9 @@ contract IntelligenceToken is
         _unpause();
     }
 
-    function claimInvestorTokens() external whenNotPaused {
+    function claimInvestorTokens() external {
         Balance storage balance = investors[msg.sender];
-        require(balance.isInvestor, "not investor");
+        require(balance.enabled, "not investor");
         require(balance.balance > 0, "no balance");
         _mint(msg.sender, balance.balance);
         emit TokensClaimed(msg.sender, balance.balance);
@@ -179,7 +179,7 @@ contract IntelligenceToken is
 
         uint256 price = amount * tokenToUsdc;
         usdcEarnings += price;
-        usdcToken.safeTransferFrom(address(this), buyer, price);
+        usdcToken.safeTransfer(buyer, price);
         _mint(buyer, amount);
         emit TokensPurchased(buyer, amount, price, currentStage);
     }
@@ -188,7 +188,8 @@ contract IntelligenceToken is
     function distribute(
         address recipient,
         uint256 amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) whenNotPaused {
+    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(recipient != address(0), "invalid recipient");
         require(amount > 0, "amount is 0");
         require(totalSupply() + amount <= MAX_SUPPLY, "exceeds maximum supply");
         _mint(recipient, amount);
@@ -197,12 +198,9 @@ contract IntelligenceToken is
     function claimEarnings(
         address cashOutRecipient
     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(cashOutRecipient != address(0), "invalid recipient");
         uint256 _usdcEarnings = usdcEarnings;
         usdcEarnings = 0;
-        usdcToken.safeTransferFrom(
-            address(this),
-            cashOutRecipient,
-            _usdcEarnings
-        );
+        usdcToken.safeTransfer(cashOutRecipient, _usdcEarnings);
     }
 }
