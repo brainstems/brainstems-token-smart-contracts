@@ -127,8 +127,23 @@ describe("Private Sale", function () {
     });
   });
 
-  describe("should fail to buy private tokens", function () {
-    it("during an invalid stage", async function () {
+  describe("should fail to", function () {
+    it("set whitelist root with invalid parameters", async function () {
+      const { intellToken } = await loadFixture(setupFixture);
+
+      const buyer = buyer3;
+      const tree = StandardMerkleTree.of([[buyer.address]], ["address"]);
+      const root = tree.root;
+
+      await expect(
+        intellToken.connect(buyer).setWhitelistRoot(root)
+      ).to.be.revertedWithCustomError(
+        intellToken,
+        "AccessControlUnauthorizedAccount"
+      );
+    });
+
+    it("buy private tokens during an invalid stage", async function () {
       const { intellToken } = await loadFixture(setupFixture);
       const amount = 10n;
       const proof = whitelistTree.getProof(0);
@@ -152,7 +167,7 @@ describe("Private Sale", function () {
       ).to.be.revertedWith("invalid stage");
     });
 
-    it("with invalid parameters", async function () {
+    it("buy private tokens with invalid parameters", async function () {
       const { intellToken } = await loadFixture(setupFixture);
 
       const amount = 100n;

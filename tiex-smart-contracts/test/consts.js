@@ -8,7 +8,11 @@ INTELLTOKEN_STAGES = {
 };
 INTELLTOKEN_EVENTS = {
   RATE_UPDATED: "RateUpdated",
+  ENTERED_STAGE: "EnteredStage",
   TOKENS_PURCHASED: "TokensPurchased",
+  INVESTOR_ADDED: "InvestorAdded",
+  TOKENS_CLAIMED: "TokensClaimed",
+  EARNINGS_CLAIMED: "EarningsClaimed",
 };
 INTELLTOKEN_MAX_SUPPLY = BigInt(1000e6) * BigInt(1e18);
 INTELLTOKEN_INVESTORS_CAP = BigInt(100e6) * BigInt(1e18);

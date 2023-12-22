@@ -52,6 +52,9 @@ contract IntelligenceToken is
     );
     event TokensClaimed(address indexed investor, uint256 amount);
     event RateUpdated(uint256 rate);
+    event TokensDistributed(address recipient, uint256 amount);
+    event EarningsClaimed(address recipient, uint256 amount);
+    event EnteredStage(Stage stage);
 
     // merkle tree root for whitelisted addresses
     bytes32 public whitelistRoot;
@@ -85,12 +88,12 @@ contract IntelligenceToken is
         currentStage = Stage.Whitelisting;
 
         emit RateUpdated(_tokenToUsdc);
+        emit EnteredStage(currentStage);
     }
 
     function setWhitelistRoot(
         bytes32 _root
     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(_root.length > 0, "invalid root");
         whitelistRoot = _root;
         emit WhitelistUpdated(_root);
     }
@@ -99,6 +102,8 @@ contract IntelligenceToken is
         address investor,
         uint256 balance
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        require(investor != address(0), "invalid investor");
+        require(balance > 0, "invalid balance");
         require(!investors[investor].enabled, "investor already added");
         require(
             investorTokensAllocated + balance <= INVESTORS_CAP,
@@ -121,6 +126,7 @@ contract IntelligenceToken is
     function moveToNextStage() external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(currentStage != Stage.Finished, "sales finished");
         currentStage = Stage(uint256(currentStage) + 1);
+        emit EnteredStage(currentStage);
     }
 
     function pause() external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -201,6 +207,8 @@ contract IntelligenceToken is
         require(recipient != address(0), "invalid recipient");
         require(amount > 0, "amount is 0");
         require(totalSupply() + amount <= MAX_SUPPLY, "exceeds maximum supply");
+
+        emit TokensDistributed(recipient, amount);
         _mint(recipient, amount);
     }
 
@@ -208,8 +216,11 @@ contract IntelligenceToken is
         address cashOutRecipient
     ) public onlyRole(DEFAULT_ADMIN_ROLE) {
         require(cashOutRecipient != address(0), "invalid recipient");
+        require(usdcEarnings > 0, "no earnings");
         uint256 _usdcEarnings = usdcEarnings;
         usdcEarnings = 0;
+
+        emit EarningsClaimed(cashOutRecipient, _usdcEarnings);
         usdcToken.safeTransfer(cashOutRecipient, _usdcEarnings);
     }
 }

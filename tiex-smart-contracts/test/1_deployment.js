@@ -71,6 +71,13 @@ describe("Deployment", function () {
         INTELLTOKEN_EVENTS.RATE_UPDATED,
         [{ tokenToUsdc: tokenToUsdc }]
       );
+
+      await verifyEvents(
+        deploymentTx,
+        intellToken,
+        INTELLTOKEN_EVENTS.ENTERED_STAGE,
+        [{ stage: INTELLTOKEN_STAGES.WHITELISTING }]
+      );
     });
   });
 });
