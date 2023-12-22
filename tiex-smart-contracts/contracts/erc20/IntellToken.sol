@@ -135,9 +135,16 @@ contract IntelligenceToken is
         Balance storage balance = investors[msg.sender];
         require(balance.enabled, "not investor");
         require(balance.balance > 0, "no balance");
-        _mint(msg.sender, balance.balance);
-        emit TokensClaimed(msg.sender, balance.balance);
+        require(
+            totalSupply() + balance.balance <= MAX_SUPPLY,
+            "exceeds maximum supply"
+        );
+
+        uint256 amount = balance.balance;
         balance.balance = 0;
+
+        emit TokensClaimed(msg.sender, amount);
+        _mint(msg.sender, amount);
     }
 
     function buyWhitelistedTokens(
@@ -175,13 +182,15 @@ contract IntelligenceToken is
             tokensSold + amount <= SALES_CAP,
             "insufficient available tokens"
         );
+        require(totalSupply() + amount <= MAX_SUPPLY, "exceeds maximum supply");
         tokensSold += amount;
 
         uint256 price = amount * tokenToUsdc;
         usdcEarnings += price;
-        usdcToken.safeTransfer(buyer, price);
-        _mint(buyer, amount);
+
         emit TokensPurchased(buyer, amount, price, currentStage);
+        _mint(buyer, amount);
+        usdcToken.safeTransferFrom(buyer, address(this), price);
     }
 
     // distribute to other pools (e.g. community programs, emissions)
