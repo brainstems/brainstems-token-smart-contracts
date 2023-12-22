@@ -54,6 +54,9 @@ describe("Investors", function () {
         // investors should be able to be added during any stage
         await intellToken.moveToNextStage();
 
+        const previousAllocatedTokens =
+          await intellToken.investorTokensAllocated();
+
         const tx = await intellToken.addInvestor(
           balance.investor,
           balance.balance
@@ -66,6 +69,16 @@ describe("Investors", function () {
             balance: balance.balance,
           },
         ]);
+
+        const newAllocatedTokens = await intellToken.investorTokensAllocated();
+        expect(newAllocatedTokens - previousAllocatedTokens).to.eq(
+          balance.balance
+        );
+
+        const contractInvestor = await intellToken.investors(
+          balance.investor.address
+        );
+        expect(contractInvestor).to.deep.eq([true, balance.balance]);
       }
     });
 

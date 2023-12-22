@@ -69,6 +69,7 @@ describe("Public Sale", function () {
           intellToken.target
         );
         const previousTokenSupply = await intellToken.totalSupply();
+        const previousSoldTokens = await intellToken.tokensSold();
 
         const price = amount * INTELLTOKEN_TO_USDC;
 
@@ -81,6 +82,7 @@ describe("Public Sale", function () {
           intellToken.target
         );
         const newTokenSupply = await intellToken.totalSupply();
+        const newSoldTokens = await intellToken.tokensSold();
 
         expect(
           newBuyerIntellTokenBalance - previousBuyerIntellTokenBalance
@@ -90,6 +92,7 @@ describe("Public Sale", function () {
           price
         );
         expect(newTokenSupply - previousTokenSupply).to.eq(amount);
+        expect(newSoldTokens - previousSoldTokens).to.eq(amount);
 
         await verifyEvents(
           tx,

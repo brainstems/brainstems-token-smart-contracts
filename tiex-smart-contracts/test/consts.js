@@ -7,7 +7,7 @@ INTELLTOKEN_STAGES = {
   FINISHED: 3n,
 };
 INTELLTOKEN_EVENTS = {
-  TOKEN_TO_USDC_UPDATED: "TokenToUsdcUpdated",
+  PRICE_UPDATED: "PriceUpdated",
   ENTERED_STAGE: "EnteredStage",
   WHITELIST_UPDATED: "WhitelistUpdated",
   INVESTOR_ADDED: "InvestorAdded",

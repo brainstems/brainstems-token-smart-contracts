@@ -6,6 +6,9 @@ const {
   INTELLTOKEN_SYMBOL,
   INTELLTOKEN_STAGES,
   INTELLTOKEN_EVENTS,
+  INTELLTOKEN_MAX_SUPPLY,
+  INTELLTOKEN_INVESTORS_CAP,
+  INTELLTOKEN_SALES_CAP,
 } = require("./consts");
 const { verifyEvents } = require("./utils");
 
@@ -65,10 +68,19 @@ describe("Deployment", function () {
       const stage = await intellToken.currentStage();
       expect(stage).to.eq(INTELLTOKEN_STAGES.WHITELISTING);
 
+      const maxSupply = await intellToken.MAX_SUPPLY();
+      expect(maxSupply).to.eq(INTELLTOKEN_MAX_SUPPLY);
+
+      const investorsCap = await intellToken.INVESTORS_CAP();
+      expect(investorsCap).to.eq(INTELLTOKEN_INVESTORS_CAP);
+
+      const salesCap = await intellToken.SALES_CAP();
+      expect(salesCap).to.eq(INTELLTOKEN_SALES_CAP);
+
       await verifyEvents(
         deploymentTx,
         intellToken,
-        INTELLTOKEN_EVENTS.TOKEN_TO_USDC_UPDATED,
+        INTELLTOKEN_EVENTS.PRICE_UPDATED,
         [{ tokenToUsdc: tokenToUsdc }]
       );
 

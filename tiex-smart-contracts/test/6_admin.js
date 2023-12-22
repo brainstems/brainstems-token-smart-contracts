@@ -52,6 +52,9 @@ describe("Admin actions", function () {
           },
         ]
       );
+
+      const contractRoot = await intellToken.whitelistRoot();
+      expect(contractRoot).to.eq(tree.root);
     });
 
     it("set price with valid parameters", async function () {
@@ -60,16 +63,11 @@ describe("Admin actions", function () {
       const tx = await intellToken.setPrice(newPrice);
       await tx.wait();
 
-      await verifyEvents(
-        tx,
-        intellToken,
-        INTELLTOKEN_EVENTS.TOKEN_TO_USDC_UPDATED,
-        [
-          {
-            rate: newPrice,
-          },
-        ]
-      );
+      await verifyEvents(tx, intellToken, INTELLTOKEN_EVENTS.PRICE_UPDATED, [
+        {
+          rate: newPrice,
+        },
+      ]);
     });
 
     it("move to next stage with valid parameters", async function () {
