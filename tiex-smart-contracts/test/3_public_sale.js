@@ -1,16 +1,14 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const {
-  INTELLTOKEN_NAME,
-  INTELLTOKEN_SYMBOL,
-  INTELLTOKEN_STAGES,
-  INTELLTOKEN_EVENTS,
   INTELLTOKEN_MAX_SUPPLY,
   INTELLTOKEN_SALES_CAP,
   INTELLTOKEN_TO_USDC,
   USDCOIN_NAME,
   USDCOIN_SYMBOL,
   USDCOIN_DECIMALS,
+  INTELLTOKEN_EVENTS,
+  INTELLTOKEN_STAGES,
 } = require("./consts");
 const { verifyEvents } = require("./utils");
 const {
@@ -52,31 +50,90 @@ describe("Public Sale", function () {
     return { intellToken, usdCoin };
   }
 
+  describe("should be able to buy tokens", function () {
+    it("with valid parameters", async function () {
+      const { intellToken, usdCoin } = await loadFixture(setupFixture);
+
+      // move to Public Sale
+      await intellToken.moveToNextStage();
+      await intellToken.moveToNextStage();
+
+      const amount = 250n;
+
+      for await (const buyer of [buyer1, buyer2, buyer3]) {
+        const previousBuyerIntellTokenBalance = await intellToken.balanceOf(
+          buyer
+        );
+        const previousBuyerUsdcBalance = await usdCoin.balanceOf(buyer);
+        const previousContractUsdcBalance = await usdCoin.balanceOf(
+          intellToken.target
+        );
+        const previousTokenSupply = await intellToken.totalSupply();
+
+        const price = amount * INTELLTOKEN_TO_USDC;
+
+        const tx = await intellToken.connect(buyer).buyPublicTokens(amount);
+        await tx.wait();
+
+        const newBuyerIntellTokenBalance = await intellToken.balanceOf(buyer);
+        const newBuyerUsdcBalance = await usdCoin.balanceOf(buyer);
+        const newContractUsdcBalance = await usdCoin.balanceOf(
+          intellToken.target
+        );
+        const newTokenSupply = await intellToken.totalSupply();
+
+        expect(
+          newBuyerIntellTokenBalance - previousBuyerIntellTokenBalance
+        ).to.eq(amount);
+        expect(previousBuyerUsdcBalance - newBuyerUsdcBalance).to.eq(price);
+        expect(newContractUsdcBalance - previousContractUsdcBalance).to.eq(
+          price
+        );
+        expect(newTokenSupply - previousTokenSupply).to.eq(amount);
+
+        await verifyEvents(
+          tx,
+          intellToken,
+          INTELLTOKEN_EVENTS.TOKENS_PURCHASED,
+          [
+            {
+              buyer: buyer.address,
+              amount: amount,
+              price: price,
+              stage: INTELLTOKEN_STAGES.PUBLIC_SALE,
+            },
+          ]
+        );
+      }
+    });
+  });
+
   describe("should fail to buy tokens", function () {
     it("during an invalid stage", async function () {
       const { intellToken } = await loadFixture(setupFixture);
+      const amount = 10n;
 
       // Whitelisting
       await expect(
-        intellToken.connect(buyer1).buyPublicTokens(10)
+        intellToken.connect(buyer1).buyPublicTokens(amount)
       ).to.be.revertedWith("invalid stage");
 
       // Private Sale
       await intellToken.moveToNextStage();
       await expect(
-        intellToken.connect(buyer1).buyPublicTokens(10)
+        intellToken.connect(buyer1).buyPublicTokens(amount)
       ).to.be.revertedWith("invalid stage");
 
       // Finished
       await intellToken.moveToNextStage();
       await intellToken.moveToNextStage();
       await expect(
-        intellToken.connect(buyer1).buyPublicTokens(10)
+        intellToken.connect(buyer1).buyPublicTokens(amount)
       ).to.be.revertedWith("invalid stage");
     });
 
     it("with invalid parameters", async function () {
-      const { intellToken, usdCoin } = await loadFixture(setupFixture);
+      const { intellToken } = await loadFixture(setupFixture);
 
       const amount = 100n;
 
