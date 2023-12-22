@@ -51,7 +51,7 @@ contract IntelligenceToken is
         Stage stage
     );
     event TokensClaimed(address indexed investor, uint256 amount);
-    event RateUpdated(uint256 rate);
+    event TokenToUsdcUpdated(uint256 tokenToUsdc);
     event TokensDistributed(address recipient, uint256 amount);
     event EarningsClaimed(address recipient, uint256 amount);
     event EnteredStage(Stage stage);
@@ -87,7 +87,7 @@ contract IntelligenceToken is
         tokenToUsdc = _tokenToUsdc;
         currentStage = Stage.Whitelisting;
 
-        emit RateUpdated(_tokenToUsdc);
+        emit TokenToUsdcUpdated(_tokenToUsdc);
         emit EnteredStage(currentStage);
     }
 
@@ -120,7 +120,7 @@ contract IntelligenceToken is
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
         require(_tokenToUsdc > 0, "invalid price");
         tokenToUsdc = _tokenToUsdc;
-        emit RateUpdated(_tokenToUsdc);
+        emit TokenToUsdcUpdated(_tokenToUsdc);
     }
 
     function moveToNextStage() external onlyRole(DEFAULT_ADMIN_ROLE) {

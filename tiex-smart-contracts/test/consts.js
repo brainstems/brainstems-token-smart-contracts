@@ -7,11 +7,13 @@ INTELLTOKEN_STAGES = {
   FINISHED: 3n,
 };
 INTELLTOKEN_EVENTS = {
-  RATE_UPDATED: "RateUpdated",
+  TOKEN_TO_USDC_UPDATED: "TokenToUsdcUpdated",
   ENTERED_STAGE: "EnteredStage",
-  TOKENS_PURCHASED: "TokensPurchased",
+  WHITELIST_UPDATED: "WhitelistUpdated",
   INVESTOR_ADDED: "InvestorAdded",
+  TOKENS_PURCHASED: "TokensPurchased",
   TOKENS_CLAIMED: "TokensClaimed",
+  TOKENS_DISTRIBUTED: "TokensDistributed",
   EARNINGS_CLAIMED: "EarningsClaimed",
 };
 INTELLTOKEN_MAX_SUPPLY = BigInt(1000e6) * BigInt(1e18);

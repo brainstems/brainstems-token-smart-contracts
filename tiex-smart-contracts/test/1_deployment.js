@@ -68,7 +68,7 @@ describe("Deployment", function () {
       await verifyEvents(
         deploymentTx,
         intellToken,
-        INTELLTOKEN_EVENTS.RATE_UPDATED,
+        INTELLTOKEN_EVENTS.TOKEN_TO_USDC_UPDATED,
         [{ tokenToUsdc: tokenToUsdc }]
       );
 

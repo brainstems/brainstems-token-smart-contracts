@@ -221,7 +221,7 @@ contract Assets is
 
         emit AssetEarningsWithdrawn(assetId, caller, balance);
 
-        paymentToken.safeTransferFrom(msg.sender, address(this), balance);
+        paymentToken.safeTransfer(msg.sender, balance);
     }
 
     function getAsset(uint256 assetId) public view returns (Asset memory) {

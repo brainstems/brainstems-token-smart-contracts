@@ -1,20 +1,13 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const {
-  INTELLTOKEN_MAX_SUPPLY,
-  INTELLTOKEN_SALES_CAP,
   INTELLTOKEN_TO_USDC,
   USDCOIN_NAME,
   USDCOIN_SYMBOL,
   USDCOIN_DECIMALS,
   INTELLTOKEN_EVENTS,
-  INTELLTOKEN_STAGES,
-  INTELLTOKEN_INVESTORS_CAP,
 } = require("./consts");
 const { verifyEvents } = require("./utils");
-const {
-  loadFixture,
-} = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 
 let owner, buyer1, buyer2, buyer3, user, intellToken, usdCoin, earnings;
 
