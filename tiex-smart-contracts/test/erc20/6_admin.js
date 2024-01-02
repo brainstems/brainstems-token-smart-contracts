@@ -8,13 +8,13 @@ const {
   INTELLTOKEN_EVENTS,
   INTELLTOKEN_STAGES,
   INTELLTOKEN_MAX_SUPPLY,
-} = require("./consts");
-const { verifyEvents } = require("./utils");
+} = require("../consts");
+const { verifyEvents } = require("../utils");
 const { StandardMerkleTree } = require("@openzeppelin/merkle-tree");
 
 let owner, user, intellToken, usdCoin;
 
-describe("Admin actions", function () {
+describe("ERC20: Admin actions", function () {
   before(async () => {
     [owner, user] = await ethers.getSigners();
 

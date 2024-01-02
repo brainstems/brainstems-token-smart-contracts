@@ -10,15 +10,15 @@ const {
   INTELLTOKEN_EVENTS,
   INTELLTOKEN_STAGES,
   INTELLTOKEN_INVESTORS_CAP,
-} = require("./consts");
-const { verifyEvents } = require("./utils");
+} = require("../consts");
+const { verifyEvents } = require("../utils");
 const {
   loadFixture,
 } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
 
 let owner, investor1, investor2, user, balances;
 
-describe("Investors", function () {
+describe("ERC20: Investors", function () {
   async function setupFixture() {
     [owner, investor1, investor2, user] = await ethers.getSigners();
 

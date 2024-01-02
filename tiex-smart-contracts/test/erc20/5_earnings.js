@@ -6,12 +6,12 @@ const {
   USDCOIN_SYMBOL,
   USDCOIN_DECIMALS,
   INTELLTOKEN_EVENTS,
-} = require("./consts");
-const { verifyEvents } = require("./utils");
+} = require("../consts");
+const { verifyEvents } = require("../utils");
 
 let owner, buyer1, buyer2, buyer3, user, intellToken, usdCoin, earnings;
 
-describe("Earnings", function () {
+describe("ERC20: Earnings", function () {
   before(async () => {
     [owner, buyer1, buyer2, buyer3, user] = await ethers.getSigners();
 

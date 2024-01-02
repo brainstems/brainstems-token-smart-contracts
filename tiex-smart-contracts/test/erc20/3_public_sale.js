@@ -9,16 +9,15 @@ const {
   USDCOIN_DECIMALS,
   INTELLTOKEN_EVENTS,
   INTELLTOKEN_STAGES,
-} = require("./consts");
-const { verifyEvents } = require("./utils");
+} = require("../consts");
+const { verifyEvents } = require("../utils");
 const {
   loadFixture,
 } = require("@nomicfoundation/hardhat-toolbox/network-helpers");
-const { StandardMerkleTree } = require("@openzeppelin/merkle-tree");
 
-let owner, buyer1, buyer2, buyer3, whitelistTree;
+let owner, buyer1, buyer2, buyer3;
 
-describe("Private Sale", function () {
+describe("ERC20: Public Sale", function () {
   async function setupFixture() {
     [owner, buyer1, buyer2, buyer3] = await ethers.getSigners();
 
@@ -48,36 +47,20 @@ describe("Private Sale", function () {
         .approve(intellToken.target, ethers.MaxUint256);
     }
 
-    // merkle tree construction in order to whitelist 2 buyers
-    const leaves = [];
-    for (const buyer of [buyer1, buyer2]) {
-      let address = buyer.address;
-      leaves.push([address]);
-    }
-
-    whitelistTree = StandardMerkleTree.of(leaves, ["address"]);
-    await intellToken.setWhitelistRoot(whitelistTree.root);
-
     return { intellToken, usdCoin };
   }
 
-  describe("should be able to buy private tokens", function () {
+  describe("should be able to buy public tokens", function () {
     it("with valid parameters", async function () {
       const { intellToken, usdCoin } = await loadFixture(setupFixture);
 
-      // move to Private Sale
+      // move to Public Sale
+      await intellToken.moveToNextStage();
       await intellToken.moveToNextStage();
 
-      const whitelist = [
-        { buyer: buyer1, proof: whitelistTree.getProof(0), amount: 150n },
-        { buyer: buyer2, proof: whitelistTree.getProof(1), amount: 300n },
-      ];
+      const amount = 250n;
 
-      for await (const entry of whitelist) {
-        const buyer = entry.buyer;
-        const proof = entry.proof;
-        const amount = entry.amount;
-
+      for await (const buyer of [buyer1, buyer2, buyer3]) {
         const previousBuyerIntellTokenBalance = await intellToken.balanceOf(
           buyer
         );
@@ -90,9 +73,7 @@ describe("Private Sale", function () {
 
         const price = amount * INTELLTOKEN_TO_USDC;
 
-        const tx = await intellToken
-          .connect(buyer)
-          .buyWhitelistedTokens(amount, proof);
+        const tx = await intellToken.connect(buyer).buyPublicTokens(amount);
         await tx.wait();
 
         const newBuyerIntellTokenBalance = await intellToken.balanceOf(buyer);
@@ -122,7 +103,7 @@ describe("Private Sale", function () {
               buyer: buyer.address,
               amount: amount,
               price: price,
-              stage: INTELLTOKEN_STAGES.PRIVATE_SALE,
+              stage: INTELLTOKEN_STAGES.PUBLIC_SALE,
             },
           ]
         );
@@ -130,78 +111,56 @@ describe("Private Sale", function () {
     });
   });
 
-  describe("should fail to", function () {
-    it("set whitelist root with invalid parameters", async function () {
-      const { intellToken } = await loadFixture(setupFixture);
-
-      const buyer = buyer3;
-      const tree = StandardMerkleTree.of([[buyer.address]], ["address"]);
-      const root = tree.root;
-
-      await expect(
-        intellToken.connect(buyer).setWhitelistRoot(root)
-      ).to.be.revertedWithCustomError(
-        intellToken,
-        "AccessControlUnauthorizedAccount"
-      );
-    });
-
-    it("buy private tokens during an invalid stage", async function () {
+  describe("should fail to buy public tokens", function () {
+    it("during an invalid stage", async function () {
       const { intellToken } = await loadFixture(setupFixture);
       const amount = 10n;
-      const proof = whitelistTree.getProof(0);
 
       // Whitelisting
       await expect(
-        intellToken.connect(buyer1).buyWhitelistedTokens(amount, proof)
+        intellToken.connect(buyer1).buyPublicTokens(amount)
       ).to.be.revertedWith("invalid stage");
 
-      // Public Sale
-      await intellToken.moveToNextStage();
+      // Private Sale
       await intellToken.moveToNextStage();
       await expect(
-        intellToken.connect(buyer1).buyWhitelistedTokens(amount, proof)
+        intellToken.connect(buyer1).buyPublicTokens(amount)
       ).to.be.revertedWith("invalid stage");
 
       // Finished
       await intellToken.moveToNextStage();
+      await intellToken.moveToNextStage();
       await expect(
-        intellToken.connect(buyer1).buyWhitelistedTokens(amount, proof)
+        intellToken.connect(buyer1).buyPublicTokens(amount)
       ).to.be.revertedWith("invalid stage");
     });
 
-    it("buy private tokens with invalid parameters", async function () {
+    it("with invalid parameters", async function () {
       const { intellToken } = await loadFixture(setupFixture);
 
       const amount = 100n;
-      const proof = whitelistTree.getProof(0);
 
-      // move to Private Sale
+      // move to Public Sale
+      await intellToken.moveToNextStage();
       await intellToken.moveToNextStage();
 
       await expect(
-        intellToken.connect(buyer1).buyWhitelistedTokens(0, proof)
+        intellToken.connect(buyer1).buyPublicTokens(0)
       ).to.be.revertedWith("amount is 0");
 
       await intellToken.pause();
 
       await expect(
-        intellToken.connect(buyer1).buyWhitelistedTokens(amount, proof)
+        intellToken.connect(buyer1).buyPublicTokens(amount)
       ).to.be.revertedWithCustomError(intellToken, "EnforcedPause");
 
       await intellToken.unpause();
 
-      await expect(
-        intellToken.connect(buyer3).buyWhitelistedTokens(amount, proof)
-      ).to.be.revertedWith("not whitelisted");
-
       const lockedAmount = INTELLTOKEN_SALES_CAP - amount + 1n;
-      await intellToken
-        .connect(buyer2)
-        .buyWhitelistedTokens(lockedAmount, whitelistTree.getProof(1));
+      await intellToken.buyPublicTokens(lockedAmount);
 
       await expect(
-        intellToken.connect(buyer1).buyWhitelistedTokens(amount, proof)
+        intellToken.connect(buyer1).buyPublicTokens(amount)
       ).to.be.revertedWith("insufficient available tokens");
 
       await intellToken.distribute(
@@ -210,7 +169,7 @@ describe("Private Sale", function () {
       );
 
       await expect(
-        intellToken.connect(buyer1).buyWhitelistedTokens(1n, proof)
+        intellToken.connect(buyer1).buyPublicTokens(1n)
       ).to.be.revertedWith("exceeds maximum supply");
     });
   });

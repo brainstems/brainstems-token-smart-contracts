@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { admin, usdcToken, tokenToUsdc } = require("../scripts/config");
+const { admin, usdcToken, tokenToUsdc } = require("../../scripts/config");
 const {
   INTELLTOKEN_NAME,
   INTELLTOKEN_SYMBOL,
@@ -9,12 +9,12 @@ const {
   INTELLTOKEN_MAX_SUPPLY,
   INTELLTOKEN_INVESTORS_CAP,
   INTELLTOKEN_SALES_CAP,
-} = require("./consts");
-const { verifyEvents } = require("./utils");
+} = require("../consts");
+const { verifyEvents } = require("../utils");
 
 let owner, IntellToken;
 
-describe("Deployment", function () {
+describe("ERC20: Deployment", function () {
   before(async () => {
     [owner] = await ethers.getSigners();
 
