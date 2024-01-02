@@ -14,7 +14,6 @@
 
 pragma solidity ^0.8.7;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
@@ -28,18 +27,19 @@ contract Assets is
     IAssets,
     ReentrancyGuardUpgradeable
 {
-    using SafeERC20 for ERC20;
+    using SafeERC20 for IERC20;
 
     mapping(uint256 => Asset) private assets;
     mapping(uint256 => mapping(address => uint256)) balances;
 
-    ERC20 public paymentToken;
+    IERC20 public paymentToken;
 
     function initialize(
         address _admin,
-        ERC20 _paymentToken
+        address _paymentToken
     ) public initializer {
-        paymentToken = _paymentToken;
+        require(_paymentToken != address(0), "invalid contract address");
+        paymentToken = IERC20(_paymentToken);
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
     }
 
