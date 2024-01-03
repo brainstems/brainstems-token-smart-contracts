@@ -9,7 +9,7 @@ const {
 
 let owner, intellToken, Assets;
 
-describe.only("Assets: Deployment", function () {
+describe("Assets: Deployment", function () {
   before(async () => {
     [owner] = await ethers.getSigners();
 

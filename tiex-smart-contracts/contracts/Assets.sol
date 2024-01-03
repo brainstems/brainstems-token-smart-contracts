@@ -61,7 +61,7 @@ contract Assets is
 
         require(
             baseAsset == 0 ||
-                getAsset(baseAsset).contributors.creator != address(0),
+                assets[baseAsset].contributors.creator != address(0),
             "invalid base asset"
         );
         assets[assetId].baseAsset = baseAsset;
@@ -77,8 +77,6 @@ contract Assets is
         bool validMetadata = bytes(metadata.name).length > 0 &&
             bytes(metadata.description).length > 0 &&
             metadata.version == 1 &&
-            metadata.fingerprint.length > 0 &&
-            metadata.watermarkFingerprint.length > 0 &&
             metadata.performance > 0;
 
         require(validMetadata, "invalid metadata");
@@ -224,7 +222,9 @@ contract Assets is
         paymentToken.safeTransfer(msg.sender, balance);
     }
 
-    function getAsset(uint256 assetId) public view returns (Asset memory) {
+    function getAsset(
+        uint256 assetId
+    ) public view existingAsset(assetId) returns (Asset memory) {
         return assets[assetId];
     }
 
@@ -242,6 +242,9 @@ contract Assets is
     function uri(
         uint256 assetId
     ) public view existingAsset(assetId) returns (string memory) {
-        return string(abi.encodePacked("ipfs://", getAsset(assetId).uri));
+        return
+            string(
+                abi.encodePacked("https://ipfs.io/ipfs/", assets[assetId].uri)
+            );
     }
 }
