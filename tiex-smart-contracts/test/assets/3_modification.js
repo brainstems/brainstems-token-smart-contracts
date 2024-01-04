@@ -22,7 +22,7 @@ let owner,
 
 describe("Assets: Modification", function () {
   before(async () => {
-    [owner, user1, user2, user3, user4, user5, user6] =
+    [owner, user1, user2, user3, user4, user5] =
       await ethers.getSigners();
 
     const TestErc20 = await ethers.getContractFactory("TestERC20");

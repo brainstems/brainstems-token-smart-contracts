@@ -30,7 +30,7 @@ contract Assets is
     using SafeERC20 for IERC20;
 
     mapping(uint256 => Asset) private assets;
-    mapping(uint256 => mapping(address => uint256)) balances;
+    mapping(uint256 => mapping(address => uint256)) public balances;
 
     IERC20 public paymentToken;
 
@@ -198,7 +198,7 @@ contract Assets is
         paymentToken.safeTransferFrom(msg.sender, address(this), presaleAmount);
     }
 
-    function withdraw(uint256 assetId) external {
+    function withdraw(uint256 assetId) external nonReentrant {
         address caller = msg.sender;
         uint256 balance = balances[assetId][caller];
         require(balance > 0);
