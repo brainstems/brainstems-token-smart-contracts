@@ -43,7 +43,7 @@ interface IAssets {
 
     event AssetCreated(uint256 indexed id, Asset asset);
     event AssetUriUpdated(uint256 indexed id, string ipfsHash);
-    event AssetUpgraded(uint256 indexed id, Metadata metadata);
+    event AssetUpgraded(uint256 indexed id, Metadata metadata, string ipfsHash);
     event AssetMarketingAddressUpdated(uint256 indexed id, address marketing);
     event AssetPresaleAddressUpdated(uint256 indexed id, address presale);
     event AssetRatesUpdated(
@@ -85,7 +85,11 @@ interface IAssets {
      * @param assetId identifier for the asset.
      * @param metadata updated asset metadata.
      */
-    function upgradeAsset(uint256 assetId, Metadata memory metadata) external;
+    function upgradeAsset(
+        uint256 assetId,
+        Metadata memory metadata,
+        string calldata uri
+    ) external;
 
     /**
      * @notice Used to edit the asset URI, expected to be in the form of an IPFS hash.

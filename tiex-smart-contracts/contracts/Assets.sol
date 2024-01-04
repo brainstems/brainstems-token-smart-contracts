@@ -76,8 +76,7 @@ contract Assets is
 
         bool validMetadata = bytes(metadata.name).length > 0 &&
             bytes(metadata.description).length > 0 &&
-            metadata.version == 1 &&
-            metadata.performance > 0;
+            metadata.version == 1;
 
         require(validMetadata, "invalid metadata");
         assets[assetId].metadata = metadata;
@@ -87,19 +86,18 @@ contract Assets is
 
     function upgradeAsset(
         uint256 assetId,
-        Metadata calldata metadata
+        Metadata calldata metadata,
+        string calldata ipfsHash
     ) external onlyRole(DEFAULT_ADMIN_ROLE) existingAsset(assetId) {
         bool validMetadata = bytes(metadata.name).length > 0 &&
             bytes(metadata.description).length > 0 &&
-            metadata.version > assets[assetId].metadata.version &&
-            metadata.fingerprint.length > 0 &&
-            metadata.watermarkFingerprint.length > 0 &&
-            metadata.performance > 0;
+            metadata.version > assets[assetId].metadata.version;
 
         require(validMetadata, "invalid metadata");
         assets[assetId].metadata = metadata;
+        assets[assetId].uri = ipfsHash;
 
-        emit AssetUpgraded(assetId, assets[assetId].metadata);
+        emit AssetUpgraded(assetId, metadata, ipfsHash);
     }
 
     function editUri(
@@ -115,7 +113,7 @@ contract Assets is
         uint256 assetId,
         address marketing
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        IAssets.Asset memory asset = getAsset(assetId);
+        Asset storage asset = assets[assetId];
 
         require(
             marketing != asset.contributors.marketing,
@@ -130,7 +128,7 @@ contract Assets is
         uint256 assetId,
         address presale
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        IAssets.Asset memory asset = getAsset(assetId);
+        Asset storage asset = assets[assetId];
 
         require(presale != asset.contributors.presale, "no change to address");
         asset.contributors.presale = presale;
