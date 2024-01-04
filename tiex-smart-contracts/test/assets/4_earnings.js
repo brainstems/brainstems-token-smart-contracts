@@ -17,7 +17,7 @@ let owner,
   registeredAssets,
   balances;
 
-describe.only("Assets: Earnings", function () {
+describe("Assets: Earnings", function () {
   before(async () => {
     [owner, user1, user2, user3, user4] = await ethers.getSigners();
 
@@ -41,9 +41,9 @@ describe.only("Assets: Earnings", function () {
         assetId: 29n,
         baseAssetId: 0n,
         contributors: {
-          creator: user3.address,
-          marketing: user2.address,
-          presale: user1.address,
+          creator: user3,
+          marketing: user2,
+          presale: user1,
           creatorRate: 6000n,
           marketingRate: 1000n,
           presaleRate: 3000n,
@@ -63,9 +63,9 @@ describe.only("Assets: Earnings", function () {
         assetId: 199n,
         baseAssetId: 29n,
         contributors: {
-          creator: user4.address,
-          marketing: user1.address,
-          presale: user3.address,
+          creator: user4,
+          marketing: user1,
+          presale: user3,
           creatorRate: 9900n,
           marketingRate: 60n,
           presaleRate: 40n,
@@ -84,8 +84,6 @@ describe.only("Assets: Earnings", function () {
       },
     ];
 
-    balances = {};
-
     for await (const asset of registeredAssets) {
       await assets.createAsset(
         asset.assetId,
@@ -94,11 +92,9 @@ describe.only("Assets: Earnings", function () {
         asset.ipfsHash,
         asset.metadata
       );
-
-      balances[asset.contributors.creator] = 0n;
-      balances[asset.contributors.marketing] = 0n;
-      balances[asset.contributors.presale] = 0n;
     }
+
+    balances = {};
 
     // fund admin
     await intellToken.mint(owner, 100000000n);
@@ -136,9 +132,18 @@ describe.only("Assets: Earnings", function () {
         const marketing = asset[2][1];
         const presale = asset[2][2];
 
-        balances[creator] += creatorAmount;
-        balances[marketing] += marketingAmount;
-        balances[presale] += presaleAmount;
+        if (balances[assetId] === undefined) {
+          balances[assetId] = {};
+        }
+        for (const address of [creator, marketing, presale]) {
+          if (balances[assetId][address] === undefined) {
+            balances[assetId][address] = 0n;
+          }
+        }
+
+        balances[assetId][creator] += creatorAmount;
+        balances[assetId][marketing] += marketingAmount;
+        balances[assetId][presale] += presaleAmount;
 
         await verifyEvents(tx, assets, "AssetEarningsDeposited", [
           {
@@ -161,7 +166,39 @@ describe.only("Assets: Earnings", function () {
       }
     });
 
-    it("withdraw with valid parameters", async function () {});
+    it("withdraw with valid parameters", async function () {
+      for await (const asset of registeredAssets) {
+        const creator = asset.contributors.creator;
+        const marketing = asset.contributors.marketing;
+        const presale = asset.contributors.presale;
+
+        for await (const caller of [creator, marketing, presale]) {
+          const previousCallerBalance = await intellToken.balanceOf(caller);
+          const previousContractBalance = await intellToken.balanceOf(
+            assets.target
+          );
+
+          const tx = await assets.connect(caller).withdraw(asset.assetId);
+          await tx.wait();
+
+          const balance = balances[asset.assetId][caller.address];
+
+          await verifyEvents(tx, assets, "AssetEarningsWithdrawn", [
+            {
+              assetId: asset.assetId,
+              caller: caller.address,
+              balance: balance,
+            },
+          ]);
+
+          const newCallerBalance = await intellToken.balanceOf(caller);
+          const newContractBalance = await intellToken.balanceOf(assets.target);
+
+          expect(newCallerBalance - previousCallerBalance).to.eq(balance);
+          expect(previousContractBalance - newContractBalance).to.eq(balance);
+        }
+      }
+    });
   });
 
   describe("should fail to", function () {
@@ -189,6 +226,18 @@ describe.only("Assets: Earnings", function () {
       ).to.be.revertedWith("insufficient allowance");
     });
 
-    it("withdraw with invalid parameters", async function () {});
+    it("withdraw with invalid parameters", async function () {
+      const asset = registeredAssets[0];
+
+      await expect(assets.withdraw(asset.assetId)).to.be.revertedWith(
+        "caller is not a contributor"
+      );
+
+      const creator = asset.contributors.creator;
+
+      await expect(
+        assets.connect(creator).withdraw(asset.assetId)
+      ).to.be.revertedWith("no balance");
+    });
   });
 });

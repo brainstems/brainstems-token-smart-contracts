@@ -200,8 +200,6 @@ contract Assets is
 
     function withdraw(uint256 assetId) external nonReentrant {
         address caller = msg.sender;
-        uint256 balance = balances[assetId][caller];
-        require(balance > 0);
 
         Asset memory asset = assets[assetId];
         Contributors memory contributors = asset.contributors;
@@ -212,6 +210,9 @@ contract Assets is
                 caller == contributors.presale,
             "caller is not a contributor"
         );
+
+        uint256 balance = balances[assetId][caller];
+        require(balance > 0, "no balance");
 
         balances[assetId][caller] = 0;
 
