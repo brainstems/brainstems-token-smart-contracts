@@ -1,0 +1,7 @@
+{
+    "projectName": "BrainstemsContracts",
+    "namespace": "BrainstemsContracts.Contracts",
+    "lang": 0,
+    "autoCodeGen": true,
+    "projectPath": "../"
+}
