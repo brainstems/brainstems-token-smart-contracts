@@ -1,0 +1,47 @@
+{
+  "name": "brainstems-protocol",
+  "version": "1.0.0",
+  "description": "Brainstems aims to revolutionize the way businesses access AI models and LLMs by connecting them with talented data scientists and the investment capital needed to deliver impact. By facilitating the sales of AI models to businesses, we create incentives for data scientists to contribute their expertise, ultimately driving the platform's success and increasing the value of the NFTs.",
+  "main": "hardhat.config.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "clean": "npx hardhat clean",
+    "build": "npx hardhat compile",
+    "rebuild": "npm run clean && npm run build",
+    "node": "npx hardhat node",
+    "test": "npx hardhat test",
+    "size": "npx hardhat size-contracts",
+    "slither": "slither . --filter-paths 'node_modules'",
+    "deploy-brainstems-local": "npx hardhat run scripts/deploy_brainstems_token.js --network localhost",
+    "deploy-brainstems-goerli": "npx hardhat run scripts/deploy_brainstems_token.js --network goerli",
+    "deploy-brainstems-fuji": "npx hardhat run scripts/deploy_brainstems_token.js --network fuji"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brainstems/brainstems-token-smart-contracts.git"
+  },
+  "keywords": [
+    "brainstems",
+    "AI",
+    "machine learning",
+    "NFT",
+    "web3",
+    "blockchain",
+    "ethers"
+  ],
+  "author": "krumfi team",
+  "license": "ISC",
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "^3.0.5",
+    "@nomicfoundation/hardhat-toolbox": "^3.0.0",
+    "@openzeppelin/contracts-upgradeable": "^5.0.0",
+    "@openzeppelin/hardhat-upgrades": "^2.5.0",
+    "@openzeppelin/merkle-tree": "^1.0.5",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.9.1",
+    "hardhat": "^2.19.0",
+    "hardhat-contract-sizer": "^2.10.0"
+  }
+}
