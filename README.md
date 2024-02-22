@@ -36,7 +36,7 @@ npm run clean
 Compile the smart contracts with Hardhat:
 
 ```sh
-npm run compile
+npm run build
 ```
 
 ### Test
@@ -46,18 +46,6 @@ Run the tests:
 ```sh
 npm run test
 ```
-<img src="unit-test.png" 
-        alt="test-table" 
-        width="100%" 
-        height="100%" 
-        style="display: block; margin: 0 auto" />
-
-<img src="test-table.png" 
-        alt="test-table" 
-        width="100%" 
-        height="100%" 
-        style="display: block; margin: 0 auto" />
-
 
 # Deployment to a testnet or mainnet
 
@@ -87,8 +75,3 @@ npm run test
     ```
     npm run deploy:mainnet
     ```
-<img src="deploy-console.png" 
-        alt="test-table" 
-        width="100%" 
-        height="100%" 
-        style="display: block; margin: 0 auto" />
