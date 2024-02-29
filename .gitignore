@@ -10,3 +10,6 @@ artifacts
 .openzeppelin
 test.js
 
+soljson*
+bin
+.vscode
