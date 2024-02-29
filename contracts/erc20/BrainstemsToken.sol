@@ -26,7 +26,7 @@ contract BrainstemsToken is
 {
     event TokensDistributed(address recipient, uint256 amount);
 
-    uint256 public constant MAX_SUPPLY = 100e6 * 1e18; // 1000 million tokens
+    uint256 public constant MAX_SUPPLY = 100e6 * 1e18; // 100 million tokens
 
     function initialize(
         address _admin
