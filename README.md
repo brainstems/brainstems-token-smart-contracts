@@ -21,6 +21,12 @@ git https://github.com/brainstems/brainstems-token-smart-contracts.git
 npm install
 ```
 
+Add a `.env` file in the root of the project, and as stated in the `.env.example` add:
+```sh
+TESTNET_PRIVATE_KEY=private_key
+MAINNET_PRIVATE_KEY=private_key
+```
+
 
 # Compile & Test
 
