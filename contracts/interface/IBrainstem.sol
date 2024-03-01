@@ -19,10 +19,13 @@ interface IBrainstem {
         uint256 name;
     }
 
+    event BrainstemCreated(uint256 indexed id, Brainstem brainstem);
+    event AssetRegistered(uint256 indexed brainstemId, uint256 indexed assetId);
+
     function createBrainstem(
         Brainstem calldata brainstem,
         uint256[] calldata companyIds
-    ) external;
+    ) external returns (uint256);
 
     function registerAsset(
         uint256 brainstemId,
