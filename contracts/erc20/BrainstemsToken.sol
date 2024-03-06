@@ -24,8 +24,6 @@ contract BrainstemsToken is
     ERC20BurnableUpgradeable,
     AccessControlEnumerableUpgradeable
 {
-    event TokensDistributed(address recipient, uint256 amount);
-
     uint256 public constant MAX_SUPPLY = 100e6 * 1e18; // 100 million tokens
 
     function initialize(
@@ -36,11 +34,11 @@ contract BrainstemsToken is
     }
 
     /**
-     * @notice Distribute token to other pools until max supply is reached (e.g. community programs, emissions).
+     * @notice mints token to other pools until max supply is reached (e.g. community programs, emissions, bridge, etc).
      * @param recipient address to receive the tokens.
-     * @param amount amount of tokens to distribute.
+     * @param amount amount of tokens to mint.
      */
-    function distribute(
+    function mint(
         address recipient,
         uint256 amount
     ) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -48,7 +46,6 @@ contract BrainstemsToken is
         require(amount > 0, "amount is 0");
         require(totalSupply() + amount <= MAX_SUPPLY, "exceeds maximum supply");
 
-        emit TokensDistributed(recipient, amount);
         _mint(recipient, amount);
     }
 }

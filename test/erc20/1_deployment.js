@@ -1,14 +1,9 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { admin, usdcToken, tokenToUsdc } = require("../../scripts/config");
+const { admin } = require("../../scripts/config");
 const {
   BRAINSTEMS_TOKEN_NAME,
   BRAINSTEMS_TOKEN_SYMBOL,
-  BRAINSTEMS_TOKEN_STAGES,
-  BRAINSTEMS_TOKEN_EVENTS,
-  BRAINSTEMS_TOKEN_MAX_SUPPLY,
-  BRAINSTEMS_TOKEN_INVESTORS_CAP,
-  BRAINSTEMS_TOKEN_SALES_CAP,
 } = require("../consts");
 const { verifyEvents } = require("../utils");
 
