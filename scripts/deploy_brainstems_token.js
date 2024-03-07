@@ -1,5 +1,5 @@
 const hre = require("hardhat");
-const { admin, usdcToken, tokenToUsdc } = require("./config");
+const { admin } = require("./config");
 
 async function main() {
   console.log("deploying Brainstems Token Contract....");
@@ -8,13 +8,11 @@ async function main() {
     "BrainstemsToken"
   );
   const brainstemsToken = await upgrades.deployProxy(BrainstemsToken, [
-    admin,
-    usdcToken,
-    tokenToUsdc,
+    admin
   ]);
-  await brainstemsToken.deployed();
+  await brainstemsToken.waitForDeployment();
 
-  console.log(`deployed to ${brainstemsToken.address}`);
+  console.log("deployed to :", await brainstemsToken.getAddress());
 }
 
 main().catch((error) => {

@@ -20,7 +20,7 @@ describe("ERC20: Admin actions", function () {
   });
 
   describe("should be able to", function () {
-    it("distribute tokens with valid parameters", async function () {
+    it("mint tokens with valid parameters", async function () {
       const recipient = user;
       const amount = 100000000000n;
 
@@ -28,17 +28,18 @@ describe("ERC20: Admin actions", function () {
         recipient
       );
 
-      const tx = await brainstemsToken.distribute(recipient, amount);
+      const tx = await brainstemsToken.mint(recipient, amount);
       await tx.wait();
 
       await verifyEvents(
         tx,
         brainstemsToken,
-        BRAINSTEMS_TOKEN_EVENTS.TOKENS_DISTRIBUTED,
+        BRAINSTEMS_TOKEN_EVENTS.TRANSFER,
         [
           {
-            recipient: recipient.address,
-            amount: amount,
+            from: ethers.ZeroAddress,
+            to: recipient.address,
+            value: amount
           },
         ]
       );
@@ -54,19 +55,19 @@ describe("ERC20: Admin actions", function () {
   });
 
   describe("should fail to", function () {
-    it("distribute tokens with invalid parameters", async function () {
+    it("mint tokens with invalid parameters", async function () {
       const recipient = user;
       const amount = BRAINSTEMS_TOKEN_MAX_SUPPLY;
 
       await expect(
-        brainstemsToken.connect(user).distribute(recipient, amount)
+        brainstemsToken.connect(user).mint(recipient, amount)
       ).to.be.revertedWithCustomError(
         brainstemsToken,
         "AccessControlUnauthorizedAccount"
       );
 
       await expect(
-        brainstemsToken.distribute(recipient, amount)
+        brainstemsToken.mint(recipient, amount)
       ).to.be.revertedWith("exceeds maximum supply");
     });
   });
