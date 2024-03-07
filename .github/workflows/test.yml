@@ -1,0 +1,30 @@
+name: Test Smart Contracts
+
+on:
+  push:
+    branches: [ "marketplace" ]
+  pull_request:
+    branches: [ "marketplace" ]
+
+jobs:
+  test:
+    name: Compile and Test.
+    runs-on: 'ubuntu-latest'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.17.0'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Tests
+        run: npm run test
+        env:
+          TESTNET_PRIVATE_KEY: ${{ secrets.TESTNET_PRIVATE_KEY }}
+          MAINNET_PRIVATE_KEY: ${{ secrets.MAINNET_PRIVATE_KEY }}
