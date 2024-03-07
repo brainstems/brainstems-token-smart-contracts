@@ -14,9 +14,7 @@
     "test": "npx hardhat test",
     "size": "npx hardhat size-contracts",
     "slither": "slither . --filter-paths 'node_modules'",
-    "deploy-brainstems-local": "npx hardhat run scripts/deploy_brainstems_token.js --network localhost",
-    "deploy-brainstems-goerli": "npx hardhat run scripts/deploy_brainstems_token.js --network goerli",
-    "deploy-brainstems-fuji": "npx hardhat run scripts/deploy_brainstems_token.js --network fuji"
+    "deploy-contracts": "node scripts/pre_deploy_contracts.js --"
   },
   "repository": {
     "type": "git",
@@ -39,6 +37,7 @@
     "@openzeppelin/contracts-upgradeable": "^5.0.0",
     "@openzeppelin/hardhat-upgrades": "^2.5.0",
     "@openzeppelin/merkle-tree": "^1.0.5",
+    "cross-env": "^7.0.3",
     "dotenv": "^16.3.1",
     "ethers": "^6.9.1",
     "hardhat": "^2.19.0",
@@ -46,6 +45,7 @@
   },
   "dependencies": {
     "axios": "^1.6.7",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "minimist": "^1.2.8"
   }
 }

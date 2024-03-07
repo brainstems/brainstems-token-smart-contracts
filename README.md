@@ -55,30 +55,33 @@ npm run test
 
 # Deployment to a testnet or mainnet
 
-<!-- ## Setup environment variabltes
-  You need to set your `ETHERSCAN_API_KEY`, `TESTNET_PRIVATE_KEY` and `MAINNET_PRIVATE_KEY` as environment variables. You can add them to a `.env` file, similar to what you see in `.env.example`.
+For localhost, you can start your own hardhat node by running:
+```sh
+npx hardhat node
+```
 
-- `TESTNET_PRIVATE_KEY`: The private key of your account to deploy them on testnet   (like from [metamask](https://metamask.io/)). 
+<br>
 
-    **NOTE:** FOR DEVELOPMENT, PLEASE USE A KEY THAT DOESN'T HAVE ANY REAL FUNDS ASSOCIATED WITH IT.
-  - You can [learn how to export it here](https://metamask.zendesk.com/hc/en-us/articles/360015289632-How-to-Export-an-Account-Private-Key).
-- `MAINNET_PRIVATE_KEY`: The private key of your account to depoy them on mainnet
+For contracts deployment you can run the script:
+```sh
+npx run deploy-contracts -- [args]
+```
 
-- `ETHERSCAN_API_KEY`: If you deploy to a testnet or mainnet, you can verify it if you get an [API Key](https://snowtrace.io/myapikey) from snowtrace -->
+<br>
 
-<!-- 1. Get testnet AVAX
+With the following possible Arguments:
+- `--network [network]` --> This can be 'localhost', 'fuji', etc.
+- `-token` --> Deploys the Brainstems Token Contract.
+- `-membership` --> Deploys the Membership Token Contract.
+- `-access` --> Deploys the Access Token Contract.
+- `-assets` --> Deploys the Assets Token Contract.
+- `-brainstem` --> Deploys the Brainstem Token Contract.
+- `-execution` --> Deploys the Execution Token Contract.
+- `-validation` --> Deploys the Validation Token Contract.
 
-    Head over to [faucet.avax.network](https://core.app/tools/testnet-faucet/?subnet=c&token=c) and get some tesnet AVAX. You should see the AVAX show up in your metamask. -->
+<br>
 
-1. Deploy on [Testnet(Fuji)](https://testnet.snowtrace.io/):
-
-    ```
-    npm run deploy:testnet
-    ```
-
-2. Deploy on [Mainnet(C-Chain)](https://snowtrace.io/):
-
-    ```
-    npm run deploy:mainnet
-    ```
-    
+Example command to run all contracts in localhost:
+```sh
+npx run deploy-contracts -- --network localhost -token -membership -access -assets -brainstem -execution -validation
+```
