@@ -23,8 +23,8 @@ npm install
 
 Add a `.env` file in the root of the project, and as stated in the `.env.example` add:
 ```sh
-TESTNET_PRIVATE_KEY=private_key
-MAINNET_PRIVATE_KEY=private_key
+TESTNET_PRIVATE_KEY=000000000000000000000000000000000000000000000000000000000000003c
+MAINNET_PRIVATE_KEY=000000000000000000000000000000000000000000000000000000000000003c
 ```
 
 
@@ -64,13 +64,15 @@ npx hardhat node
 
 For contracts deployment you can run the script:
 ```sh
-npx run deploy-contracts -- [args]
+npm run deploy-contracts -- [args]
 ```
 
 <br>
 
 With the following possible Arguments:
+
 - `--network [network]` --> This can be 'localhost', 'fuji', etc.
+- `-all` --> Deploy all contracts.
 - `-token` --> Deploys the Brainstems Token Contract.
 - `-membership` --> Deploys the Membership Token Contract.
 - `-access` --> Deploys the Access Token Contract.

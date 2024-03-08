@@ -2,33 +2,34 @@ const hre = require("hardhat");
 const { admin, usdcToken } = require("./config");
 
 async function main() {
-  if (process.env.DEPLOY_TOKEN === "true") {
+  if (process.env.DEPLOY_ALL==="true" || process.env.DEPLOY_TOKEN === "true") {
     await deployBrainstemsTokenContract();
   }
 
-  if (process.env.DEPLOY_MEMBERSHIP === "true") {
+  if (process.env.DEPLOY_ALL==="true" || process.env.DEPLOY_MEMBERSHIP === "true") {
     await deployMembershipContract();
   }
-
-  if (process.env.DEPLOY_ACCESS === "true") {
-    await deployAccessContract();
-  }
-
-  if (process.env.DEPLOY_ASSETS === "true") {
+ 
+  if (process.env.DEPLOY_ALL==="true" || process.env.DEPLOY_ASSETS === "true") {
     await deployAssetsContract();
   }
-
-  if (process.env.DEPLOY_BRAINSTEM === "true") {
+/*
+  if (process.env.DEPLOY_ALL==="true" || process.env.DEPLOY_BRAINSTEM === "true") {
     await deployBrainstemContract();
   }
 
-  if (process.env.DEPLOY_EXECUTION === "true") {
+  if (process.env.DEPLOY_ALL==="true" || process.env.DEPLOY_EXECUTION === "true") {
     await deployExecutionContract();
   }
 
-  if (process.env.DEPLOY_VALIDATION === "true") {
+  if (process.env.DEPLOY_ALL==="true" || process.env.DEPLOY_VALIDATION === "true") {
     await deployValidationContract();
+    
   }
+  if (process.env.DEPLOY_ALL==="true" || process.env.DEPLOY_ACCESS === "true") {
+    await deployAccessContract();
+  }
+*/
 }
 
 async function deployBrainstemsTokenContract() {
@@ -65,7 +66,7 @@ async function deployMembershipContract() {
   const Membership = await hre.ethers.getContractFactory(
     "Membership"
   );
-  const membership = await upgrades.deployProxy(Membership, [
+  const membership = await upgrades.deployProxy(Membership, [admin
     // Constructor args.
   ]);
   await membership.waitForDeployment();

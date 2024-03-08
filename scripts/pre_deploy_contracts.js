@@ -10,6 +10,7 @@ if (!args.includes("--network")) {
 }
 
 const env = {
+  DEPLOY_ALL: args.includes("-all"),
   DEPLOY_TOKEN: args.includes("-token"),
   DEPLOY_MEMBERSHIP: args.includes("-membership"),
   DEPLOY_ACCESS: args.includes("-access"),
