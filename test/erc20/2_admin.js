@@ -22,7 +22,7 @@ describe("ERC20: Admin actions", function () {
   describe("should be able to", function () {
     it("mint tokens with valid parameters", async function () {
       const recipient = user;
-      const amount = 100000000000n;
+      const amount = 1000000000000n;
 
       const previousRecipientBrainstemsTokenBalance = await brainstemsToken.balanceOf(
         recipient
@@ -53,7 +53,7 @@ describe("ERC20: Admin actions", function () {
       ).to.eq(amount);
     });
   });
-
+   
   describe("should fail to", function () {
     it("mint tokens with invalid parameters", async function () {
       const recipient = user;
@@ -71,4 +71,5 @@ describe("ERC20: Admin actions", function () {
       ).to.be.revertedWith("exceeds maximum supply");
     });
   });
+  
 });

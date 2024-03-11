@@ -24,7 +24,7 @@ contract BrainstemsToken is
     ERC20BurnableUpgradeable,
     AccessControlEnumerableUpgradeable
 {
-    uint256 public constant MAX_SUPPLY = 100e6 * 1e18; // 100 million tokens
+    uint256 public constant MAX_SUPPLY = 1000e6 * 1e18; // 1000 million tokens
 
     function initialize(
         address _admin
