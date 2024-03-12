@@ -1,6 +1,6 @@
 {
-    "projectName": "BrainstemsContracts",
-    "namespace": "BrainstemsContracts.Contracts",
+    "projectName": "BrainstemsToken",
+    "namespace": "BrainstemsToken.Contracts",
     "lang": 0,
     "autoCodeGen": true,
     "projectPath": "../"

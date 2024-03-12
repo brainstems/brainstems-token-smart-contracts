@@ -10,14 +10,7 @@ if (!args.includes("--network")) {
 }
 
 const env = {
-  DEPLOY_ALL: args.includes("-all"),
   DEPLOY_TOKEN: args.includes("-token"),
-  DEPLOY_MEMBERSHIP: args.includes("-membership"),
-  DEPLOY_ACCESS: args.includes("-access"),
-  DEPLOY_ASSETS: args.includes("-assets"),
-  DEPLOY_BRAINSTEM: args.includes("-brainstem"),
-  DEPLOY_EXECUTION: args.includes("-execution"),
-  DEPLOY_VALIDATION: args.includes("-validation"),
   ...process.env, // Include existing environment variables
 };
 
