@@ -6,17 +6,22 @@ const {
 } = require("../consts");
 const { verifyEvents } = require("../utils");
 
-let owner, user, brainstemsToken;
+let owner, user, brainstemsToken, testAccount;
 
 describe("ERC20: Admin actions", function () {
   before(async () => {
-    [owner, user] = await ethers.getSigners();
+    [owner, user, testAccount] = await ethers.getSigners();
 
     const BrainstemsToken = await ethers.getContractFactory("BrainstemsToken");
     brainstemsToken = await upgrades.deployProxy(BrainstemsToken, [
       owner.address
-    ]);
+    ]); 
     await brainstemsToken.waitForDeployment();
+
+    await brainstemsToken.grantRole(
+      await brainstemsToken.MINTER_ROLE(),
+      testAccount
+    );
   });
 
   describe("should be able to", function () {
@@ -28,7 +33,7 @@ describe("ERC20: Admin actions", function () {
         recipient
       );
 
-      const tx = await brainstemsToken.mint(recipient, amount);
+      const tx = await brainstemsToken.connect(testAccount).mint(recipient, amount);
       await tx.wait();
 
       await verifyEvents(
@@ -60,14 +65,14 @@ describe("ERC20: Admin actions", function () {
       const amount = BRAINSTEMS_TOKEN_MAX_SUPPLY;
 
       await expect(
-        brainstemsToken.connect(user).mint(recipient, amount)
+        brainstemsToken.connect(owner).mint(recipient, amount)
       ).to.be.revertedWithCustomError(
         brainstemsToken,
         "AccessControlUnauthorizedAccount"
       );
 
       await expect(
-        brainstemsToken.mint(recipient, amount)
+        brainstemsToken.connect(testAccount).mint(recipient, amount)
       ).to.be.revertedWith("exceeds maximum supply");
     });
   });
