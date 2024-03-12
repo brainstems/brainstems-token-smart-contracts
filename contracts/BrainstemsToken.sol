@@ -25,6 +25,7 @@ contract BrainstemsToken is
     AccessControlEnumerableUpgradeable
 {
     uint256 public constant MAX_SUPPLY = 1000e6 * 1e18; // 1000 million tokens
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     function initialize(
         address _admin
@@ -41,11 +42,18 @@ contract BrainstemsToken is
     function mint(
         address recipient,
         uint256 amount
-    ) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(recipient != address(0), "invalid recipient");
+    ) external onlyRole(MINTER_ROLE) {
         require(amount > 0, "amount is 0");
         require(totalSupply() + amount <= MAX_SUPPLY, "exceeds maximum supply");
 
         _mint(recipient, amount);
+    }
+
+    /**
+     * @notice grants minter role to an address.
+     * @param minter address to grant minter role.
+     */
+    function grantMinterRole(address minter) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        grantRole(MINTER_ROLE, minter);
     }
 }
