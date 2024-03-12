@@ -72,18 +72,11 @@ npm run deploy-contracts -- [args]
 With the following possible Arguments:
 
 - `--network [network]` --> This can be 'localhost', 'fuji', etc.
-- `-all` --> Deploy all contracts.
 - `-token` --> Deploys the Brainstems Token Contract.
-- `-membership` --> Deploys the Membership Token Contract.
-- `-access` --> Deploys the Access Token Contract.
-- `-assets` --> Deploys the Assets Token Contract.
-- `-brainstem` --> Deploys the Brainstem Token Contract.
-- `-execution` --> Deploys the Execution Token Contract.
-- `-validation` --> Deploys the Validation Token Contract.
 
 <br>
 
 Example command to run all contracts in localhost:
 ```sh
-npx run deploy-contracts -- --network localhost -token -membership -access -assets -brainstem -execution -validation
+npx run deploy-contracts -- --network localhost -token
 ```

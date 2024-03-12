@@ -4,6 +4,7 @@ const { admin } = require("../../scripts/config");
 const {
   BRAINSTEMS_TOKEN_NAME,
   BRAINSTEMS_TOKEN_SYMBOL,
+  BRAINSTEMS_TOKEN_DECIMALS
 } = require("../consts");
 const { verifyEvents } = require("../utils");
 
@@ -28,6 +29,9 @@ describe("ERC20: Deployment", function () {
 
       const symbol = await brainstemsToken.symbol();
       expect(symbol).to.eq(BRAINSTEMS_TOKEN_SYMBOL);
+
+      const decimals = await brainstemsToken.decimals();
+      expect(decimals).to.eq(BRAINSTEMS_TOKEN_DECIMALS);
 
       const adminRole = await brainstemsToken.DEFAULT_ADMIN_ROLE();
       const adminHasAdminRole = await brainstemsToken.hasRole(adminRole, admin);
