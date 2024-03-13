@@ -48,12 +48,4 @@ contract BrainstemsToken is
 
         _mint(recipient, amount);
     }
-
-    /**
-     * @notice grants minter role to an address.
-     * @param minter address to grant minter role.
-     */
-    function grantMinterRole(address minter) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        grantRole(MINTER_ROLE, minter);
-    }
 }
