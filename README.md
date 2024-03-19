@@ -1,4 +1,4 @@
-# Brainstems DAO
+# Brainstems ERC 20 Token
 
 - [Getting Started](#getting-started)
   - [Requirements](#requirements)
