@@ -13,10 +13,10 @@ $$$$$$$  |$$ |  $$ |$$ |  $$ |$$$$$$\ $$ | \$$ |\$$$$$$  |  $$ |   $$$$$$$$\ $$ 
 
 pragma solidity ^0.8.7;
 
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts-upgradeable/access/extensions/AccessControlEnumerableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 
 contract BrainstemsToken is
     Initializable,
@@ -27,11 +27,18 @@ contract BrainstemsToken is
     uint256 public constant MAX_SUPPLY = 1000e6 * 1e18; // 1000 million tokens
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function initialize(
         address _admin
     ) public initializer {
         __ERC20_init("Brainstems Token", "STEMS");
+        __ERC20Burnable_init();
+        __AccessControlEnumerable_init();
         _grantRole(DEFAULT_ADMIN_ROLE, _admin);
+        _setRoleAdmin(MINTER_ROLE, DEFAULT_ADMIN_ROLE);
     }
 
     /**
